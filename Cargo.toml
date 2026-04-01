@@ -2,6 +2,7 @@
 members = [
     "crates/dc_api",
     "crates/dc_example_mod",
+    "crates/dc_netwatch",
 ]
 resolver = "2"
 

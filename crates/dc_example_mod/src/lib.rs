@@ -425,6 +425,7 @@ pub extern "C" fn mod_on_event(event_id: u32, event_data: *const u8, data_size: 
             Event::WallPurchased => {
                 api.log_info("[InfiniteMoney] Wall/room expansion purchased!");
             }
+
             Event::Unknown { event_id } => {
                 api.log_info(&format!("[InfiniteMoney] Unknown event (id={})", event_id));
             }

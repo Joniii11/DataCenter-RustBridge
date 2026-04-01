@@ -17,6 +17,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "dc_netwatch"
+version = "1.0.0"
+dependencies = [
+ "dc_api",
+]
+
+[[package]]
 name = "log"
 version = "0.4.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"

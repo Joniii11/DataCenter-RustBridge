@@ -19,4 +19,5 @@ Desktop.ini
 
 # Project specific
 /tools/dump/
+/tools/TypeDumper
 /claude.md

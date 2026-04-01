@@ -43,6 +43,8 @@ public static class EventIds
     public const uint GameAutoSaved = 702;
 
     public const uint WallPurchased = 800;
+
+    public const uint NetWatchDispatched = 900; // 9xx = mod systems
 }
 
 // must match rust repr(C) layouts
@@ -109,6 +111,13 @@ public struct ShopItemAddedData
 public struct ShopItemRemovedData
 {
     public int Uid;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct NetWatchDispatchedData
+{
+    public int DeviceType; // 0 = server, 1 = switch
+    public int Reason;     // 0 = broken, 1 = eol_warning
 }
 
 // dispatches events to rust mods
@@ -287,5 +296,14 @@ public static class EventDispatcher
     public static void FireWallPurchased()
     {
         FireSimple(EventIds.WallPurchased);
+    }
+
+    public static void FireNetWatchDispatched(int deviceType, int reason)
+    {
+        DispatchWithData(EventIds.NetWatchDispatched, new NetWatchDispatchedData
+        {
+            DeviceType = deviceType,
+            Reason = reason
+        }, deviceType * 10.0 + reason);
     }
 }

@@ -1,6 +1,6 @@
 ﻿==========================================================
   Data Center — Il2Cpp Type Dump
-  Generated: 2026-04-02 00:18:09
+  Generated: 2026-04-02 00:55:08
   Total types in Assembly-CSharp: 472
 ==========================================================
 
@@ -1305,4 +1305,397 @@
 
 ╔══ TYPE NOT FOUND: ContractManager ══╗
   No fuzzy matches found either.
+
+
+══════════════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.TechnicianManager
+  Base: UnityEngine.MonoBehaviour
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr_DISPATCH_INTERVAL
+    private static readonly IntPtr NativeFieldInfoPtr_dispatchCoroutine
+    private static readonly IntPtr NativeFieldInfoPtr_hiredTechnicians
+    private static readonly IntPtr NativeFieldInfoPtr_instance
+    private static readonly IntPtr NativeFieldInfoPtr_jobQueue
+    private static readonly IntPtr NativeFieldInfoPtr_lastAssignedIndex
+    private static readonly IntPtr NativeFieldInfoPtr_lastDispatchTime
+    private static readonly IntPtr NativeFieldInfoPtr_pendingDispatches
+    private static readonly IntPtr NativeFieldInfoPtr_technicians
+    private static readonly IntPtr NativeFieldInfoPtr_transformContainer
+    private static readonly IntPtr NativeFieldInfoPtr_transformDeviceSpawnPosition
+    private static readonly IntPtr NativeFieldInfoPtr_transformDumpster
+    private static readonly IntPtr NativeFieldInfoPtr_transformIdle
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_AddTechnician_Public_Void_Technician_0
+    private static readonly IntPtr NativeMethodInfoPtr_Awake_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_EnqueueDispatch_Private_Void_RepairJob_0
+    private static readonly IntPtr NativeMethodInfoPtr_FireTechnician_Public_Void_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_get_QueuedJobCount_Public_get_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_GetActiveJobs_Public_List_1_RepairJob_0
+    private static readonly IntPtr NativeMethodInfoPtr_GetQueuedJobs_Public_List_1_RepairJob_0
+    private static readonly IntPtr NativeMethodInfoPtr_IsDeviceAlreadyAssigned_Public_Boolean_NetworkSwitch_Server_0
+    private static readonly IntPtr NativeMethodInfoPtr_ProcessDispatchQueue_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_RequestNextJob_Public_Void_Technician_0
+    private static readonly IntPtr NativeMethodInfoPtr_RestoreJobQueue_Public_Void_List_1_RepairJobSaveData_0
+    private static readonly IntPtr NativeMethodInfoPtr_SendTechnician_Public_Void_NetworkSwitch_Server_0
+
+  ── PROPERTIES ──
+    float static DISPATCH_INTERVAL { get; set; }
+    Coroutine dispatchCoroutine { get; set; }
+    Il2CppStructArray<int> hiredTechnicians { get; set; }
+    TechnicianManager static instance { get; set; }
+    Queue<RepairJob> jobQueue { get; set; }
+    int lastAssignedIndex { get; set; }
+    float lastDispatchTime { get; set; }
+    Queue<RepairJob> pendingDispatches { get; set; }
+    int QueuedJobCount { get; }
+    List<Technician> technicians { get; set; }
+    Transform transformContainer { get; set; }
+    Transform transformDeviceSpawnPosition { get; set; }
+    Transform transformDumpster { get; set; }
+    Il2CppReferenceArray<Transform> transformIdle { get; set; }
+
+  ── METHODS ──
+    public void AddTechnician(Technician technician)
+    public void Awake()
+    public void EnqueueDispatch(RepairJob job)
+    public void FireTechnician(int technicianID)
+    public List<RepairJob> GetActiveJobs()
+    public List<RepairJob> GetQueuedJobs()
+    public bool IsDeviceAlreadyAssigned(NetworkSwitch networkSwitch, Server server)
+    public IEnumerator ProcessDispatchQueue()
+    public void RequestNextJob(Technician technician)
+    public void RestoreJobQueue(List<RepairJobSaveData> savedJobs)
+    public void SendTechnician(NetworkSwitch networkSwitch, Server server)
+
+  ── CONSTRUCTORS ──
+    private .ctor()
+    public .ctor()
+    public .ctor(IntPtr pointer)
+
+  ── NESTED TYPES ──
+    class __c__DisplayClass26_0
+    class _ProcessDispatchQueue_d__21
+    class RepairJob
+
+
+══════════════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.Technician
+  Base: UnityEngine.MonoBehaviour
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr_characterControl
+    private static readonly IntPtr NativeFieldInfoPtr_currentJob
+    private static readonly IntPtr NativeFieldInfoPtr_currentState
+    private static readonly IntPtr NativeFieldInfoPtr_deviceInHand
+    private static readonly IntPtr NativeFieldInfoPtr_isBusy
+    private static readonly IntPtr NativeFieldInfoPtr_leftHandIK
+    private static readonly IntPtr NativeFieldInfoPtr_leftHandTarget
+    private static readonly IntPtr NativeFieldInfoPtr_networkSwitch
+    private static readonly IntPtr NativeFieldInfoPtr_positionOfDeviceToBeReplaced
+    private static readonly IntPtr NativeFieldInfoPtr_rightHandIK
+    private static readonly IntPtr NativeFieldInfoPtr_rightHandTarget
+    private static readonly IntPtr NativeFieldInfoPtr_salary
+    private static readonly IntPtr NativeFieldInfoPtr_server
+    private static readonly IntPtr NativeFieldInfoPtr_technicianID
+    private static readonly IntPtr NativeFieldInfoPtr_technicianName
+    private static readonly IntPtr NativeFieldInfoPtr_transformContainer
+    private static readonly IntPtr NativeFieldInfoPtr_transformDeviceSpawnPosition
+    private static readonly IntPtr NativeFieldInfoPtr_transformDumpster
+    private static readonly IntPtr NativeFieldInfoPtr_transformIdle
+    private static readonly IntPtr NativeFieldInfoPtr_transformInHandPosition
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_AssignJob_Public_Void_RepairJob_0
+    private static readonly IntPtr NativeMethodInfoPtr_Awake_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_get_CurrentJob_Public_get_Nullable_1_RepairJob_0
+    private static readonly IntPtr NativeMethodInfoPtr_GetCorrectDevicePrefab_Private_GameObject_0
+    private static readonly IntPtr NativeMethodInfoPtr_GettingNewServer_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnDestroy_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnLoadingStarted_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_PositionHandTargetsOnDevice_Private_Void_GameObject_0
+    private static readonly IntPtr NativeMethodInfoPtr_RepairDevice_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ReplacingServer_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_RequestJobDelayed_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_RotateTowardsGoal_Private_Void_Vector3_0
+    private static readonly IntPtr NativeMethodInfoPtr_SendToContainer_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_SetHandIKWeight_Private_IEnumerator_Single_Single_0
+    private static readonly IntPtr NativeMethodInfoPtr_Start_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_StartTextingAnimation_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_ThrowingOutServer_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_Update_Private_Void_0
+
+  ── PROPERTIES ──
+    AICharacterControl characterControl { get; set; }
+    Nullable<RepairJob> currentJob { get; set; }
+    Nullable<RepairJob> CurrentJob { get; }
+    TechnicianState currentState { get; set; }
+    GameObject deviceInHand { get; set; }
+    bool isBusy { get; set; }
+    TwoBoneIKConstraint leftHandIK { get; set; }
+    Transform leftHandTarget { get; set; }
+    NetworkSwitch networkSwitch { get; set; }
+    Transform positionOfDeviceToBeReplaced { get; set; }
+    TwoBoneIKConstraint rightHandIK { get; set; }
+    Transform rightHandTarget { get; set; }
+    int salary { get; set; }
+    Server server { get; set; }
+    int technicianID { get; set; }
+    string technicianName { get; set; }
+    Transform transformContainer { get; set; }
+    Transform transformDeviceSpawnPosition { get; set; }
+    Transform transformDumpster { get; set; }
+    Transform transformIdle { get; set; }
+    Transform transformInHandPosition { get; set; }
+
+  ── METHODS ──
+    public void AssignJob(RepairJob job)
+    public void Awake()
+    public GameObject GetCorrectDevicePrefab()
+    public IEnumerator GettingNewServer()
+    public void OnDestroy()
+    public void OnLoadingStarted()
+    public void PositionHandTargetsOnDevice(GameObject device)
+    public void RepairDevice()
+    public IEnumerator ReplacingServer()
+    public IEnumerator RequestJobDelayed()
+    public void RotateTowardsGoal(Vector3 goal)
+    public IEnumerator SendToContainer()
+    public IEnumerator SetHandIKWeight(float targetWeight, float duration)
+    public void Start()
+    public IEnumerator StartTextingAnimation()
+    public IEnumerator ThrowingOutServer()
+    public void Update()
+
+  ── CONSTRUCTORS ──
+    private .ctor()
+    public .ctor()
+    public .ctor(IntPtr pointer)
+
+  ── NESTED TYPES ──
+    class _GettingNewServer_d__30
+    class _ReplacingServer_d__31
+    class _RequestJobDelayed_d__25
+    class _SendToContainer_d__29
+    class _SetHandIKWeight_d__36
+    class _StartTextingAnimation_d__28
+    class _ThrowingOutServer_d__32
+    enum TechnicianState
+      Idle = 0
+      GoingForNewServer = 1
+      BringingNewServer = 2
+      GoingBackWithOldServer = 3
+      EndingHisWork = 4
+
+
+══════════════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.Technician+TechnicianState
+  Base: System.Enum
+  Public: False  Abstract: False  Sealed: True
+  Implements: IComparable, IFormattable, IConvertible
+══════════════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    public static const TechnicianState BringingNewServer
+    public static const TechnicianState EndingHisWork
+    public static const TechnicianState GoingBackWithOldServer
+    public static const TechnicianState GoingForNewServer
+    public static const TechnicianState Idle
+    public int value__
+
+  ── PROPERTIES ──
+    (none)
+
+  ── METHODS ──
+    (none)
+
+
+══════════════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.NetworkSwitch
+  Base: Il2Cpp.UsableObject
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr_breakingRoutine
+    private static readonly IntPtr NativeFieldInfoPtr_cableLinkSwitchPorts
+    private static readonly IntPtr NativeFieldInfoPtr_canvas
+    private static readonly IntPtr NativeFieldInfoPtr_eolTime
+    private static readonly IntPtr NativeFieldInfoPtr_existingErrorSigns
+    private static readonly IntPtr NativeFieldInfoPtr_existingWarningSigns
+    private static readonly IntPtr NativeFieldInfoPtr_isBroken
+    private static readonly IntPtr NativeFieldInfoPtr_isOn
+    private static readonly IntPtr NativeFieldInfoPtr_isWarningCleared
+    private static readonly IntPtr NativeFieldInfoPtr_label
+    private static readonly IntPtr NativeFieldInfoPtr_powerButton
+    private static readonly IntPtr NativeFieldInfoPtr_switchId
+    private static readonly IntPtr NativeFieldInfoPtr_switchType
+    private static readonly IntPtr NativeFieldInfoPtr_temporarilyDisconnectedCables
+    private static readonly IntPtr NativeFieldInfoPtr_timeToBrake
+    private static readonly IntPtr NativeFieldInfoPtr_txtScreen
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr__InteractOnClick_b__22_0_Private_Boolean_RackPosition_0
+    private static readonly IntPtr NativeMethodInfoPtr__ValidateRackPosition_b__34_0_Private_Boolean_RackPosition_0
+    private static readonly IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_BrekingInProgress_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonShowNetworkSwitchConfig_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ClearErrorSign_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ClearWarningSign_Public_Void_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_DisconnectCables_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_DisconnectCablesWhenSwitchIsOff_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_GetConnectedDevices_Public_List_1_ValueTuple_2_String_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_GetSwitchId_Public_String_0
+    private static readonly IntPtr NativeMethodInfoPtr_HandleNewCableWhileOff_Public_Void_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+    private static readonly IntPtr NativeMethodInfoPtr_IsAnyCableConnected_Public_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_ItIsBroken_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnDestroy_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_PowerButton_Public_Void_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_ReconnectCables_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_RepairDevice_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_SetPowerLightMaterial_Private_Void_Material_0
+    private static readonly IntPtr NativeMethodInfoPtr_Start_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_SwitchInsertedInRack_Public_Void_SwitchSaveData_0
+    private static readonly IntPtr NativeMethodInfoPtr_TurnOffCommonFunctions_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_TurnOnCommonFunction_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_UpdateScreenUI_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ValidateRackPosition_Public_Boolean_0
+
+  ── PROPERTIES ──
+    Coroutine breakingRoutine { get; set; }
+    Il2CppReferenceArray<CableLink> cableLinkSwitchPorts { get; set; }
+    GameObject canvas { get; set; }
+    int eolTime { get; set; }
+    int existingErrorSigns { get; set; }
+    int existingWarningSigns { get; set; }
+    bool isBroken { get; set; }
+    bool isOn { get; set; }
+    bool isWarningCleared { get; set; }
+    string label { get; set; }
+    Renderer powerButton { get; set; }
+    string switchId { get; set; }
+    int switchType { get; set; }
+    List<ValueTuple<int, ValueTuple<string, string>>> temporarilyDisconnectedCables { get; set; }
+    int timeToBrake { get; set; }
+    TextMeshProUGUI txtScreen { get; set; }
+
+  ── METHODS ──
+    public bool _InteractOnClick_b__22_0(RackPosition r)
+    public bool _ValidateRackPosition_b__34_0(RackPosition r)
+    public virtual void Awake()
+    public IEnumerator BrekingInProgress()
+    public void ButtonShowNetworkSwitchConfig()
+    public void ClearErrorSign()
+    public void ClearWarningSign(bool isPreserved)
+    public void DisconnectCables()
+    public void DisconnectCablesWhenSwitchIsOff()
+    public List<ValueTuple<string, int>> GetConnectedDevices()
+    public string GetSwitchId()
+    public void HandleNewCableWhileOff(int cableId)
+    public virtual void InteractOnClick()
+    public virtual void InteractOnHover(RaycastHit hit)
+    public bool IsAnyCableConnected()
+    public void ItIsBroken()
+    public virtual void OnDestroy()
+    public void PowerButton(bool forceState)
+    public void ReconnectCables()
+    public void RepairDevice()
+    public void SetPowerLightMaterial(Material material)
+    public void Start()
+    public void SwitchInsertedInRack(SwitchSaveData switchSaveData)
+    public void TurnOffCommonFunctions()
+    public void TurnOnCommonFunction()
+    public void UpdateScreenUI()
+    public bool ValidateRackPosition()
+
+  ── CONSTRUCTORS ──
+    private .ctor()
+    public .ctor()
+    public .ctor(IntPtr pointer)
+
+  ── NESTED TYPES ──
+    class _BrekingInProgress_d__29
+
+
+══════════════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.AssetManagement
+  Base: UnityEngine.MonoBehaviour
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr__dataLength
+    private static readonly IntPtr NativeFieldInfoPtr__recyclableScrollRect
+    private static readonly IntPtr NativeFieldInfoPtr_brokenList
+    private static readonly IntPtr NativeFieldInfoPtr_buttonReturn
+    private static readonly IntPtr NativeFieldInfoPtr_currentFilter
+    private static readonly IntPtr NativeFieldInfoPtr_deviceList
+    private static readonly IntPtr NativeFieldInfoPtr_eolList
+    private static readonly IntPtr NativeFieldInfoPtr_firstInit
+    private static readonly IntPtr NativeFieldInfoPtr_offList
+    private static readonly IntPtr NativeFieldInfoPtr_overlayConfirmTechnician
+    private static readonly IntPtr NativeFieldInfoPtr_priceOfTechnician
+    private static readonly IntPtr NativeFieldInfoPtr_selectedNetworkSwitch
+    private static readonly IntPtr NativeFieldInfoPtr_selectedServer
+    private static readonly IntPtr NativeFieldInfoPtr_serverList
+    private static readonly IntPtr NativeFieldInfoPtr_switchList
+    private static readonly IntPtr NativeFieldInfoPtr_technicianInformation
+    private static readonly IntPtr NativeFieldInfoPtr_textPriceForTechnician
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonCancelSendingTechnician_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonConfirmSendingTechnician_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonFilterAll_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonFilterBroken_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonFilterEOL_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonFilterOff_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonFilterServers_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonFilterSwitches_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_GetItemCount_Public_Virtual_Final_New_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnEnable_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_SendTechnician_Public_Void_NetworkSwitch_Server_0
+    private static readonly IntPtr NativeMethodInfoPtr_SetCell_Public_Virtual_Final_New_Void_ICell_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_UpdateTechnicianInformation_Private_Void_0
+
+  ── PROPERTIES ──
+    int _dataLength { get; set; }
+    RecyclableScrollRect _recyclableScrollRect { get; set; }
+    List<AssetManagementDeviceLineData> brokenList { get; set; }
+    ButtonExtended buttonReturn { get; set; }
+    int currentFilter { get; set; }
+    List<AssetManagementDeviceLineData> deviceList { get; set; }
+    List<AssetManagementDeviceLineData> eolList { get; set; }
+    bool firstInit { get; set; }
+    List<AssetManagementDeviceLineData> offList { get; set; }
+    GameObject overlayConfirmTechnician { get; set; }
+    int priceOfTechnician { get; set; }
+    NetworkSwitch selectedNetworkSwitch { get; set; }
+    Server selectedServer { get; set; }
+    List<AssetManagementDeviceLineData> serverList { get; set; }
+    List<AssetManagementDeviceLineData> switchList { get; set; }
+    TextMeshProUGUI technicianInformation { get; set; }
+    TextMeshProUGUI textPriceForTechnician { get; set; }
+
+  ── METHODS ──
+    public void ButtonCancelSendingTechnician()
+    public void ButtonConfirmSendingTechnician()
+    public void ButtonFilterAll()
+    public void ButtonFilterBroken()
+    public void ButtonFilterEOL()
+    public void ButtonFilterOff()
+    public void ButtonFilterServers()
+    public void ButtonFilterSwitches()
+    public virtual int GetItemCount()
+    public void OnEnable()
+    public void SendTechnician(NetworkSwitch networkSwitch, Server server)
+    public virtual void SetCell(ICell cell, int index)
+    public void UpdateTechnicianInformation()
+
+  ── CONSTRUCTORS ──
+    private .ctor()
+    public .ctor()
+    public .ctor(IntPtr pointer)
 

@@ -13,7 +13,9 @@ string[] defaultTypes = new[]
     "TimeController", "MainGameManager", "ComputerShop",
     "HRSystem", "SaveSystem", "NetworkMap", "Rack",
     "BalanceSheet", "BuildingManager", "ContractBase",
-    "Customer", "ContractManager"
+    "Customer", "ContractManager",
+    "TechnicianManager", "Technician", "TechnicianState",
+    "NetworkSwitch", "AssetManagement"
 };
 
 string[] requestedTypes = args.Length > 0 ? args : defaultTypes;

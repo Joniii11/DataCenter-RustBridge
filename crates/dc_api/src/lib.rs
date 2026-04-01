@@ -25,7 +25,7 @@ use std::ffi::{c_char, CStr, CString};
 use std::fmt;
 use std::sync::OnceLock;
 
-pub const API_VERSION: u32 = 2;
+pub const API_VERSION: u32 = 3;
 
 #[repr(C)]
 pub struct ModInfo {
@@ -103,6 +103,11 @@ pub struct GameAPI {
     pub get_switch_count: extern "C" fn() -> u32,
 
     pub get_satisfied_customer_count: extern "C" fn() -> u32,
+
+    // v3
+    pub set_netwatch_enabled: extern "C" fn(u32), // 1 = enable, 0 = disable
+    pub is_netwatch_enabled: extern "C" fn() -> u32, // 1 = enabled, 0 = disabled
+    pub get_netwatch_stats: extern "C" fn() -> u32, // total dispatches count
 }
 
 unsafe impl Send for GameAPI {}
@@ -259,6 +264,31 @@ impl Api {
             return None;
         }
         Some((self.raw.get_satisfied_customer_count)())
+    }
+
+    /// Enable or disable the NetWatch auto-repair system.
+    pub fn set_netwatch_enabled(&self, enabled: bool) -> bool {
+        if self.raw.api_version < 3 {
+            return false;
+        }
+        (self.raw.set_netwatch_enabled)(if enabled { 1 } else { 0 });
+        true
+    }
+
+    /// Check if NetWatch is currently enabled.
+    pub fn is_netwatch_enabled(&self) -> Option<bool> {
+        if self.raw.api_version < 3 {
+            return None;
+        }
+        Some((self.raw.is_netwatch_enabled)() != 0)
+    }
+
+    /// Get total number of technician dispatches by NetWatch.
+    pub fn get_netwatch_stats(&self) -> Option<u32> {
+        if self.raw.api_version < 3 {
+            return None;
+        }
+        Some((self.raw.get_netwatch_stats)())
     }
 }
 

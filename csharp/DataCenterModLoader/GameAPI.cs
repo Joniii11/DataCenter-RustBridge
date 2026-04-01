@@ -33,12 +33,17 @@ public struct GameAPITable
     public IntPtr SetSecondsInFullDay;
     public IntPtr GetSwitchCount;
     public IntPtr GetSatisfiedCustomerCount;
+
+    // v3
+    public IntPtr SetNetWatchEnabled;
+    public IntPtr IsNetWatchEnabled;
+    public IntPtr GetNetWatchStats;
 }
 
 // manages the api table, delegates stored as fields to prevent GC
 public class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 2;
+    public const uint API_VERSION = 3;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -49,6 +54,7 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate float GetFloatDelegate();
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetFloatDelegate(float value);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint GetUIntDelegate();
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetUIntDelegate(uint value);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr GetStringDelegate();
 
     // prevent GC while rust holds these
@@ -58,6 +64,8 @@ public class GameAPIManager : IDisposable
     private readonly GetFloatDelegate _getTimeScale, _getTimeOfDay, _getSecondsInFullDay;
     private readonly SetFloatDelegate _setTimeScale, _setSecondsInFullDay;
     private readonly GetUIntDelegate _getServerCount, _getRackCount, _getDay, _getSwitchCount, _getSatisfiedCustomerCount;
+    private readonly GetUIntDelegate _isNetWatchEnabled, _getNetWatchStats;
+    private readonly SetUIntDelegate _setNetWatchEnabled;
     private readonly GetStringDelegate _getCurrentScene;
 
     private readonly MelonLogger.Instance _logger;
@@ -87,6 +95,9 @@ public class GameAPIManager : IDisposable
         _setSecondsInFullDay = SetSecondsInFullDayImpl;
         _getSwitchCount = GetSwitchCountImpl;
         _getSatisfiedCustomerCount = GetSatisfiedCustomerCountImpl;
+        _setNetWatchEnabled = SetNetWatchEnabledImpl;
+        _isNetWatchEnabled = IsNetWatchEnabledImpl;
+        _getNetWatchStats = GetNetWatchStatsImpl;
 
         _table = new GameAPITable
         {
@@ -111,6 +122,9 @@ public class GameAPIManager : IDisposable
             SetSecondsInFullDay = Marshal.GetFunctionPointerForDelegate(_setSecondsInFullDay),
             GetSwitchCount = Marshal.GetFunctionPointerForDelegate(_getSwitchCount),
             GetSatisfiedCustomerCount = Marshal.GetFunctionPointerForDelegate(_getSatisfiedCustomerCount),
+            SetNetWatchEnabled = Marshal.GetFunctionPointerForDelegate(_setNetWatchEnabled),
+            IsNetWatchEnabled = Marshal.GetFunctionPointerForDelegate(_isNetWatchEnabled),
+            GetNetWatchStats = Marshal.GetFunctionPointerForDelegate(_getNetWatchStats),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -201,6 +215,17 @@ public class GameAPIManager : IDisposable
 
     private uint GetSwitchCountImpl() { try { return GameHooks.GetSwitchCount(); } catch { return 0; } }
     private uint GetSatisfiedCustomerCountImpl() { try { return (uint)Math.Max(0, GameHooks.GetSatisfiedCustomerCount()); } catch { return 0; } }
+
+    // v3
+
+    private void SetNetWatchEnabledImpl(uint value)
+    {
+        try { NetWatchSystem.Enabled = value != 0; }
+        catch (Exception ex) { _logger.Error("SetNetWatchEnabled: " + ex.Message); }
+    }
+
+    private uint IsNetWatchEnabledImpl() { try { return NetWatchSystem.Enabled ? 1u : 0u; } catch { return 0; } }
+    private uint GetNetWatchStatsImpl() { try { return (uint)NetWatchSystem.TotalDispatches; } catch { return 0; } }
 
     public void Dispose()
     {

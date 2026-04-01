@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "uhKcnA4o4SQ=",
+  "dgSpecHash": "urlWpyM+Muo=",
   "success": true,
-  "projectFilePath": "E:\\rust\\data center modloader\\tools\\TypeDumper\\TypeDumper.csproj",
+  "projectFilePath": "E:\\rust\\data center modloader\\tools\\typedumper\\TypeDumper.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Jonas\\.nuget\\packages\\system.collections.immutable\\8.0.0\\system.collections.immutable.8.0.0.nupkg.sha512",
     "C:\\Users\\Jonas\\.nuget\\packages\\system.reflection.metadata\\8.0.0\\system.reflection.metadata.8.0.0.nupkg.sha512",

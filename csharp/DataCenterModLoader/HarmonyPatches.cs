@@ -117,6 +117,7 @@ internal static class Patch_Server_ServerInsertedInRack
 }
 
 // track day changes each frame
+// note: NetWatchSystem also uses this to detect day changes for salary deduction
 [HarmonyPatch(typeof(TimeController), "Update")]
 internal static class Patch_TimeController_Update
 {
