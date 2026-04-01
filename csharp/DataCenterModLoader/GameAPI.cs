@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace DataCenterModLoader;
 
-/// Function pointer table passed to Rust mods. Append-only, never reorder fields.
+// function pointer table for rust mods, append-only
 [StructLayout(LayoutKind.Sequential)]
 public struct GameAPITable
 {
@@ -35,7 +35,7 @@ public struct GameAPITable
     public IntPtr GetSatisfiedCustomerCount;
 }
 
-/// Manages the GameAPI function pointer table. Delegates are stored as fields to prevent GC.
+// manages the api table, delegates stored as fields to prevent GC
 public class GameAPIManager : IDisposable
 {
     public const uint API_VERSION = 2;
@@ -51,7 +51,7 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint GetUIntDelegate();
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr GetStringDelegate();
 
-    // Pinned delegate instances (prevent GC while Rust holds raw pointers)
+    // prevent GC while rust holds these
     private readonly LogDelegate _logInfo, _logWarning, _logError;
     private readonly GetDoubleDelegate _getPlayerMoney, _getPlayerXP, _getPlayerReputation;
     private readonly SetDoubleDelegate _setPlayerMoney, _setPlayerXP, _setPlayerReputation;
@@ -119,7 +119,7 @@ public class GameAPIManager : IDisposable
 
     public IntPtr GetTablePointer() => _tablePtr;
 
-    // v1 implementations
+    // v1
 
     private void LogInfoImpl(IntPtr msg) { _logger.Msg("[RustMod] " + (Marshal.PtrToStringAnsi(msg) ?? "")); }
     private void LogWarningImpl(IntPtr msg) { _logger.Warning("[RustMod] " + (Marshal.PtrToStringAnsi(msg) ?? "")); }
@@ -163,7 +163,7 @@ public class GameAPIManager : IDisposable
         catch { return IntPtr.Zero; }
     }
 
-    // v2 implementations
+    // v2
 
     private double GetPlayerXPImpl()
     {

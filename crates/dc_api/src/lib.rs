@@ -1,8 +1,4 @@
-//! # Data Center Modloader API
-//!
 //! FFI types and safe wrappers for writing Data Center mods in Rust.
-//!
-//! Your mod DLL must export at minimum `mod_info` and `mod_init`:
 //!
 //! ```rust,ignore
 //! use dc_api::*;
@@ -23,15 +19,14 @@
 //! ```
 
 pub mod events;
+pub use events::{Event, EventCategory, EventId};
 
 use std::ffi::{c_char, CStr, CString};
 use std::fmt;
 use std::sync::OnceLock;
 
-/// Current API version
 pub const API_VERSION: u32 = 2;
 
-/// Information about a mod. Returned by the `mod_info` export.
 #[repr(C)]
 pub struct ModInfo {
     pub id: *const c_char,
@@ -74,10 +69,7 @@ impl ModInfo {
     }
 }
 
-/// The function pointer table passed from C# to Rust on mod_init.
-///
-/// This struct is append-only. New fields are added at the end.
-/// Check `api_version` to know which fields are available.
+// function pointer table from C#, append-only
 #[repr(C)]
 pub struct GameAPI {
     pub api_version: u32,
@@ -116,7 +108,6 @@ pub struct GameAPI {
 unsafe impl Send for GameAPI {}
 unsafe impl Sync for GameAPI {}
 
-/// Safe wrapper around the raw `GameAPI` function pointers.
 pub struct Api {
     raw: &'static GameAPI,
 }
@@ -125,7 +116,6 @@ unsafe impl Send for Api {}
 unsafe impl Sync for Api {}
 
 impl Api {
-    /// Wraps a raw `GameAPI` reference received in `mod_init`.
     pub unsafe fn from_raw(raw: &'static GameAPI) -> Self {
         Self { raw }
     }
@@ -160,7 +150,7 @@ impl Api {
         (self.raw.set_player_money)(amount);
     }
 
-    /// 1.0 = normal, 0.0 = paused.
+    // 1.0 = normal, 0.0 = paused
     pub fn get_time_scale(&self) -> f32 {
         (self.raw.get_time_scale)()
     }
@@ -187,7 +177,7 @@ impl Api {
             .into_owned()
     }
 
-    /// Returns `None` if API version < 2.
+    // returns None if API version < 2
     pub fn get_player_xp(&self) -> Option<f64> {
         if self.raw.api_version < 2 {
             return None;
@@ -195,7 +185,7 @@ impl Api {
         Some((self.raw.get_player_xp)())
     }
 
-    /// Returns `false` if API version < 2.
+    // returns false if API version < 2
     pub fn set_player_xp(&self, value: f64) -> bool {
         if self.raw.api_version < 2 {
             return false;
@@ -204,7 +194,7 @@ impl Api {
         true
     }
 
-    /// Returns `None` if API version < 2.
+    // returns None if API version < 2
     pub fn get_player_reputation(&self) -> Option<f64> {
         if self.raw.api_version < 2 {
             return None;
@@ -212,7 +202,7 @@ impl Api {
         Some((self.raw.get_player_reputation)())
     }
 
-    /// Returns `false` if API version < 2.
+    // returns false if API version < 2
     pub fn set_player_reputation(&self, value: f64) -> bool {
         if self.raw.api_version < 2 {
             return false;
@@ -221,7 +211,8 @@ impl Api {
         true
     }
 
-    /// 0.0 = midnight, 0.5 = noon, 1.0 = end of day. Returns `None` if API version < 2.
+    // 0.0 = midnight, 0.5 = noon, 1.0 = end of day
+    // returns None if API version < 2
     pub fn get_time_of_day(&self) -> Option<f32> {
         if self.raw.api_version < 2 {
             return None;
@@ -229,7 +220,7 @@ impl Api {
         Some((self.raw.get_time_of_day)())
     }
 
-    /// Returns `None` if API version < 2.
+    // returns None if API version < 2
     pub fn get_day(&self) -> Option<u32> {
         if self.raw.api_version < 2 {
             return None;
@@ -237,7 +228,7 @@ impl Api {
         Some((self.raw.get_day)())
     }
 
-    /// Returns `None` if API version < 2.
+    // returns None if API version < 2
     pub fn get_seconds_in_full_day(&self) -> Option<f32> {
         if self.raw.api_version < 2 {
             return None;
@@ -245,7 +236,7 @@ impl Api {
         Some((self.raw.get_seconds_in_full_day)())
     }
 
-    /// Lower values = faster days. Returns `false` if API version < 2.
+    // lower values = faster days, returns false if API version < 2
     pub fn set_seconds_in_full_day(&self, seconds: f32) -> bool {
         if self.raw.api_version < 2 {
             return false;
@@ -254,7 +245,7 @@ impl Api {
         true
     }
 
-    /// Returns `None` if API version < 2.
+    // returns None if API version < 2
     pub fn get_switch_count(&self) -> Option<u32> {
         if self.raw.api_version < 2 {
             return None;
@@ -262,7 +253,7 @@ impl Api {
         Some((self.raw.get_switch_count)())
     }
 
-    /// Returns `None` if API version < 2.
+    // returns None if API version < 2
     pub fn get_satisfied_customer_count(&self) -> Option<u32> {
         if self.raw.api_version < 2 {
             return None;
@@ -285,7 +276,4 @@ pub type ModUpdateFn = unsafe extern "C" fn(delta_time: f32);
 pub type ModFixedUpdateFn = unsafe extern "C" fn(delta_time: f32);
 pub type ModOnSceneLoadedFn = unsafe extern "C" fn(scene_name: *const c_char);
 pub type ModShutdownFn = unsafe extern "C" fn();
-
-/// Optional event handler export. See [`events::decode`] to turn the raw
-/// arguments into an [`events::Event`].
 pub type ModOnEventFn = events::ModOnEventFn;

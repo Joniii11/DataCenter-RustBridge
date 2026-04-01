@@ -5,8 +5,7 @@ using UnityEngine;
 
 namespace DataCenterModLoader;
 
-/// Safe accessors for game state via Il2Cpp singletons.
-/// All methods return safe defaults when singletons are null (loading screens etc).
+// safe game state accessors, returns defaults when singletons are null
 public static class GameHooks
 {
     public static float GetPlayerMoney()

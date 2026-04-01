@@ -105,12 +105,14 @@ public class FFIBridge : IDisposable
         var fileName = Path.GetFileName(dllPath);
         _logger.Msg($"Loading Rust mod: {fileName}");
 
+        CrashLog.Log($"LoadMod: about to call LoadLibrary for '{fileName}'");
         var handle = LoadLibrary(dllPath);
         if (handle == IntPtr.Zero)
         {
             var error = Marshal.GetLastWin32Error();
             throw new Exception($"LoadLibrary failed with error code {error}");
         }
+        CrashLog.Log($"LoadMod: LoadLibrary succeeded for '{fileName}', handle=0x{handle.ToInt64():X}");
 
         var mod = new RustMod { FilePath = dllPath, Handle = handle };
 
@@ -119,7 +121,9 @@ public class FFIBridge : IDisposable
         if (modInfoPtr != IntPtr.Zero)
         {
             var modInfoFn = Marshal.GetDelegateForFunctionPointer<ModInfoDelegate>(modInfoPtr);
+            CrashLog.Log($"LoadMod: about to call modInfoFn() for '{fileName}'");
             var info = modInfoFn();
+            CrashLog.Log($"LoadMod: modInfoFn() returned for '{fileName}'");
 
             mod.Id = Marshal.PtrToStringAnsi(info.Id) ?? "unknown";
             mod.Name = Marshal.PtrToStringAnsi(info.Name) ?? "Unknown";
@@ -140,12 +144,14 @@ public class FFIBridge : IDisposable
         if (modInitPtr != IntPtr.Zero)
         {
             var modInitFn = Marshal.GetDelegateForFunctionPointer<ModInitDelegate>(modInitPtr);
+            CrashLog.Log($"LoadMod: about to call modInitFn() for '{mod.Name}'");
             if (!modInitFn(_apiManager.GetTablePointer()))
             {
                 _logger.Error($"  Mod '{mod.Name}' mod_init() returned false.");
                 FreeLibrary(handle);
                 return;
             }
+            CrashLog.Log($"LoadMod: modInitFn() succeeded for '{mod.Name}'");
             _logger.Msg($"  Mod '{mod.Name}' initialized.");
         }
         else
@@ -154,22 +160,27 @@ public class FFIBridge : IDisposable
         }
 
         // Optional exports
+        CrashLog.Log($"LoadMod: resolving optional export 'mod_update' for '{mod.Name}'");
         var updatePtr = GetProcAddress(handle, "mod_update");
         if (updatePtr != IntPtr.Zero)
             mod.Update = Marshal.GetDelegateForFunctionPointer<ModUpdateDelegate>(updatePtr);
 
+        CrashLog.Log($"LoadMod: resolving optional export 'mod_fixed_update' for '{mod.Name}'");
         var fixedUpdatePtr = GetProcAddress(handle, "mod_fixed_update");
         if (fixedUpdatePtr != IntPtr.Zero)
             mod.FixedUpdate = Marshal.GetDelegateForFunctionPointer<ModUpdateDelegate>(fixedUpdatePtr);
 
+        CrashLog.Log($"LoadMod: resolving optional export 'mod_on_scene_loaded' for '{mod.Name}'");
         var sceneLoadedPtr = GetProcAddress(handle, "mod_on_scene_loaded");
         if (sceneLoadedPtr != IntPtr.Zero)
             mod.OnSceneLoaded = Marshal.GetDelegateForFunctionPointer<ModOnSceneLoadedDelegate>(sceneLoadedPtr);
 
+        CrashLog.Log($"LoadMod: resolving optional export 'mod_shutdown' for '{mod.Name}'");
         var shutdownPtr = GetProcAddress(handle, "mod_shutdown");
         if (shutdownPtr != IntPtr.Zero)
             mod.Shutdown = Marshal.GetDelegateForFunctionPointer<ModShutdownDelegate>(shutdownPtr);
 
+        CrashLog.Log($"LoadMod: resolving optional export 'mod_on_event' for '{mod.Name}'");
         var onEventPtr = GetProcAddress(handle, "mod_on_event");
         if (onEventPtr != IntPtr.Zero)
         {
@@ -177,24 +188,47 @@ public class FFIBridge : IDisposable
             _logger.Msg($"  Mod '{mod.Name}' supports game events.");
         }
 
+        CrashLog.Log($"LoadMod: finished loading '{mod.Name}' successfully");
         _loadedMods.Add(mod);
     }
 
     public void OnUpdate(float deltaTime)
     {
-        foreach (var mod in _loadedMods)
+        try
         {
-            try { mod.Update?.Invoke(deltaTime); }
-            catch (Exception ex) { _logger.Error($"[{mod.Name}] mod_update crashed: {ex.Message}"); }
+            foreach (var mod in _loadedMods)
+            {
+                try { mod.Update?.Invoke(deltaTime); }
+                catch (Exception ex)
+                {
+                    _logger.Error($"[{mod.Name}] mod_update crashed: {ex.Message}");
+                    CrashLog.LogException($"[{mod.Name}] mod_update", ex);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("FFIBridge.OnUpdate outer", ex);
         }
     }
 
     public void OnFixedUpdate(float deltaTime)
     {
-        foreach (var mod in _loadedMods)
+        try
         {
-            try { mod.FixedUpdate?.Invoke(deltaTime); }
-            catch (Exception ex) { _logger.Error($"[{mod.Name}] mod_fixed_update crashed: {ex.Message}"); }
+            foreach (var mod in _loadedMods)
+            {
+                try { mod.FixedUpdate?.Invoke(deltaTime); }
+                catch (Exception ex)
+                {
+                    _logger.Error($"[{mod.Name}] mod_fixed_update crashed: {ex.Message}");
+                    CrashLog.LogException($"[{mod.Name}] mod_fixed_update", ex);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("FFIBridge.OnFixedUpdate outer", ex);
         }
     }
 
@@ -217,6 +251,7 @@ public class FFIBridge : IDisposable
         foreach (var mod in _loadedMods)
         {
             if (mod.OnEvent == null) continue;
+            CrashLog.Log($"DispatchEvent: calling mod_on_event(id={eventId}, dataSize={dataSize}) on '{mod.Name}'");
             try { mod.OnEvent.Invoke(eventId, eventData, dataSize); }
             catch (Exception ex) { _logger.Error($"[{mod.Name}] mod_on_event(id={eventId}) crashed: {ex.Message}"); }
         }

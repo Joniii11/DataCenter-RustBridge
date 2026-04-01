@@ -10,6 +10,63 @@ using UnityEngine;
 
 namespace DataCenterModLoader;
 
+// file-based crash logger, never throws
+public static class CrashLog
+{
+    private static string _logPath;
+    private static readonly object _lock = new();
+
+    public static void Init(string gameRoot)
+    {
+        try
+        {
+            _logPath = Path.Combine(gameRoot, "dc_modloader_debug.log");
+            var header =
+                $"===== DataCenterModLoader Debug Log ====={Environment.NewLine}" +
+                $"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}{Environment.NewLine}" +
+                $"========================================={Environment.NewLine}";
+            File.WriteAllText(_logPath, header);
+        }
+        catch { }
+    }
+
+    public static void Log(string msg)
+    {
+        try
+        {
+            if (_logPath == null) return;
+            lock (_lock)
+            {
+                File.AppendAllText(_logPath,
+                    $"[{DateTime.Now:HH:mm:ss.fff}] {msg}{Environment.NewLine}");
+            }
+        }
+        catch { }
+    }
+
+    public static void LogException(string context, Exception ex)
+    {
+        try
+        {
+            if (_logPath == null) return;
+            lock (_lock)
+            {
+                File.AppendAllText(_logPath,
+                    $"[{DateTime.Now:HH:mm:ss.fff}] EXCEPTION in {context}:{Environment.NewLine}" +
+                    $"  Type: {ex.GetType().FullName}{Environment.NewLine}" +
+                    $"  Message: {ex.Message}{Environment.NewLine}" +
+                    $"  StackTrace:{Environment.NewLine}{ex.StackTrace}{Environment.NewLine}" +
+                    (ex.InnerException != null
+                        ? $"  InnerException: {ex.InnerException.GetType().FullName}: {ex.InnerException.Message}{Environment.NewLine}" +
+                          $"  InnerStackTrace:{Environment.NewLine}{ex.InnerException.StackTrace}{Environment.NewLine}"
+                        : "") +
+                    Environment.NewLine);
+            }
+        }
+        catch { }
+    }
+}
+
 public class Core : MelonMod
 {
     public static Core Instance { get; private set; }
@@ -19,57 +76,107 @@ public class Core : MelonMod
 
     public override void OnInitializeMelon()
     {
-        Instance = this;
-        _modsPath = Path.Combine(MelonEnvironment.GameRootDirectory, "Mods", "native");
-
-        LoggerInstance.Msg("╔══════════════════════════════════════════╗");
-        LoggerInstance.Msg("║   Data Center Modloader v0.1.0          ║");
-        LoggerInstance.Msg("║   Rust FFI Bridge Active                ║");
-        LoggerInstance.Msg("╚══════════════════════════════════════════╝");
-
-        if (!Directory.Exists(_modsPath))
-        {
-            Directory.CreateDirectory(_modsPath);
-            LoggerInstance.Msg($"Created Mods/native directory: {_modsPath}");
-        }
-
-        _ffiBridge = new FFIBridge(LoggerInstance, _modsPath);
-        EventDispatcher.Initialize(_ffiBridge, LoggerInstance);
-
         try
         {
-            HarmonyInstance.PatchAll(typeof(Core).Assembly);
-            LoggerInstance.Msg("Harmony patches applied.");
+            Instance = this;
+
+            CrashLog.Init(MelonEnvironment.GameRootDirectory);
+            CrashLog.Log("step: CrashLog initialized");
+
+            _modsPath = Path.Combine(MelonEnvironment.GameRootDirectory, "Mods", "native");
+
+            LoggerInstance.Msg("╔══════════════════════════════════════════╗");
+            LoggerInstance.Msg("║   Data Center Modloader v0.1.0          ║");
+            LoggerInstance.Msg("║   Rust FFI Bridge Active                ║");
+            LoggerInstance.Msg("╚══════════════════════════════════════════╝");
+
+            if (!Directory.Exists(_modsPath))
+            {
+                Directory.CreateDirectory(_modsPath);
+                LoggerInstance.Msg($"Created Mods/native directory: {_modsPath}");
+            }
+
+            CrashLog.Log("step: creating FFIBridge");
+            _ffiBridge = new FFIBridge(LoggerInstance, _modsPath);
+
+            CrashLog.Log("step: initializing EventDispatcher");
+            EventDispatcher.Initialize(_ffiBridge, LoggerInstance);
+
+            CrashLog.Log("step: applying Harmony patches");
+            try
+            {
+                HarmonyInstance.PatchAll(typeof(Core).Assembly);
+                LoggerInstance.Msg("Harmony patches applied.");
+                CrashLog.Log("step: Harmony patches applied successfully");
+            }
+            catch (Exception ex)
+            {
+                LoggerInstance.Error($"Failed to apply Harmony patches: {ex.Message}");
+                LoggerInstance.Msg("Continuing without full event support.");
+                CrashLog.LogException("Harmony patching", ex);
+            }
+
+            CrashLog.Log("step: loading all mods");
+            _ffiBridge.LoadAllMods();
+            LoggerInstance.Msg("Modloader initialization complete.");
+            CrashLog.Log("step: OnInitializeMelon complete");
         }
         catch (Exception ex)
         {
-            LoggerInstance.Error($"Failed to apply Harmony patches: {ex.Message}");
-            LoggerInstance.Msg("Continuing without full event support.");
+            CrashLog.LogException("OnInitializeMelon", ex);
+            throw;
         }
-
-        _ffiBridge.LoadAllMods();
-        LoggerInstance.Msg("Modloader initialization complete.");
     }
 
     public override void OnSceneWasLoaded(int buildIndex, string sceneName)
     {
-        _ffiBridge?.OnSceneLoaded(sceneName);
+        try
+        {
+            _ffiBridge?.OnSceneLoaded(sceneName);
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("OnSceneWasLoaded", ex);
+        }
     }
 
     public override void OnUpdate()
     {
-        _ffiBridge?.OnUpdate(Time.deltaTime);
+        try
+        {
+            _ffiBridge?.OnUpdate(Time.deltaTime);
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("OnUpdate", ex);
+        }
     }
 
     public override void OnFixedUpdate()
     {
-        _ffiBridge?.OnFixedUpdate(Time.fixedDeltaTime);
+        try
+        {
+            _ffiBridge?.OnFixedUpdate(Time.fixedDeltaTime);
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("OnFixedUpdate", ex);
+        }
     }
 
     public override void OnApplicationQuit()
     {
-        LoggerInstance.Msg("Shutting down modloader...");
-        _ffiBridge?.Shutdown();
-        _ffiBridge?.Dispose();
+        try
+        {
+            LoggerInstance.Msg("Shutting down modloader...");
+            CrashLog.Log("step: OnApplicationQuit starting");
+            _ffiBridge?.Shutdown();
+            _ffiBridge?.Dispose();
+            CrashLog.Log("step: OnApplicationQuit complete");
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("OnApplicationQuit", ex);
+        }
     }
 }

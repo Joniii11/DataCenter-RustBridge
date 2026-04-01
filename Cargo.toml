@@ -14,3 +14,6 @@ license = "MIT"
 [workspace.dependencies]
 log = "0.4"
 anyhow = "1"
+
+[profile.release]
+panic = "unwind"

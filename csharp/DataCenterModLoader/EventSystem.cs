@@ -4,7 +4,7 @@ using MelonLoader;
 
 namespace DataCenterModLoader;
 
-/// Event IDs shared with Rust mods. Must stay in sync with dc_api/src/events.rs.
+// must match dc_api/src/events.rs
 public static class EventIds
 {
     public const uint MoneyChanged      = 100;
@@ -15,21 +15,37 @@ public static class EventIds
     public const uint ServerBroken    = 201;
     public const uint ServerRepaired  = 202;
     public const uint ServerInstalled = 203;
+    public const uint CableConnected          = 204;
+    public const uint CableDisconnected       = 205;
+    public const uint ServerCustomerChanged   = 206;
+    public const uint ServerAppChanged        = 207;
+    public const uint RackUnmounted  = 208;
+    public const uint SwitchBroken   = 209;
+    public const uint SwitchRepaired = 210;
 
     public const uint DayEnded = 300;
+    public const uint MonthEnded = 301;
 
-    public const uint CustomerAccepted = 400;
+    public const uint CustomerAccepted  = 400;
+    public const uint CustomerSatisfied = 401;
+    public const uint CustomerUnsatisfied = 402;
 
     public const uint ShopCheckout = 500;
+    public const uint ShopItemAdded  = 501;
+    public const uint ShopCartCleared = 502;
+    public const uint ShopItemRemoved = 503;
 
     public const uint EmployeeHired = 600;
     public const uint EmployeeFired = 601;
 
     public const uint GameSaved  = 700;
     public const uint GameLoaded = 701;
+    public const uint GameAutoSaved = 702;
+
+    public const uint WallPurchased = 800;
 }
 
-// Event data structs (must match Rust #[repr(C)] layouts byte-for-byte)
+// must match rust repr(C) layouts
 
 [StructLayout(LayoutKind.Sequential)]
 public struct ValueChangedData
@@ -57,12 +73,54 @@ public struct CustomerAcceptedData
     public int CustomerId;
 }
 
-/// Harmony patches call Fire* methods here, and the dispatcher forwards events
-/// to all Rust mods that export mod_on_event.
+[StructLayout(LayoutKind.Sequential)]
+public struct CustomerSatisfiedData
+{
+    public int CustomerBaseId;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct ServerCustomerChangedData
+{
+    public int NewCustomerId;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct ServerAppChangedData
+{
+    public int NewAppId;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct MonthEndedData
+{
+    public int Month;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct ShopItemAddedData
+{
+    public int ItemId;
+    public int Price;
+    public int ItemType;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct ShopItemRemovedData
+{
+    public int Uid;
+}
+
+// dispatches events to rust mods
 public static class EventDispatcher
 {
     private static FFIBridge _bridge;
     private static MelonLogger.Instance _logger;
+
+    // dedup: harmony + il2cpp can double-fire patches
+    private static uint _lastEventId;
+    private static long _lastEventTick;
+    private static double _lastEventPayloadHash;
 
     public static void Initialize(FFIBridge bridge, MelonLogger.Instance logger)
     {
@@ -70,15 +128,34 @@ public static class EventDispatcher
         _logger = logger;
     }
 
-    private static void DispatchWithData<T>(uint eventId, T data) where T : struct
+    private static bool IsDuplicate(uint eventId, double payloadHash = 0.0)
+    {
+        long now = System.Diagnostics.Stopwatch.GetTimestamp();
+        long elapsed = now - _lastEventTick;
+        long threshold = System.Diagnostics.Stopwatch.Frequency / 20; // ~50ms window
+
+        bool isDup = (eventId == _lastEventId)
+                     && (elapsed < threshold)
+                     && (Math.Abs(payloadHash - _lastEventPayloadHash) < 0.0001);
+
+        _lastEventId = eventId;
+        _lastEventTick = now;
+        _lastEventPayloadHash = payloadHash;
+
+        return isDup;
+    }
+
+    private static void DispatchWithData<T>(uint eventId, T data, double payloadHash = 0.0) where T : struct
     {
         if (_bridge == null) return;
+        if (IsDuplicate(eventId, payloadHash)) return;
 
         int size = Marshal.SizeOf<T>();
         IntPtr ptr = Marshal.AllocHGlobal(size);
         try
         {
             Marshal.StructureToPtr(data, ptr, false);
+            CrashLog.Log($"DispatchWithData: dispatching eventId={eventId}, dataType={typeof(T).Name}, size={size}");
             _bridge.DispatchEvent(eventId, ptr, (uint)size);
         }
         catch (Exception ex)
@@ -94,7 +171,12 @@ public static class EventDispatcher
     public static void FireSimple(uint eventId)
     {
         if (_bridge == null) return;
-        try { _bridge.DispatchEvent(eventId, IntPtr.Zero, 0); }
+        if (IsDuplicate(eventId)) return;
+        try
+        {
+            CrashLog.Log($"FireSimple: dispatching eventId={eventId}");
+            _bridge.DispatchEvent(eventId, IntPtr.Zero, 0);
+        }
         catch (Exception ex) { _logger?.Error($"Failed to dispatch event {eventId}: {ex.Message}"); }
     }
 
@@ -110,7 +192,7 @@ public static class EventDispatcher
             OldValue = oldValue,
             NewValue = newValue,
             Delta = delta,
-        });
+        }, oldValue + newValue * 31.0);
     }
 
     public static void FireServerPowered(bool poweredOn)
@@ -118,16 +200,92 @@ public static class EventDispatcher
         DispatchWithData(EventIds.ServerPowered, new ServerPoweredData
         {
             PoweredOn = poweredOn ? 1u : 0u,
-        });
+        }, poweredOn ? 1.0 : 0.0);
     }
 
     public static void FireDayEnded(uint day)
     {
-        DispatchWithData(EventIds.DayEnded, new DayEndedData { Day = day });
+        DispatchWithData(EventIds.DayEnded, new DayEndedData { Day = day }, day);
     }
 
     public static void FireCustomerAccepted(int customerId)
     {
-        DispatchWithData(EventIds.CustomerAccepted, new CustomerAcceptedData { CustomerId = customerId });
+        DispatchWithData(EventIds.CustomerAccepted, new CustomerAcceptedData { CustomerId = customerId }, customerId);
+    }
+
+    public static void FireCustomerSatisfied(int customerBaseId)
+    {
+        DispatchWithData(EventIds.CustomerSatisfied, new CustomerSatisfiedData { CustomerBaseId = customerBaseId }, customerBaseId);
+    }
+
+    public static void FireCustomerUnsatisfied(int customerBaseId)
+    {
+        CrashLog.Log($"FireCustomerUnsatisfied: dispatching for customerBaseId={customerBaseId}");
+        DispatchWithData(EventIds.CustomerUnsatisfied, new CustomerSatisfiedData { CustomerBaseId = customerBaseId }, customerBaseId + 0.5);
+    }
+
+    public static void FireCableConnected()
+    {
+        FireSimple(EventIds.CableConnected);
+    }
+
+    public static void FireCableDisconnected()
+    {
+        FireSimple(EventIds.CableDisconnected);
+    }
+
+    public static void FireServerCustomerChanged(int newCustomerId)
+    {
+        DispatchWithData(EventIds.ServerCustomerChanged, new ServerCustomerChangedData { NewCustomerId = newCustomerId }, newCustomerId);
+    }
+
+    public static void FireServerAppChanged(int newAppId)
+    {
+        DispatchWithData(EventIds.ServerAppChanged, new ServerAppChangedData { NewAppId = newAppId }, newAppId);
+    }
+
+    public static void FireRackUnmounted()
+    {
+        FireSimple(EventIds.RackUnmounted);
+    }
+
+    public static void FireSwitchBroken()
+    {
+        FireSimple(EventIds.SwitchBroken);
+    }
+
+    public static void FireSwitchRepaired()
+    {
+        FireSimple(EventIds.SwitchRepaired);
+    }
+
+    public static void FireMonthEnded(int month)
+    {
+        DispatchWithData(EventIds.MonthEnded, new MonthEndedData { Month = month }, month);
+    }
+
+    public static void FireShopItemAdded(int itemId, int price, int itemType)
+    {
+        DispatchWithData(EventIds.ShopItemAdded, new ShopItemAddedData { ItemId = itemId, Price = price, ItemType = itemType }, itemId * 1000.0 + price + itemType * 0.1);
+    }
+
+    public static void FireShopItemRemoved(int uid)
+    {
+        DispatchWithData(EventIds.ShopItemRemoved, new ShopItemRemovedData { Uid = uid }, uid);
+    }
+
+    public static void FireShopCartCleared()
+    {
+        FireSimple(EventIds.ShopCartCleared);
+    }
+
+    public static void FireGameAutoSaved()
+    {
+        FireSimple(EventIds.GameAutoSaved);
+    }
+
+    public static void FireWallPurchased()
+    {
+        FireSimple(EventIds.WallPurchased);
     }
 }

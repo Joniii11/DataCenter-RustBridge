@@ -1,0 +1,32 @@
+﻿
+  TYPE NOT FOUND: Server
+
+  Possible matches:
+    - Microsoft.Cci.Pdb.LeafTypeServer (in Mono.Cecil.Pdb)
+    - Microsoft.Cci.Pdb.LeafTypeServer2 (in Mono.Cecil.Pdb)
+    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerCommandSet (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerResponseId (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterRunner (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterRunner+<runIpcClientTcpServerRouter>d__1 (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterRunner+<runIpcServerTcpClientRouter>d__3 (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterRunner+<runIpcServerTcpServerRouter>d__2 (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IIpcServerTransportCallbackInternal (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcClientTcpServerRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcServerRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcServerTcpClientRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcServerTcpServerRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcServerTransport (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcSocketServerTransport (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcTcpSocketServerTransport (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcUnixDomainSocketServerTransport (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcWebSocketServerTransport (in Microsoft.Diagnostics.NETCore.Client)
+    - Microsoft.Diagnostics.NETCore.Client.IpcWindowsNamedPipeServerTransport (in Microsoft.Diagnostics.NETCore.Client)
+
+
+  TYPE NOT FOUND: CustomerBase
+
+
+  TYPE NOT FOUND: Player
+
+
