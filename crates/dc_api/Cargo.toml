@@ -1,0 +1,8 @@
+[package]
+name = "dc_api"
+version.workspace = true
+edition.workspace = true
+description = "FFI API types and safe wrappers for Data Center mods written in Rust"
+
+[dependencies]
+log = { workspace = true }

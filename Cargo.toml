@@ -1,0 +1,16 @@
+[workspace]
+members = [
+    "crates/dc_api",
+    "crates/dc_example_mod",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Data Center Modding Community"]
+license = "MIT"
+
+[workspace.dependencies]
+log = "0.4"
+anyhow = "1"

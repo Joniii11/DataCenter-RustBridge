@@ -1,0 +1,11 @@
+[package]
+name = "dc_example_mod"
+version.workspace = true
+edition.workspace = true
+description = "Example Rust mod for Data Center — gives the player infinite money"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dc_api = { path = "../dc_api" }

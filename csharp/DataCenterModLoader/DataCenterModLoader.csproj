@@ -1,0 +1,77 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>DataCenterModLoader</AssemblyName>
+    <RootNamespace>DataCenterModLoader</RootNamespace>
+    <Description>MelonLoader mod that provides a Rust FFI bridge for Data Center</Description>
+    <!-- Suppress warnings about version conflicts with Il2Cpp assemblies -->
+    <NoWarn>CS1701;CS1702</NoWarn>
+    <!-- Add both MelonLoader directories as assembly search paths for transitive dependency resolution -->
+    <ReferencePath>$(MelonLoaderDir)\net6;$(MelonLoaderDir)\Il2CppAssemblies</ReferencePath>
+    <AssemblySearchPaths>{CandidateAssemblyFiles};{HintPathFromItem};$(MelonLoaderDir)\net6;$(MelonLoaderDir)\Il2CppAssemblies;{TargetFrameworkDirectory};{RawFileName}</AssemblySearchPaths>
+  </PropertyGroup>
+
+  <!--
+    MelonLoader references - these paths assume MelonLoader is installed in the game directory.
+    Adjust GameDir if your game is installed elsewhere.
+  -->
+  <PropertyGroup>
+    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\Data Center</GameDir>
+    <MelonLoaderDir>$(GameDir)\MelonLoader</MelonLoaderDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MelonLoader core -->
+    <Reference Include="MelonLoader">
+      <HintPath>$(MelonLoaderDir)\net6\MelonLoader.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- HarmonyX (shipped with MelonLoader, needed for [HarmonyPatch] attributes) -->
+    <Reference Include="0Harmony">
+      <HintPath>$(MelonLoaderDir)\net6\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Il2CppInterop runtime (needed for Il2Cpp type access) -->
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(MelonLoaderDir)\net6\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Il2Cpp mscorlib (needed for Il2Cpp base types like Il2CppObjectBase) -->
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Il2CppSystem (needed for Il2Cpp collection types) -->
+    <Reference Include="Il2CppSystem">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\Il2CppSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Game assembly (contains PlayerManager, BalanceSheet, TimeController, etc.) -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Unity engine core (contains UnityEngine.Object, Time, MonoBehaviour, etc.) -->
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Unity engine facade (contains SceneManagement namespace in Unity 6) -->
+    <Reference Include="UnityEngine">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>
