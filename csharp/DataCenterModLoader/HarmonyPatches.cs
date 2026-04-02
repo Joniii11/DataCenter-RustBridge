@@ -160,8 +160,26 @@ internal static class Patch_ComputerShop_ButtonCheckOut
 [HarmonyPatch(typeof(HRSystem), nameof(HRSystem.ButtonConfirmHire))]
 internal static class Patch_HRSystem_ButtonConfirmHire
 {
+    private static bool _wasCustom;
+
+    internal static bool Prefix(HRSystem __instance)
+    {
+        try
+        {
+            if (CustomEmployeeManager.HandleConfirmHire(__instance))
+            {
+                _wasCustom = true;
+                return false;
+            }
+        }
+        catch (Exception ex) { CrashLog.LogException("ButtonConfirmHire prefix", ex); }
+        _wasCustom = false;
+        return true;
+    }
+
     internal static void Postfix()
     {
+        if (_wasCustom) return;
         try { EventDispatcher.FireSimple(EventIds.EmployeeHired); }
         catch (Exception ex) { EventDispatcher.LogError($"ButtonConfirmHire: {ex.Message}"); }
     }
@@ -170,10 +188,38 @@ internal static class Patch_HRSystem_ButtonConfirmHire
 [HarmonyPatch(typeof(HRSystem), nameof(HRSystem.ButtonConfirmFireEmployee))]
 internal static class Patch_HRSystem_ButtonConfirmFireEmployee
 {
+    private static bool _wasCustom;
+
+    internal static bool Prefix(HRSystem __instance)
+    {
+        try
+        {
+            if (CustomEmployeeManager.HandleConfirmFire(__instance))
+            {
+                _wasCustom = true;
+                return false;
+            }
+        }
+        catch (Exception ex) { CrashLog.LogException("ButtonConfirmFireEmployee prefix", ex); }
+        _wasCustom = false;
+        return true;
+    }
+
     internal static void Postfix()
     {
+        if (_wasCustom) return;
         try { EventDispatcher.FireSimple(EventIds.EmployeeFired); }
         catch (Exception ex) { EventDispatcher.LogError($"ButtonConfirmFireEmployee: {ex.Message}"); }
+    }
+}
+
+[HarmonyPatch(typeof(HRSystem), nameof(HRSystem.ButtonCancelBuying))]
+internal static class Patch_HRSystem_ButtonCancelBuying
+{
+    internal static void Postfix()
+    {
+        try { CustomEmployeeManager.ClearPending(); }
+        catch (Exception ex) { CrashLog.LogException("ButtonCancelBuying clear pending", ex); }
     }
 }
 
@@ -182,7 +228,11 @@ internal static class Patch_SaveSystem_SaveGame
 {
     internal static void Postfix()
     {
-        try { EventDispatcher.FireSimple(EventIds.GameSaved); }
+        try
+        {
+            CustomEmployeeManager.SaveState();
+            EventDispatcher.FireSimple(EventIds.GameSaved);
+        }
         catch (Exception ex) { EventDispatcher.LogError($"SaveGame: {ex.Message}"); }
     }
 }
@@ -192,7 +242,11 @@ internal static class Patch_SaveSystem_Load
 {
     internal static void Postfix()
     {
-        try { EventDispatcher.FireSimple(EventIds.GameLoaded); }
+        try
+        {
+            CustomEmployeeManager.LoadState();
+            EventDispatcher.FireSimple(EventIds.GameLoaded);
+        }
         catch (Exception ex) { EventDispatcher.LogError($"Load: {ex.Message}"); }
     }
 }
@@ -337,7 +391,11 @@ internal static class Patch_SaveSystem_AutoSave
 {
     internal static void Postfix()
     {
-        try { EventDispatcher.FireGameAutoSaved(); }
+        try
+        {
+            CustomEmployeeManager.SaveState();
+            EventDispatcher.FireGameAutoSaved();
+        }
         catch (Exception ex) { EventDispatcher.LogError($"AutoSave: {ex.Message}"); }
     }
 }

@@ -257,9 +257,10 @@ pub struct GameAPI {
     pub dispatch_replace_switch: extern "C" fn() -> i32,
 
     pub register_custom_employee:
-        extern "C" fn(*const c_char, *const c_char, *const c_char, f32, f32) -> i32,
+        extern "C" fn(*const c_char, *const c_char, *const c_char, f32, f32, u32) -> i32,
     pub is_custom_employee_hired: extern "C" fn(*const c_char) -> u32,
     pub fire_custom_employee: extern "C" fn(*const c_char) -> i32,
+    pub register_salary: extern "C" fn(i32) -> i32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -533,6 +534,8 @@ impl Api {
     /// - `description`: tooltip text
     /// - `salary_per_hour`: displayed salary
     /// - `required_reputation`: reputation needed to hire
+    /// - `confirm_dialogs`: show confirmation dialogs when hiring
+    ///
     /// Returns: 1 = success, 0 = duplicate/error
     pub fn register_custom_employee(
         &self,
@@ -541,6 +544,7 @@ impl Api {
         description: &str,
         salary_per_hour: f32,
         required_reputation: f32,
+        confirm_dialogs: bool,
     ) -> Option<i32> {
         if self.raw.api_version < 5 {
             return None;
@@ -554,6 +558,7 @@ impl Api {
             c_desc.as_ptr(),
             salary_per_hour,
             required_reputation,
+            confirm_dialogs as u32,
         ))
     }
 
@@ -580,6 +585,16 @@ impl Api {
             Err(_) => return None,
         };
         Some((self.raw.fire_custom_employee)(c_id.as_ptr()))
+    }
+
+    /// Register a recurring monthly salary expense in the game's BalanceSheet.
+    /// Pass a negative value to remove an expense (e.g. when firing).
+    /// Returns 1 on success, 0 on error.
+    pub fn register_salary(&self, monthly_salary: i32) -> Option<i32> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        Some((self.raw.register_salary)(monthly_salary))
     }
 }
 

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using Il2Cpp;
+using MelonLoader.Utils;
 using Il2CppTMPro;
 using MelonLoader;
 using UnityEngine;
@@ -17,6 +19,7 @@ public class CustomEmployeeEntry
     public float SalaryPerHour;
     public float RequiredReputation;
     public bool IsHired;
+    public bool RequiresConfirmation;
 }
 
 /// <summary>
@@ -26,13 +29,21 @@ public static class CustomEmployeeManager
 {
     private static readonly List<CustomEmployeeEntry> _employees = new();
     private static readonly Dictionary<string, int> _employeeIndex = new();
-    private static readonly List<UnityAction> _liveCallbacks = new(); // prevent GC of Il2Cpp delegates
+    private static readonly List<UnityAction> _liveCallbacks = new();
+
+    private static readonly string _statePath =
+        Path.Combine(MelonEnvironment.UserDataDirectory, "custom_employees_hired.txt");
+
+    // pending confirmation state
+    private static string _pendingEmployeeId;
+    private static bool _pendingIsHire;
 
     public static IReadOnlyList<CustomEmployeeEntry> Employees => _employees;
+    public static bool HasPendingAction => _pendingEmployeeId != null;
 
-    // Registration API (called from FFI)
 
-    public static int Register(string id, string name, string description, float salary, float reputation)
+
+    public static int Register(string id, string name, string description, float salary, float reputation, bool requiresConfirmation = false)
     {
         if (string.IsNullOrEmpty(id)) return 0;
         if (_employeeIndex.ContainsKey(id))
@@ -49,6 +60,7 @@ public static class CustomEmployeeManager
             SalaryPerHour = salary,
             RequiredReputation = reputation,
             IsHired = false,
+            RequiresConfirmation = requiresConfirmation,
         };
 
         _employeeIndex[id] = _employees.Count;
@@ -57,6 +69,7 @@ public static class CustomEmployeeManager
         CrashLog.Log($"CustomEmployee registered: id={id}, name={name}, salary={salary}/h, requiredRep={reputation}");
         Core.Instance?.LoggerInstance.Msg($"[CustomEmployee] Registered: {name} (id={id}, salary={salary}/h, rep={reputation})");
 
+        LoadState();
         return 1;
     }
 
@@ -90,7 +103,10 @@ public static class CustomEmployeeManager
         CrashLog.Log($"CustomEmployee hired: {id} ({entry.Name})");
         Core.Instance?.LoggerInstance.Msg($"[CustomEmployee] Hired: {entry.Name}");
 
+        try { BalanceSheet.instance?.RegisterSalary((int)entry.SalaryPerHour); } catch { }
+
         EventDispatcher.FireCustomEmployeeHired(id);
+        SaveState();
         return 1;
     }
 
@@ -106,7 +122,10 @@ public static class CustomEmployeeManager
         CrashLog.Log($"CustomEmployee fired: {id} ({entry.Name})");
         Core.Instance?.LoggerInstance.Msg($"[CustomEmployee] Fired: {entry.Name}");
 
+        try { BalanceSheet.instance?.RegisterSalary(-(int)entry.SalaryPerHour); } catch { }
+
         EventDispatcher.FireCustomEmployeeFired(id);
+        SaveState();
         return 1;
     }
 
@@ -280,24 +299,107 @@ public static class CustomEmployeeManager
         WireButtonExtendedClick(buttonHireT, () =>
         {
             CrashLog.Log($"CustomEmployee: Hire clicked for '{employeeId}'");
-            int result = Hire(employeeId);
-            if (result == 1)
-                RefreshAllCards();
-            else if (result == -1)
-                CrashLog.Log($"CustomEmployee: Hire rejected — insufficient reputation");
-            else if (result == -2)
-                CrashLog.Log($"CustomEmployee: Already hired");
+            if (entry.RequiresConfirmation)
+            {
+                _pendingEmployeeId = employeeId;
+                _pendingIsHire = true;
+                ShowOverlay(hire: true);
+            }
+            else
+            {
+                if (Hire(employeeId) == 1) RefreshAllCards();
+            }
         });
 
         WireButtonExtendedClick(buttonFireT, () =>
         {
             CrashLog.Log($"CustomEmployee: Fire clicked for '{employeeId}'");
-            if (Fire(employeeId) == 1)
-                RefreshAllCards();
+            if (entry.RequiresConfirmation)
+            {
+                _pendingEmployeeId = employeeId;
+                _pendingIsHire = false;
+                ShowOverlay(hire: false);
+            }
+            else
+            {
+                if (Fire(employeeId) == 1) RefreshAllCards();
+            }
         });
 
         CrashLog.Log($"CustomEmployee: Buttons configured for '{entry.EmployeeId}' (hired={entry.IsHired})");
     }
+
+
+
+    private static void ShowOverlay(bool hire)
+    {
+        var hrSystems = UnityEngine.Object.FindObjectsOfType<HRSystem>();
+        if (hrSystems == null) return;
+        for (int i = 0; i < hrSystems.Count; i++)
+        {
+            var hr = hrSystems[i];
+            if (hr == null || !hr.gameObject.activeInHierarchy) continue;
+            var overlay = hire ? hr.confirmHireOverlay : hr.confirmFireOverlay;
+            overlay?.SetActive(true);
+            return;
+        }
+    }
+
+    /// <summary>Called from Harmony prefix on ButtonConfirmHire. Returns true if handled (skip vanilla).</summary>
+    public static bool HandleConfirmHire(HRSystem hr)
+    {
+        if (_pendingEmployeeId == null || !_pendingIsHire) return false;
+        string id = _pendingEmployeeId;
+        _pendingEmployeeId = null;
+        Hire(id);
+        hr.confirmHireOverlay?.SetActive(false);
+        RefreshAllCards();
+        return true;
+    }
+
+    /// <summary>Called from Harmony prefix on ButtonConfirmFireEmployee. Returns true if handled.</summary>
+    public static bool HandleConfirmFire(HRSystem hr)
+    {
+        if (_pendingEmployeeId == null || _pendingIsHire) return false;
+        string id = _pendingEmployeeId;
+        _pendingEmployeeId = null;
+        Fire(id);
+        hr.confirmFireOverlay?.SetActive(false);
+        RefreshAllCards();
+        return true;
+    }
+
+    public static void ClearPending() => _pendingEmployeeId = null;
+
+    public static void SaveState()
+    {
+        try
+        {
+            var lines = new List<string>();
+            foreach (var e in _employees)
+                if (e.IsHired)
+                    lines.Add(e.EmployeeId);
+            File.WriteAllLines(_statePath, lines);
+        }
+        catch (Exception ex) { CrashLog.LogException("SaveState", ex); }
+    }
+
+    public static void LoadState()
+    {
+        try
+        {
+            if (!File.Exists(_statePath)) return;
+            var hired = new HashSet<string>(File.ReadAllLines(_statePath));
+            foreach (var e in _employees)
+            {
+                if (hired.Contains(e.EmployeeId))
+                    e.IsHired = true;
+            }
+        }
+        catch (Exception ex) { CrashLog.LogException("LoadState", ex); }
+    }
+
+
 
     /// <summary>ButtonExtended : Selectable (NOT Button!), has its own onClick : ButtonClickedEvent.</summary>
     private static void WireButtonExtendedClick(Transform buttonTransform, System.Action callback)

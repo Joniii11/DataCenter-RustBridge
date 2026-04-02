@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using Il2Cpp;
 using MelonLoader;
 using UnityEngine;
 
@@ -55,6 +56,7 @@ public struct GameAPITable
     public IntPtr RegisterCustomEmployee;
     public IntPtr IsCustomEmployeeHired;
     public IntPtr FireCustomEmployee;
+    public IntPtr RegisterSalary;
 }
 
 // manages the api table, delegates stored as fields to prevent GC
@@ -76,11 +78,13 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int GetIntDelegate();
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate int RegisterCustomEmployeeDelegate(IntPtr employeeId, IntPtr name, IntPtr description, float salary, float requiredReputation);
+    private delegate int RegisterCustomEmployeeDelegate(IntPtr employeeId, IntPtr name, IntPtr description, float salary, float requiredReputation, uint confirmDialogs);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate uint IsCustomEmployeeHiredDelegate(IntPtr employeeId);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int FireCustomEmployeeDelegate(IntPtr employeeId);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RegisterSalaryDelegate(int monthlySalary);
 
     // prevent GC while rust holds these
     private readonly LogDelegate _logInfo, _logWarning, _logError;
@@ -100,6 +104,7 @@ public class GameAPIManager : IDisposable
     private readonly RegisterCustomEmployeeDelegate _registerCustomEmployee;
     private readonly IsCustomEmployeeHiredDelegate _isCustomEmployeeHired;
     private readonly FireCustomEmployeeDelegate _fireCustomEmployee;
+    private readonly RegisterSalaryDelegate _registerSalary;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
@@ -148,6 +153,7 @@ public class GameAPIManager : IDisposable
         _registerCustomEmployee = RegisterCustomEmployeeImpl;
         _isCustomEmployeeHired = IsCustomEmployeeHiredImpl;
         _fireCustomEmployee = FireCustomEmployeeImpl;
+        _registerSalary = RegisterSalaryImpl;
 
         _table = new GameAPITable
         {
@@ -190,6 +196,7 @@ public class GameAPIManager : IDisposable
             RegisterCustomEmployee = Marshal.GetFunctionPointerForDelegate(_registerCustomEmployee),
             IsCustomEmployeeHired = Marshal.GetFunctionPointerForDelegate(_isCustomEmployeeHired),
             FireCustomEmployee = Marshal.GetFunctionPointerForDelegate(_fireCustomEmployee),
+            RegisterSalary = Marshal.GetFunctionPointerForDelegate(_registerSalary),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -307,15 +314,15 @@ public class GameAPIManager : IDisposable
 
     // v5
 
-    private int RegisterCustomEmployeeImpl(IntPtr employeeId, IntPtr name, IntPtr description, float salary, float requiredReputation)
+    private int RegisterCustomEmployeeImpl(IntPtr employeeId, IntPtr name, IntPtr description, float salary, float requiredReputation, uint confirmDialogs)
     {
         try
         {
             string id = Marshal.PtrToStringAnsi(employeeId) ?? "";
             string n = Marshal.PtrToStringAnsi(name) ?? "";
             string desc = Marshal.PtrToStringAnsi(description) ?? "";
-            CrashLog.Log($"RegisterCustomEmployee: id={id}, name={n}, salary={salary}, rep={requiredReputation}");
-            return CustomEmployeeManager.Register(id, n, desc, salary, requiredReputation);
+            CrashLog.Log($"RegisterCustomEmployee: id={id}, name={n}, salary={salary}, rep={requiredReputation}, confirmDialogs={confirmDialogs}");
+            return CustomEmployeeManager.Register(id, n, desc, salary, requiredReputation, confirmDialogs != 0);
         }
         catch (Exception ex)
         {
@@ -343,6 +350,22 @@ public class GameAPIManager : IDisposable
             return CustomEmployeeManager.Fire(id);
         }
         catch { return 0; }
+    }
+
+    private int RegisterSalaryImpl(int monthlySalary)
+    {
+        try
+        {
+            var bs = BalanceSheet.instance;
+            if (bs == null) return 0;
+            bs.RegisterSalary(monthlySalary);
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("RegisterSalary", ex);
+            return 0;
+        }
     }
 
     public void Dispose()

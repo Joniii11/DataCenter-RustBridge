@@ -12,12 +12,11 @@ use std::sync::{Mutex, OnceLock};
 const EMPLOYEE_ID: &str = "sysadmin";
 const EMPLOYEE_NAME: &str = "SysAdmin";
 const EMPLOYEE_DESC: &str = "Automatically dispatches technicians to repair broken devices and replace end-of-life hardware.";
-const SALARY_PER_HOUR: f32 = 500.0;
-const REQUIRED_REPUTATION: f32 = 50.0;
+const SALARY_PER_HOUR: f32 = 4500.0;
+const REQUIRED_REPUTATION: f32 = 500.0;
 
 const SCAN_INTERVAL: f32 = 5.0;
 const MAX_DISPATCHES_PER_SCAN: u32 = 2;
-const DAILY_SALARY: f64 = 500.0;
 
 static STATE: OnceLock<Mutex<NetWatchState>> = OnceLock::new();
 
@@ -25,8 +24,6 @@ struct NetWatchState {
     /// Whether the SysAdmin is currently hired (toggled by HR events).
     hired: bool,
     scan_timer: f32,
-    last_day: i64, // -1 = not yet seen
-
     // statistics (persist across hire/fire within a session)
     total_dispatches: u32,
     broken_repairs: u32,
@@ -38,7 +35,6 @@ impl NetWatchState {
         Self {
             hired: false,
             scan_timer: 0.0,
-            last_day: -1,
             total_dispatches: 0,
             broken_repairs: 0,
             eol_replacements: 0,
@@ -54,30 +50,6 @@ where
         .get()
         .and_then(|m| m.lock().ok())
         .map(|mut s| f(&mut s))
-}
-
-// TOOD: CALCULATE INT OTHE LOSSES/s
-fn handle_salary(api: &Api, state: &mut NetWatchState) {
-    let day = match api.get_day() {
-        Some(d) => d as i64,
-        None => return,
-    };
-
-    if state.last_day < 0 {
-        state.last_day = day;
-        return;
-    }
-
-    if day != state.last_day {
-        state.last_day = day;
-
-        let money = api.get_player_money();
-        api.set_player_money(money - DAILY_SALARY);
-        api.log_info(&format!(
-            "[SysAdmin] Day {}, deducted daily salary: ${:.0}",
-            day, DAILY_SALARY
-        ));
-    }
 }
 
 fn scan_and_dispatch(api: &Api, state: &mut NetWatchState) {
@@ -198,6 +170,7 @@ fn init(api: &Api) -> bool {
             EMPLOYEE_DESC,
             SALARY_PER_HOUR,
             REQUIRED_REPUTATION,
+            true,
         ) {
             Some(1) => {
                 api.log_info("[SysAdmin] Registered in HR System. Hire me from the computer!");
@@ -235,8 +208,6 @@ fn update(api: &Api, dt: f32) {
         if !state.hired {
             return false;
         }
-
-        handle_salary(api, state);
 
         state.scan_timer += dt;
         if state.scan_timer >= SCAN_INTERVAL {
@@ -289,12 +260,8 @@ fn scene_loaded(api: &Api, name: &str) {
 #[dc_api::on_event]
 fn handle_event(api: &Api, event: Event) {
     match event {
-        // ── Custom Employee events (hire/fire from HR System) ───────────
         Event::CustomEmployeeHired { ref employee_id } if employee_id == EMPLOYEE_ID => {
-            with_state(|s| {
-                s.hired = true;
-                s.last_day = -1; // reset day tracking so we don't double-deduct
-            });
+            with_state(|s| s.hired = true);
             api.log_info("[SysAdmin] Hired! Starting infrastructure monitoring.");
         }
 
@@ -312,7 +279,6 @@ fn handle_event(api: &Api, event: Event) {
             }
         }
 
-        // ── Game lifecycle ─────────────────────────────────────────────
         Event::DayEnded { day } => {
             let is_hired = with_state(|s| s.hired).unwrap_or(false);
             if !is_hired {
@@ -333,10 +299,7 @@ fn handle_event(api: &Api, event: Event) {
             // Re-check hire state after loading a save
             if api.version() >= 5 {
                 if let Some(hired) = api.is_custom_employee_hired(EMPLOYEE_ID) {
-                    with_state(|s| {
-                        s.hired = hired;
-                        s.last_day = -1;
-                    });
+                    with_state(|s| s.hired = hired);
                     if hired {
                         api.log_info("[SysAdmin] Game loaded — SysAdmin is hired, resuming.");
                     } else {
@@ -345,10 +308,7 @@ fn handle_event(api: &Api, event: Event) {
                 }
             } else {
                 // Fallback: re-enable
-                with_state(|s| {
-                    s.hired = true;
-                    s.last_day = -1;
-                });
+                with_state(|s| s.hired = true);
                 api.log_info("[SysAdmin] Game loaded, NetWatch re-enabled (legacy mode).");
             }
         }
