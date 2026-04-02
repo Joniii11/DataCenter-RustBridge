@@ -1,8 +1,19 @@
 //! SysAdmin mod — auto-dispatches technicians for broken/EOL devices.
+//!
+//! The SysAdmin is a **hireable employee** in the HR System panel. The player
+//! must hire the SysAdmin before auto-dispatch activates. Firing the SysAdmin
+//! disables all automation (but keeps statistics for the session).
+//!
 //! This mod uses `dc_api` proc macros to eliminate all FFI boilerplate.
 
 use dc_api::*;
 use std::sync::{Mutex, OnceLock};
+
+const EMPLOYEE_ID: &str = "sysadmin";
+const EMPLOYEE_NAME: &str = "SysAdmin";
+const EMPLOYEE_DESC: &str = "Automatically dispatches technicians to repair broken devices and replace end-of-life hardware.";
+const SALARY_PER_HOUR: f32 = 500.0;
+const REQUIRED_REPUTATION: f32 = 50.0;
 
 const SCAN_INTERVAL: f32 = 5.0;
 const MAX_DISPATCHES_PER_SCAN: u32 = 2;
@@ -11,11 +22,12 @@ const DAILY_SALARY: f64 = 500.0;
 static STATE: OnceLock<Mutex<NetWatchState>> = OnceLock::new();
 
 struct NetWatchState {
-    enabled: bool,
+    /// Whether the SysAdmin is currently hired (toggled by HR events).
+    hired: bool,
     scan_timer: f32,
     last_day: i64, // -1 = not yet seen
 
-    // statistics
+    // statistics (persist across hire/fire within a session)
     total_dispatches: u32,
     broken_repairs: u32,
     eol_replacements: u32,
@@ -24,7 +36,7 @@ struct NetWatchState {
 impl NetWatchState {
     fn new() -> Self {
         Self {
-            enabled: false,
+            hired: false,
             scan_timer: 0.0,
             last_day: -1,
             total_dispatches: 0,
@@ -44,6 +56,7 @@ where
         .map(|mut s| f(&mut s))
 }
 
+// TOOD: CALCULATE INT OTHE LOSSES/s
 fn handle_salary(api: &Api, state: &mut NetWatchState) {
     let day = match api.get_day() {
         Some(d) => d as i64,
@@ -164,9 +177,9 @@ fn scan_and_dispatch(api: &Api, state: &mut NetWatchState) {
 #[dc_api::mod_entry(
     id = "sysadmin",
     name = "SysAdmin",
-    version = "1.0.0",
+    version = "1.1.0",
     author = "Joniii",
-    description = "Schedules automatically technicians for broken/EOL devices."
+    description = "Hireable SysAdmin employee — automatically dispatches technicians for broken/EOL devices."
 )]
 fn init(api: &Api) -> bool {
     if api.version() < 4 {
@@ -176,16 +189,50 @@ fn init(api: &Api) -> bool {
     }
 
     let _ = STATE.set(Mutex::new(NetWatchState::new()));
-    with_state(|s| s.enabled = true);
 
-    api.log_info("[SysAdmin] NetWatch enabled. Watching your infrastructure 24/7.");
+    // Register as a hireable employee in the HR System panel (requires API v5)
+    if api.version() >= 5 {
+        match api.register_custom_employee(
+            EMPLOYEE_ID,
+            EMPLOYEE_NAME,
+            EMPLOYEE_DESC,
+            SALARY_PER_HOUR,
+            REQUIRED_REPUTATION,
+        ) {
+            Some(1) => {
+                api.log_info("[SysAdmin] Registered in HR System. Hire me from the computer!");
+            }
+            Some(0) => {
+                api.log_warning("[SysAdmin] Already registered in HR System (duplicate id?).");
+            }
+            Some(code) => {
+                api.log_warning(&format!(
+                    "[SysAdmin] HR registration returned unexpected code: {}",
+                    code
+                ));
+            }
+            None => {
+                api.log_warning("[SysAdmin] Could not register in HR System (API too old?).");
+            }
+        }
+
+        if let Some(true) = api.is_custom_employee_hired(EMPLOYEE_ID) {
+            with_state(|s| s.hired = true);
+            api.log_info("[SysAdmin] Already hired — resuming operations.");
+        }
+    } else {
+        api.log_warning("[SysAdmin] API v5 not available — falling back to auto-enable mode.");
+        with_state(|s| s.hired = true);
+    }
+
+    api.log_info("[SysAdmin] Initialized successfully.");
     true
 }
 
 #[dc_api::on_update]
 fn update(api: &Api, dt: f32) {
     let should_scan = with_state(|state| {
-        if !state.enabled {
+        if !state.hired {
             return false;
         }
 
@@ -211,64 +258,133 @@ fn update(api: &Api, dt: f32) {
 fn scene_loaded(api: &Api, name: &str) {
     api.log_info(&format!("[SysAdmin] Scene loaded: {}", name));
 
-    with_state(|s| s.enabled = true);
-
-    if let Some(total) = with_state(|s| s.total_dispatches) {
-        api.log_info(&format!("[SysAdmin] Total dispatches so far: {}", total));
+    // Re-check hire state after scene transitions
+    if api.version() >= 5 {
+        if let Some(hired) = api.is_custom_employee_hired(EMPLOYEE_ID) {
+            with_state(|s| s.hired = hired);
+            if hired {
+                api.log_info("[SysAdmin] Hired — watching your infrastructure.");
+            } else {
+                api.log_info("[SysAdmin] Not hired. Open HR System to hire me!");
+            }
+        }
     }
 
-    if api.version() >= 4 {
-        let total_techs = api.get_total_technician_count().unwrap_or(0);
-        let free_techs = api.get_free_technician_count().unwrap_or(0);
-        api.log_info(&format!(
-            "[SysAdmin] Technicians: {}/{} available",
-            free_techs, total_techs
-        ));
+    if let Some(true) = with_state(|s| s.hired) {
+        if let Some(total) = with_state(|s| s.total_dispatches) {
+            api.log_info(&format!("[SysAdmin] Total dispatches so far: {}", total));
+        }
+
+        if api.version() >= 4 {
+            let total_techs = api.get_total_technician_count().unwrap_or(0);
+            let free_techs = api.get_free_technician_count().unwrap_or(0);
+            api.log_info(&format!(
+                "[SysAdmin] Technicians: {}/{} available",
+                free_techs, total_techs
+            ));
+        }
     }
 }
 
 #[dc_api::on_event]
 fn handle_event(api: &Api, event: Event) {
     match event {
-        Event::DayEnded { day } => {
+        // ── Custom Employee events (hire/fire from HR System) ───────────
+        Event::CustomEmployeeHired { ref employee_id } if employee_id == EMPLOYEE_ID => {
+            with_state(|s| {
+                s.hired = true;
+                s.last_day = -1; // reset day tracking so we don't double-deduct
+            });
+            api.log_info("[SysAdmin] Hired! Starting infrastructure monitoring.");
+        }
+
+        Event::CustomEmployeeFired { ref employee_id } if employee_id == EMPLOYEE_ID => {
+            with_state(|s| s.hired = false);
+            api.log_info("[SysAdmin] Fired. Stopping all automated dispatches.");
+
             if let Some((total, repairs, replacements)) =
                 with_state(|s| (s.total_dispatches, s.broken_repairs, s.eol_replacements))
             {
                 api.log_info(&format!(
-                    "[SysAdmin] Day {}, dispatches: {} (repairs: {}, replacements: {})",
+                    "[SysAdmin] Session stats before dismissal — dispatches: {} (repairs: {}, replacements: {})",
+                    total, repairs, replacements
+                ));
+            }
+        }
+
+        // ── Game lifecycle ─────────────────────────────────────────────
+        Event::DayEnded { day } => {
+            let is_hired = with_state(|s| s.hired).unwrap_or(false);
+            if !is_hired {
+                return;
+            }
+
+            if let Some((total, repairs, replacements)) =
+                with_state(|s| (s.total_dispatches, s.broken_repairs, s.eol_replacements))
+            {
+                api.log_info(&format!(
+                    "[SysAdmin] Day {} report — dispatches: {} (repairs: {}, replacements: {})",
                     day, total, repairs, replacements
                 ));
             }
         }
+
         Event::GameLoaded => {
-            with_state(|s| {
-                s.enabled = true;
-                s.last_day = -1;
-            });
-            api.log_info("[SysAdmin] Game loaded, NetWatch re-enabled.");
+            // Re-check hire state after loading a save
+            if api.version() >= 5 {
+                if let Some(hired) = api.is_custom_employee_hired(EMPLOYEE_ID) {
+                    with_state(|s| {
+                        s.hired = hired;
+                        s.last_day = -1;
+                    });
+                    if hired {
+                        api.log_info("[SysAdmin] Game loaded — SysAdmin is hired, resuming.");
+                    } else {
+                        api.log_info("[SysAdmin] Game loaded — SysAdmin not hired.");
+                    }
+                }
+            } else {
+                // Fallback: re-enable
+                with_state(|s| {
+                    s.hired = true;
+                    s.last_day = -1;
+                });
+                api.log_info("[SysAdmin] Game loaded, NetWatch re-enabled (legacy mode).");
+            }
         }
+
         Event::ServerBroken => {
-            api.log_info("[SysAdmin] Server broken detected, will dispatch on next scan.");
+            let is_hired = with_state(|s| s.hired).unwrap_or(false);
+            if is_hired {
+                api.log_info("[SysAdmin] Server broken detected, will dispatch on next scan.");
+            }
         }
+
         Event::SwitchBroken => {
-            api.log_info("[SysAdmin] Switch broken detected, will dispatch on next scan.");
+            let is_hired = with_state(|s| s.hired).unwrap_or(false);
+            if is_hired {
+                api.log_info("[SysAdmin] Switch broken detected, will dispatch on next scan.");
+            }
         }
+
         _ => {}
     }
 }
 
 #[dc_api::on_shutdown]
 fn shutdown(api: &Api) {
+    let is_hired = with_state(|s| s.hired).unwrap_or(false);
+
     if let Some((total, repairs, replacements)) =
         with_state(|s| (s.total_dispatches, s.broken_repairs, s.eol_replacements))
     {
         api.log_info(&format!(
-            "[SysAdmin] Shutting down. Final stats, dispatches: {} (repairs: {}, replacements: {}). Goodbye!",
-            total, repairs, replacements
+            "[SysAdmin] Shutting down (hired={}). Final stats — dispatches: {} (repairs: {}, replacements: {}). Goodbye!",
+            is_hired, total, repairs, replacements
         ));
     } else {
         api.log_info("[SysAdmin] Shutting down. Goodbye!");
     }
 
-    with_state(|s| s.enabled = false);
+    with_state(|s| s.hired = false);
 }

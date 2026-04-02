@@ -517,22 +517,12 @@ function Deploy-ModFiles {
         Write-Warn "  DataCenterModLoader.dll not found (C# not built yet)."
     }
 
-    # Copy Rust example mod
-    $rustExampleDll = Join-Path $ProjectRoot "target\release\dc_example_mod.dll"
-    if (Test-Path $rustExampleDll) {
-        Copy-Item $rustExampleDll -Destination $rustModsDir -Force
-        Write-Ok "  Mods/native/dc_example_mod.dll"
-        $deployed++
-    }
-    else {
-        Write-Warn "  dc_example_mod.dll not found (Rust not built yet)."
-    }
-
-    # Copy any other Rust mod DLLs from target/release that match dc_* pattern
+    # Copy Rust mod DLLs from target/release that match dc_* pattern
+    # Excludes: dc_api.dll (shared lib), dc_api_macros.dll (proc-macro, compile-time only), dc_example_mod.dll (example)
     $releaseDir = Join-Path $ProjectRoot "target\release"
     if (Test-Path $releaseDir) {
         $extraMods = Get-ChildItem -Path $releaseDir -Filter "dc_*.dll" -ErrorAction SilentlyContinue |
-            Where-Object { ($_.Name -ne "dc_example_mod.dll") -and ($_.Name -ne "dc_api.dll") }
+            Where-Object { ($_.Name -ne "dc_example_mod.dll") -and ($_.Name -ne "dc_api.dll") -and ($_.Name -ne "dc_api_macros.dll") }
 
         foreach ($mod in $extraMods) {
             Copy-Item $mod.FullName -Destination $rustModsDir -Force

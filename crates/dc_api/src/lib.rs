@@ -55,7 +55,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-pub const API_VERSION: u32 = 4;
+pub const API_VERSION: u32 = 5;
 
 // ── Internal helpers for proc macros ────────────────────────────────────────
 //
@@ -255,6 +255,11 @@ pub struct GameAPI {
     pub dispatch_repair_switch: extern "C" fn() -> i32,
     pub dispatch_replace_server: extern "C" fn() -> i32,
     pub dispatch_replace_switch: extern "C" fn() -> i32,
+
+    pub register_custom_employee:
+        extern "C" fn(*const c_char, *const c_char, *const c_char, f32, f32) -> i32,
+    pub is_custom_employee_hired: extern "C" fn(*const c_char) -> u32,
+    pub fire_custom_employee: extern "C" fn(*const c_char) -> i32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -520,6 +525,61 @@ impl Api {
             return None;
         }
         Some((self.raw.dispatch_replace_switch)())
+    }
+
+    /// Register a custom employee that appears in the HR System.
+    /// - `id`: unique identifier (e.g. "sysadmin")
+    /// - `name`: display name (e.g. "SysAdmin")
+    /// - `description`: tooltip text
+    /// - `salary_per_hour`: displayed salary
+    /// - `required_reputation`: reputation needed to hire
+    /// Returns: 1 = success, 0 = duplicate/error
+    pub fn register_custom_employee(
+        &self,
+        id: &str,
+        name: &str,
+        description: &str,
+        salary_per_hour: f32,
+        required_reputation: f32,
+    ) -> Option<i32> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        let c_id = CString::new(id).ok()?;
+        let c_name = CString::new(name).ok()?;
+        let c_desc = CString::new(description).ok()?;
+        Some((self.raw.register_custom_employee)(
+            c_id.as_ptr(),
+            c_name.as_ptr(),
+            c_desc.as_ptr(),
+            salary_per_hour,
+            required_reputation,
+        ))
+    }
+
+    /// Check if a custom employee is currently hired.
+    pub fn is_custom_employee_hired(&self, id: &str) -> Option<bool> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        let c_id = match CString::new(id) {
+            Ok(c) => c,
+            Err(_) => return None,
+        };
+        Some((self.raw.is_custom_employee_hired)(c_id.as_ptr()) != 0)
+    }
+
+    /// Programmatically fire a custom employee.
+    /// Returns: 1 = fired, 0 = not found/not hired
+    pub fn fire_custom_employee(&self, id: &str) -> Option<i32> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        let c_id = match CString::new(id) {
+            Ok(c) => c,
+            Err(_) => return None,
+        };
+        Some((self.raw.fire_custom_employee)(c_id.as_ptr()))
     }
 }
 

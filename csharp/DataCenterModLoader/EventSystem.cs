@@ -45,6 +45,10 @@ public static class EventIds
     public const uint WallPurchased = 800;
 
     public const uint NetWatchDispatched = 900; // 9xx = mod systems
+
+    // mod systems (10xx)
+    public const uint CustomEmployeeHired = 1000;
+    public const uint CustomEmployeeFired = 1001;
 }
 
 // must match rust repr(C) layouts
@@ -118,6 +122,24 @@ public struct NetWatchDispatchedData
 {
     public int DeviceType; // 0 = server, 1 = switch
     public int Reason;     // 0 = broken, 1 = eol_warning
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct CustomEmployeeEventData
+{
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
+    public byte[] EmployeeId;
+
+    public static CustomEmployeeEventData Create(string employeeId)
+    {
+        var data = new CustomEmployeeEventData { EmployeeId = new byte[64] };
+        if (!string.IsNullOrEmpty(employeeId))
+        {
+            var bytes = System.Text.Encoding.ASCII.GetBytes(employeeId);
+            Array.Copy(bytes, data.EmployeeId, Math.Min(bytes.Length, 63));
+        }
+        return data;
+    }
 }
 
 // dispatches events to rust mods
@@ -305,5 +327,15 @@ public static class EventDispatcher
             DeviceType = deviceType,
             Reason = reason
         }, deviceType * 10.0 + reason);
+    }
+
+    public static void FireCustomEmployeeHired(string employeeId)
+    {
+        DispatchWithData(EventIds.CustomEmployeeHired, CustomEmployeeEventData.Create(employeeId), employeeId.GetHashCode());
+    }
+
+    public static void FireCustomEmployeeFired(string employeeId)
+    {
+        DispatchWithData(EventIds.CustomEmployeeFired, CustomEmployeeEventData.Create(employeeId), employeeId.GetHashCode() + 0.5);
     }
 }

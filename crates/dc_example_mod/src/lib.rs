@@ -201,6 +201,18 @@ fn handle_event(api: &Api, event: Event) {
             api.log_info(&format!("[InfiniteMoney] Month {} ended.", month));
         }
         Event::WallPurchased => api.log_info("[InfiniteMoney] Wall purchased!"),
+        Event::CustomEmployeeHired { ref employee_id } => {
+            api.log_info(&format!(
+                "[InfiniteMoney] Custom employee hired: {}",
+                employee_id
+            ));
+        }
+        Event::CustomEmployeeFired { ref employee_id } => {
+            api.log_info(&format!(
+                "[InfiniteMoney] Custom employee fired: {}",
+                employee_id
+            ));
+        }
         Event::Unknown { event_id } => {
             api.log_info(&format!("[InfiniteMoney] Unknown event id={}", event_id));
         }

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using Il2Cpp;
+using UnityEngine;
 
 namespace DataCenterModLoader;
 
@@ -348,5 +349,27 @@ internal static class Patch_ComputerShop_RemoveSpawnedItem
     {
         try { EventDispatcher.FireShopItemRemoved(__0); }
         catch (Exception ex) { EventDispatcher.LogError($"RemoveSpawnedItem: {ex.Message}"); }
+    }
+}
+
+/// <summary>
+/// Patches HRSystem.OnEnable to inject custom employee cards into the HR panel.
+/// The panel is toggled via SetActive, so OnEnable fires each time it opens.
+/// Note: HRSystem does NOT override Start(), so we cannot patch it in Il2Cpp.
+/// </summary>
+[HarmonyPatch(typeof(HRSystem), "OnEnable")]
+internal static class Patch_HRSystem_OnEnable
+{
+    internal static void Postfix(HRSystem __instance)
+    {
+        try
+        {
+            CrashLog.Log("HRSystem.OnEnable: injecting custom employees");
+            CustomEmployeeManager.InjectIntoHRSystem(__instance);
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("HRSystem.OnEnable custom employee injection", ex);
+        }
     }
 }

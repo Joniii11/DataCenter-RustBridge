@@ -50,12 +50,17 @@ public struct GameAPITable
     public IntPtr DispatchRepairSwitch;
     public IntPtr DispatchReplaceServer;
     public IntPtr DispatchReplaceSwitch;
+
+    // v5 — Custom Employee system (mod-registered employees in HR panel)
+    public IntPtr RegisterCustomEmployee;
+    public IntPtr IsCustomEmployeeHired;
+    public IntPtr FireCustomEmployee;
 }
 
 // manages the api table, delegates stored as fields to prevent GC
 public class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 4;
+    public const uint API_VERSION = 5;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -69,6 +74,13 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetUIntDelegate(uint value);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr GetStringDelegate();
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int GetIntDelegate();
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RegisterCustomEmployeeDelegate(IntPtr employeeId, IntPtr name, IntPtr description, float salary, float requiredReputation);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint IsCustomEmployeeHiredDelegate(IntPtr employeeId);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int FireCustomEmployeeDelegate(IntPtr employeeId);
 
     // prevent GC while rust holds these
     private readonly LogDelegate _logInfo, _logWarning, _logError;
@@ -84,6 +96,10 @@ public class GameAPIManager : IDisposable
     private readonly GetUIntDelegate _getBrokenServerCount, _getBrokenSwitchCount, _getEolServerCount, _getEolSwitchCount;
     private readonly GetUIntDelegate _getFreeTechnicianCount, _getTotalTechnicianCount;
     private readonly GetIntDelegate _dispatchRepairServer, _dispatchRepairSwitch, _dispatchReplaceServer, _dispatchReplaceSwitch;
+    // v5
+    private readonly RegisterCustomEmployeeDelegate _registerCustomEmployee;
+    private readonly IsCustomEmployeeHiredDelegate _isCustomEmployeeHired;
+    private readonly FireCustomEmployeeDelegate _fireCustomEmployee;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
@@ -128,6 +144,11 @@ public class GameAPIManager : IDisposable
         _dispatchReplaceServer = DispatchReplaceServerImpl;
         _dispatchReplaceSwitch = DispatchReplaceSwitchImpl;
 
+        // v5
+        _registerCustomEmployee = RegisterCustomEmployeeImpl;
+        _isCustomEmployeeHired = IsCustomEmployeeHiredImpl;
+        _fireCustomEmployee = FireCustomEmployeeImpl;
+
         _table = new GameAPITable
         {
             ApiVersion = API_VERSION,
@@ -165,6 +186,10 @@ public class GameAPIManager : IDisposable
             DispatchRepairSwitch = Marshal.GetFunctionPointerForDelegate(_dispatchRepairSwitch),
             DispatchReplaceServer = Marshal.GetFunctionPointerForDelegate(_dispatchReplaceServer),
             DispatchReplaceSwitch = Marshal.GetFunctionPointerForDelegate(_dispatchReplaceSwitch),
+            // v5
+            RegisterCustomEmployee = Marshal.GetFunctionPointerForDelegate(_registerCustomEmployee),
+            IsCustomEmployeeHired = Marshal.GetFunctionPointerForDelegate(_isCustomEmployeeHired),
+            FireCustomEmployee = Marshal.GetFunctionPointerForDelegate(_fireCustomEmployee),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -279,6 +304,46 @@ public class GameAPIManager : IDisposable
     private int DispatchRepairSwitchImpl() { try { return GameHooks.DispatchRepairSwitch(); } catch { return 0; } }
     private int DispatchReplaceServerImpl() { try { return GameHooks.DispatchReplaceServer(); } catch { return 0; } }
     private int DispatchReplaceSwitchImpl() { try { return GameHooks.DispatchReplaceSwitch(); } catch { return 0; } }
+
+    // v5
+
+    private int RegisterCustomEmployeeImpl(IntPtr employeeId, IntPtr name, IntPtr description, float salary, float requiredReputation)
+    {
+        try
+        {
+            string id = Marshal.PtrToStringAnsi(employeeId) ?? "";
+            string n = Marshal.PtrToStringAnsi(name) ?? "";
+            string desc = Marshal.PtrToStringAnsi(description) ?? "";
+            CrashLog.Log($"RegisterCustomEmployee: id={id}, name={n}, salary={salary}, rep={requiredReputation}");
+            return CustomEmployeeManager.Register(id, n, desc, salary, requiredReputation);
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("RegisterCustomEmployee: " + ex.Message);
+            CrashLog.LogException("RegisterCustomEmployee", ex);
+            return 0;
+        }
+    }
+
+    private uint IsCustomEmployeeHiredImpl(IntPtr employeeId)
+    {
+        try
+        {
+            string id = Marshal.PtrToStringAnsi(employeeId) ?? "";
+            return CustomEmployeeManager.IsHired(id) ? 1u : 0u;
+        }
+        catch { return 0; }
+    }
+
+    private int FireCustomEmployeeImpl(IntPtr employeeId)
+    {
+        try
+        {
+            string id = Marshal.PtrToStringAnsi(employeeId) ?? "";
+            return CustomEmployeeManager.Fire(id);
+        }
+        catch { return 0; }
+    }
 
     public void Dispose()
     {

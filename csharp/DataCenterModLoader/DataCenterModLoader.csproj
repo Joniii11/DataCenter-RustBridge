@@ -72,6 +72,19 @@
       <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.dll</HintPath>
       <Private>false</Private>
     </Reference>
+
+    <!-- Unity UI module (needed for Button, Text, Image, LayoutGroup, etc.) -->
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- TextMeshPro (needed for TextMeshProUGUI text component access) -->
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
   </ItemGroup>
 
 </Project>

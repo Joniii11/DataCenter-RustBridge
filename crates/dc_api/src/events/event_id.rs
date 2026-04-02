@@ -15,6 +15,7 @@ use super::EventCategory;
 /// - **6xx**: Employee
 /// - **7xx**: Persistence (save/load)
 /// - **8xx**: Building
+/// - **10xx**: Mod systems (custom employees, etc.)
 #[repr(u32)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventId {
@@ -62,6 +63,10 @@ pub enum EventId {
 
     // building (8xx)
     WallPurchased = 800,
+
+    // mod systems (10xx)
+    CustomEmployeeHired = 1000,
+    CustomEmployeeFired = 1001,
 }
 
 impl EventId {
@@ -96,6 +101,8 @@ impl EventId {
         Self::GameLoaded,
         Self::GameAutoSaved,
         Self::WallPurchased,
+        Self::CustomEmployeeHired,
+        Self::CustomEmployeeFired,
     ];
 
     /// Convert a raw `u32` to a known event ID (returns `None` for unknown IDs).
@@ -140,6 +147,8 @@ impl EventId {
             Self::GameLoaded => "GameLoaded",
             Self::GameAutoSaved => "GameAutoSaved",
             Self::WallPurchased => "WallPurchased",
+            Self::CustomEmployeeHired => "CustomEmployeeHired",
+            Self::CustomEmployeeFired => "CustomEmployeeFired",
         }
     }
 
@@ -171,6 +180,7 @@ impl EventId {
             Self::EmployeeHired | Self::EmployeeFired => EventCategory::Employee,
             Self::GameSaved | Self::GameLoaded | Self::GameAutoSaved => EventCategory::Persistence,
             Self::WallPurchased => EventCategory::Building,
+            Self::CustomEmployeeHired | Self::CustomEmployeeFired => EventCategory::ModSystems,
         }
     }
 }
@@ -187,7 +197,7 @@ mod tests {
 
     #[test]
     fn all_contains_every_variant() {
-        assert_eq!(EventId::ALL.len(), 29);
+        assert_eq!(EventId::ALL.len(), 31);
     }
 
     #[test]
@@ -226,6 +236,14 @@ mod tests {
         assert_eq!(EventId::EmployeeHired.to_string(), "EmployeeHired(600)");
         assert_eq!(EventId::GameLoaded.to_string(), "GameLoaded(701)");
         assert_eq!(EventId::WallPurchased.to_string(), "WallPurchased(800)");
+        assert_eq!(
+            EventId::CustomEmployeeHired.to_string(),
+            "CustomEmployeeHired(1000)"
+        );
+        assert_eq!(
+            EventId::CustomEmployeeFired.to_string(),
+            "CustomEmployeeFired(1001)"
+        );
     }
 
     #[test]
@@ -274,6 +292,7 @@ mod tests {
                 EventCategory::Employee => 600..700,
                 EventCategory::Persistence => 700..800,
                 EventCategory::Building => 800..900,
+                EventCategory::ModSystems => 1000..1100,
             };
             assert!(
                 expected_range.contains(&raw),
@@ -350,5 +369,15 @@ mod tests {
 
         // building
         assert_eq!(EventId::WallPurchased.category(), EventCategory::Building);
+
+        // mod systems
+        assert_eq!(
+            EventId::CustomEmployeeHired.category(),
+            EventCategory::ModSystems
+        );
+        assert_eq!(
+            EventId::CustomEmployeeFired.category(),
+            EventCategory::ModSystems
+        );
     }
 }

@@ -22,6 +22,7 @@ pub enum EventCategory {
     Employee,
     Persistence,
     Building,
+    ModSystems,
 }
 
 impl fmt::Display for EventCategory {
@@ -35,6 +36,7 @@ impl fmt::Display for EventCategory {
             Self::Employee => "Employee",
             Self::Persistence => "Persistence",
             Self::Building => "Building",
+            Self::ModSystems => "ModSystems",
         })
     }
 }

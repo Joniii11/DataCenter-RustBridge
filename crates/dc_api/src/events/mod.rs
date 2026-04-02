@@ -132,6 +132,18 @@ pub fn decode(event_id: u32, data: *const u8, size: u32) -> Option<Event> {
         Some(EventId::GameLoaded) => Some(Event::GameLoaded),
         Some(EventId::GameAutoSaved) => Some(Event::GameAutoSaved),
         Some(EventId::WallPurchased) => Some(Event::WallPurchased),
+        Some(EventId::CustomEmployeeHired) => {
+            let d = read_payload::<CustomEmployeeEventData>(data, size)?;
+            Some(Event::CustomEmployeeHired {
+                employee_id: d.id().to_owned(),
+            })
+        }
+        Some(EventId::CustomEmployeeFired) => {
+            let d = read_payload::<CustomEmployeeEventData>(data, size)?;
+            Some(Event::CustomEmployeeFired {
+                employee_id: d.id().to_owned(),
+            })
+        }
         None => Some(Event::Unknown { event_id }),
     }
 }
@@ -308,5 +320,25 @@ mod tests {
         assert!(!u.is_employee());
         assert!(!u.is_save_load());
         assert!(!u.is_building());
+    }
+
+    #[test]
+    fn decode_custom_employee_hired() {
+        let mut data = CustomEmployeeEventData {
+            employee_id: [0u8; 64],
+        };
+        let id_bytes = b"sysadmin";
+        data.employee_id[..id_bytes.len()].copy_from_slice(id_bytes);
+
+        let ptr = &data as *const _ as *const u8;
+        let size = std::mem::size_of::<CustomEmployeeEventData>() as u32;
+
+        let evt = decode(EventId::CustomEmployeeHired as u32, ptr, size).unwrap();
+        match evt {
+            Event::CustomEmployeeHired { employee_id } => {
+                assert_eq!(employee_id, "sysadmin");
+            }
+            other => panic!("expected CustomEmployeeHired, got {:?}", other),
+        }
     }
 }

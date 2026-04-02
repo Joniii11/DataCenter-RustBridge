@@ -91,3 +91,23 @@ pub struct ShopItemAddedData {
 pub struct ShopItemRemovedData {
     pub uid: i32,
 }
+
+/// Payload for [`CustomEmployeeHired`] and [`CustomEmployeeFired`].
+/// The `employee_id` is a null-terminated ASCII string in a fixed-size buffer.
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct CustomEmployeeEventData {
+    pub employee_id: [u8; 64],
+}
+
+impl CustomEmployeeEventData {
+    /// Extract the employee ID as a string slice.
+    pub fn id(&self) -> &str {
+        let end = self
+            .employee_id
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(self.employee_id.len());
+        std::str::from_utf8(&self.employee_id[..end]).unwrap_or("")
+    }
+}

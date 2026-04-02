@@ -88,6 +88,14 @@ pub enum Event {
     // building (8xx)
     WallPurchased,
 
+    // mod systems (10xx)
+    CustomEmployeeHired {
+        employee_id: String,
+    },
+    CustomEmployeeFired {
+        employee_id: String,
+    },
+
     /// Unknown / unrecognised event — the raw ID is preserved.
     Unknown {
         event_id: u32,
@@ -132,6 +140,8 @@ impl Event {
             Self::GameLoaded => EventId::GameLoaded as u32,
             Self::GameAutoSaved => EventId::GameAutoSaved as u32,
             Self::WallPurchased => EventId::WallPurchased as u32,
+            Self::CustomEmployeeHired { .. } => EventId::CustomEmployeeHired as u32,
+            Self::CustomEmployeeFired { .. } => EventId::CustomEmployeeFired as u32,
             Self::Unknown { event_id } => *event_id,
         }
     }
@@ -181,6 +191,11 @@ impl Event {
     pub fn is_building(&self) -> bool {
         self.event_id()
             .map_or(false, |id| id.category() == EventCategory::Building)
+    }
+
+    pub fn is_mod_systems(&self) -> bool {
+        self.event_id()
+            .map_or(false, |id| id.category() == EventCategory::ModSystems)
     }
 }
 
@@ -283,6 +298,12 @@ impl fmt::Display for Event {
             Self::GameLoaded => write!(f, "GameLoaded"),
             Self::GameAutoSaved => write!(f, "GameAutoSaved"),
             Self::WallPurchased => write!(f, "WallPurchased"),
+            Self::CustomEmployeeHired { employee_id } => {
+                write!(f, "CustomEmployeeHired(id={})", employee_id)
+            }
+            Self::CustomEmployeeFired { employee_id } => {
+                write!(f, "CustomEmployeeFired(id={})", employee_id)
+            }
             Self::Unknown { event_id } => write!(f, "Unknown(id={})", event_id),
         }
     }
