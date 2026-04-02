@@ -57,6 +57,16 @@ public struct GameAPITable
     public IntPtr IsCustomEmployeeHired;
     public IntPtr FireCustomEmployee;
     public IntPtr RegisterSalary;
+
+    // v6 — Notifications, rates, pause, difficulty, save
+    public IntPtr ShowNotification;
+    public IntPtr GetMoneyPerSecond;
+    public IntPtr GetExpensesPerSecond;
+    public IntPtr GetXpPerSecond;
+    public IntPtr IsGamePaused;
+    public IntPtr SetGamePaused;
+    public IntPtr GetDifficulty;
+    public IntPtr TriggerSave;
 }
 
 // manages the api table, delegates stored as fields to prevent GC
@@ -85,6 +95,10 @@ public class GameAPIManager : IDisposable
     private delegate int FireCustomEmployeeDelegate(IntPtr employeeId);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int RegisterSalaryDelegate(int monthlySalary);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ShowNotificationDelegate(IntPtr message);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void SetGamePausedDelegate(uint paused);
 
     // prevent GC while rust holds these
     private readonly LogDelegate _logInfo, _logWarning, _logError;
@@ -105,6 +119,12 @@ public class GameAPIManager : IDisposable
     private readonly IsCustomEmployeeHiredDelegate _isCustomEmployeeHired;
     private readonly FireCustomEmployeeDelegate _fireCustomEmployee;
     private readonly RegisterSalaryDelegate _registerSalary;
+    // v6
+    private readonly ShowNotificationDelegate _showNotification;
+    private readonly GetFloatDelegate _getMoneyPerSecond, _getExpensesPerSecond, _getXpPerSecond;
+    private readonly GetUIntDelegate _isGamePaused2;
+    private readonly SetGamePausedDelegate _setGamePaused;
+    private readonly GetIntDelegate _getDifficulty, _triggerSave;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
@@ -155,6 +175,16 @@ public class GameAPIManager : IDisposable
         _fireCustomEmployee = FireCustomEmployeeImpl;
         _registerSalary = RegisterSalaryImpl;
 
+        // v6
+        _showNotification = ShowNotificationImpl;
+        _getMoneyPerSecond = GetMoneyPerSecondImpl;
+        _getExpensesPerSecond = GetExpensesPerSecondImpl;
+        _getXpPerSecond = GetXpPerSecondImpl;
+        _isGamePaused2 = IsGamePausedImpl;
+        _setGamePaused = SetGamePausedImpl;
+        _getDifficulty = GetDifficultyImpl;
+        _triggerSave = TriggerSaveImpl;
+
         _table = new GameAPITable
         {
             ApiVersion = API_VERSION,
@@ -197,6 +227,15 @@ public class GameAPIManager : IDisposable
             IsCustomEmployeeHired = Marshal.GetFunctionPointerForDelegate(_isCustomEmployeeHired),
             FireCustomEmployee = Marshal.GetFunctionPointerForDelegate(_fireCustomEmployee),
             RegisterSalary = Marshal.GetFunctionPointerForDelegate(_registerSalary),
+            // v6
+            ShowNotification = Marshal.GetFunctionPointerForDelegate(_showNotification),
+            GetMoneyPerSecond = Marshal.GetFunctionPointerForDelegate(_getMoneyPerSecond),
+            GetExpensesPerSecond = Marshal.GetFunctionPointerForDelegate(_getExpensesPerSecond),
+            GetXpPerSecond = Marshal.GetFunctionPointerForDelegate(_getXpPerSecond),
+            IsGamePaused = Marshal.GetFunctionPointerForDelegate(_isGamePaused2),
+            SetGamePaused = Marshal.GetFunctionPointerForDelegate(_setGamePaused),
+            GetDifficulty = Marshal.GetFunctionPointerForDelegate(_getDifficulty),
+            TriggerSave = Marshal.GetFunctionPointerForDelegate(_triggerSave),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -366,6 +405,85 @@ public class GameAPIManager : IDisposable
             CrashLog.LogException("RegisterSalary", ex);
             return 0;
         }
+    }
+
+    // v6
+
+    private int ShowNotificationImpl(IntPtr message)
+    {
+        try
+        {
+            string msg = Marshal.PtrToStringAnsi(message) ?? "";
+            var ui = StaticUIElements.instance;
+            if (ui == null) return 0;
+            ui.AddMeesageInField(msg);  // NOTE: typo "Meesage" is in the game code!
+            return 1;
+        }
+        catch (Exception ex) { CrashLog.LogException("ShowNotification", ex); return 0; }
+    }
+
+    private float GetMoneyPerSecondImpl()
+    {
+        try
+        {
+            var ui = StaticUIElements.instance;
+            if (ui == null) return 0f;
+            ui.CalculateRates(out float money, out float _, out float _);
+            return money;
+        }
+        catch { return 0f; }
+    }
+
+    private float GetExpensesPerSecondImpl()
+    {
+        try
+        {
+            var ui = StaticUIElements.instance;
+            if (ui == null) return 0f;
+            ui.CalculateRates(out float _, out float _, out float expenses);
+            return expenses;
+        }
+        catch { return 0f; }
+    }
+
+    private float GetXpPerSecondImpl()
+    {
+        try
+        {
+            var ui = StaticUIElements.instance;
+            if (ui == null) return 0f;
+            ui.CalculateRates(out float _, out float xp, out float _);
+            return xp;
+        }
+        catch { return 0f; }
+    }
+
+    private uint IsGamePausedImpl()
+    {
+        try { return MainGameManager.instance?.isGamePaused == true ? 1u : 0u; }
+        catch { return 0; }
+    }
+
+    private void SetGamePausedImpl(uint paused)
+    {
+        try
+        {
+            var mgr = MainGameManager.instance;
+            if (mgr != null) mgr.isGamePaused = paused != 0;
+        }
+        catch (Exception ex) { CrashLog.LogException("SetGamePaused", ex); }
+    }
+
+    private int GetDifficultyImpl()
+    {
+        try { return MainGameManager.instance?.difficulty ?? -1; }
+        catch { return -1; }
+    }
+
+    private int TriggerSaveImpl()
+    {
+        try { SaveSystem.SaveGame(); return 1; }
+        catch (Exception ex) { CrashLog.LogException("TriggerSave", ex); return 0; }
     }
 
     public void Dispose()

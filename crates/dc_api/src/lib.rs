@@ -261,6 +261,16 @@ pub struct GameAPI {
     pub is_custom_employee_hired: extern "C" fn(*const c_char) -> u32,
     pub fire_custom_employee: extern "C" fn(*const c_char) -> i32,
     pub register_salary: extern "C" fn(i32) -> i32,
+
+    // v5 — Game state & UI
+    pub show_notification: extern "C" fn(*const c_char) -> i32,
+    pub get_money_per_second: extern "C" fn() -> f32,
+    pub get_expenses_per_second: extern "C" fn() -> f32,
+    pub get_xp_per_second: extern "C" fn() -> f32,
+    pub is_game_paused: extern "C" fn() -> u32,
+    pub set_game_paused: extern "C" fn(u32),
+    pub get_difficulty: extern "C" fn() -> i32,
+    pub trigger_save: extern "C" fn() -> i32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -595,6 +605,62 @@ impl Api {
             return None;
         }
         Some((self.raw.register_salary)(monthly_salary))
+    }
+
+    pub fn show_notification(&self, message: &str) -> Option<i32> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        let c_msg = CString::new(message).ok()?;
+        Some((self.raw.show_notification)(c_msg.as_ptr()))
+    }
+
+    pub fn get_money_per_second(&self) -> Option<f32> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        Some((self.raw.get_money_per_second)())
+    }
+
+    pub fn get_expenses_per_second(&self) -> Option<f32> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        Some((self.raw.get_expenses_per_second)())
+    }
+
+    pub fn get_xp_per_second(&self) -> Option<f32> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        Some((self.raw.get_xp_per_second)())
+    }
+
+    pub fn is_game_paused(&self) -> Option<bool> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        Some((self.raw.is_game_paused)() != 0)
+    }
+
+    pub fn set_game_paused(&self, paused: bool) {
+        if self.raw.api_version >= 5 {
+            (self.raw.set_game_paused)(paused as u32);
+        }
+    }
+
+    pub fn get_difficulty(&self) -> Option<i32> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        Some((self.raw.get_difficulty)())
+    }
+
+    pub fn trigger_save(&self) -> Option<i32> {
+        if self.raw.api_version < 5 {
+            return None;
+        }
+        Some((self.raw.trigger_save)())
     }
 }
 
