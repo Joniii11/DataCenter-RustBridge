@@ -25,7 +25,7 @@ pub mod event_id;
 pub mod payload;
 
 pub use category::EventCategory;
-pub use event::Event;
+pub use event::{item_type_name, Event};
 pub use event_id::EventId;
 pub use payload::*;
 

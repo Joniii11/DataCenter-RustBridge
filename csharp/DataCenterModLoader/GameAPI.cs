@@ -38,12 +38,24 @@ public struct GameAPITable
     public IntPtr SetNetWatchEnabled;
     public IntPtr IsNetWatchEnabled;
     public IntPtr GetNetWatchStats;
+
+    // v4 — Device & Technician management primitives
+    public IntPtr GetBrokenServerCount;
+    public IntPtr GetBrokenSwitchCount;
+    public IntPtr GetEolServerCount;
+    public IntPtr GetEolSwitchCount;
+    public IntPtr GetFreeTechnicianCount;
+    public IntPtr GetTotalTechnicianCount;
+    public IntPtr DispatchRepairServer;
+    public IntPtr DispatchRepairSwitch;
+    public IntPtr DispatchReplaceServer;
+    public IntPtr DispatchReplaceSwitch;
 }
 
 // manages the api table, delegates stored as fields to prevent GC
 public class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 3;
+    public const uint API_VERSION = 4;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -56,6 +68,7 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint GetUIntDelegate();
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetUIntDelegate(uint value);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr GetStringDelegate();
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int GetIntDelegate();
 
     // prevent GC while rust holds these
     private readonly LogDelegate _logInfo, _logWarning, _logError;
@@ -67,6 +80,10 @@ public class GameAPIManager : IDisposable
     private readonly GetUIntDelegate _isNetWatchEnabled, _getNetWatchStats;
     private readonly SetUIntDelegate _setNetWatchEnabled;
     private readonly GetStringDelegate _getCurrentScene;
+    // v4
+    private readonly GetUIntDelegate _getBrokenServerCount, _getBrokenSwitchCount, _getEolServerCount, _getEolSwitchCount;
+    private readonly GetUIntDelegate _getFreeTechnicianCount, _getTotalTechnicianCount;
+    private readonly GetIntDelegate _dispatchRepairServer, _dispatchRepairSwitch, _dispatchReplaceServer, _dispatchReplaceSwitch;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
@@ -99,6 +116,18 @@ public class GameAPIManager : IDisposable
         _isNetWatchEnabled = IsNetWatchEnabledImpl;
         _getNetWatchStats = GetNetWatchStatsImpl;
 
+        // v4
+        _getBrokenServerCount = GetBrokenServerCountImpl;
+        _getBrokenSwitchCount = GetBrokenSwitchCountImpl;
+        _getEolServerCount = GetEolServerCountImpl;
+        _getEolSwitchCount = GetEolSwitchCountImpl;
+        _getFreeTechnicianCount = GetFreeTechnicianCountImpl;
+        _getTotalTechnicianCount = GetTotalTechnicianCountImpl;
+        _dispatchRepairServer = DispatchRepairServerImpl;
+        _dispatchRepairSwitch = DispatchRepairSwitchImpl;
+        _dispatchReplaceServer = DispatchReplaceServerImpl;
+        _dispatchReplaceSwitch = DispatchReplaceSwitchImpl;
+
         _table = new GameAPITable
         {
             ApiVersion = API_VERSION,
@@ -125,6 +154,17 @@ public class GameAPIManager : IDisposable
             SetNetWatchEnabled = Marshal.GetFunctionPointerForDelegate(_setNetWatchEnabled),
             IsNetWatchEnabled = Marshal.GetFunctionPointerForDelegate(_isNetWatchEnabled),
             GetNetWatchStats = Marshal.GetFunctionPointerForDelegate(_getNetWatchStats),
+            // v4
+            GetBrokenServerCount = Marshal.GetFunctionPointerForDelegate(_getBrokenServerCount),
+            GetBrokenSwitchCount = Marshal.GetFunctionPointerForDelegate(_getBrokenSwitchCount),
+            GetEolServerCount = Marshal.GetFunctionPointerForDelegate(_getEolServerCount),
+            GetEolSwitchCount = Marshal.GetFunctionPointerForDelegate(_getEolSwitchCount),
+            GetFreeTechnicianCount = Marshal.GetFunctionPointerForDelegate(_getFreeTechnicianCount),
+            GetTotalTechnicianCount = Marshal.GetFunctionPointerForDelegate(_getTotalTechnicianCount),
+            DispatchRepairServer = Marshal.GetFunctionPointerForDelegate(_dispatchRepairServer),
+            DispatchRepairSwitch = Marshal.GetFunctionPointerForDelegate(_dispatchRepairSwitch),
+            DispatchReplaceServer = Marshal.GetFunctionPointerForDelegate(_dispatchReplaceServer),
+            DispatchReplaceSwitch = Marshal.GetFunctionPointerForDelegate(_dispatchReplaceSwitch),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -216,16 +256,29 @@ public class GameAPIManager : IDisposable
     private uint GetSwitchCountImpl() { try { return GameHooks.GetSwitchCount(); } catch { return 0; } }
     private uint GetSatisfiedCustomerCountImpl() { try { return (uint)Math.Max(0, GameHooks.GetSatisfiedCustomerCount()); } catch { return 0; } }
 
-    // v3
+    // v3 — standalone state (logic moved to Rust mods)
+    private static bool _netWatchEnabled;
 
     private void SetNetWatchEnabledImpl(uint value)
     {
-        try { NetWatchSystem.Enabled = value != 0; }
-        catch (Exception ex) { _logger.Error("SetNetWatchEnabled: " + ex.Message); }
+        _netWatchEnabled = value != 0;
     }
 
-    private uint IsNetWatchEnabledImpl() { try { return NetWatchSystem.Enabled ? 1u : 0u; } catch { return 0; } }
-    private uint GetNetWatchStatsImpl() { try { return (uint)NetWatchSystem.TotalDispatches; } catch { return 0; } }
+    private uint IsNetWatchEnabledImpl() { return _netWatchEnabled ? 1u : 0u; }
+    private uint GetNetWatchStatsImpl() { return 0; }
+
+    // v4
+
+    private uint GetBrokenServerCountImpl() { try { return GameHooks.GetBrokenServerCount(); } catch { return 0; } }
+    private uint GetBrokenSwitchCountImpl() { try { return GameHooks.GetBrokenSwitchCount(); } catch { return 0; } }
+    private uint GetEolServerCountImpl() { try { return GameHooks.GetEolServerCount(); } catch { return 0; } }
+    private uint GetEolSwitchCountImpl() { try { return GameHooks.GetEolSwitchCount(); } catch { return 0; } }
+    private uint GetFreeTechnicianCountImpl() { try { return GameHooks.GetFreeTechnicianCount(); } catch { return 0; } }
+    private uint GetTotalTechnicianCountImpl() { try { return GameHooks.GetTotalTechnicianCount(); } catch { return 0; } }
+    private int DispatchRepairServerImpl() { try { return GameHooks.DispatchRepairServer(); } catch { return 0; } }
+    private int DispatchRepairSwitchImpl() { try { return GameHooks.DispatchRepairSwitch(); } catch { return 0; } }
+    private int DispatchReplaceServerImpl() { try { return GameHooks.DispatchReplaceServer(); } catch { return 0; } }
+    private int DispatchReplaceSwitchImpl() { try { return GameHooks.DispatchReplaceSwitch(); } catch { return 0; } }
 
     public void Dispose()
     {

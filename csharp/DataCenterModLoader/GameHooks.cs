@@ -126,4 +126,280 @@ public static class GameHooks
         try { return CustomerBase.satisfiedCustomerCount; }
         catch { return 0; }
     }
+
+    // ── Technician & Device management (v4) ─────────────────────
+
+    public static uint GetBrokenServerCount()
+    {
+        try
+        {
+            var nm = NetworkMap.instance;
+            if (nm == null) return 0;
+            var dict = nm.brokenServers;
+            if (dict == null) return 0;
+            return (uint)Math.Max(0, dict.Count);
+        }
+        catch { return 0; }
+    }
+
+    public static uint GetBrokenSwitchCount()
+    {
+        try
+        {
+            var nm = NetworkMap.instance;
+            if (nm == null) return 0;
+            var dict = nm.brokenSwitches;
+            if (dict == null) return 0;
+            return (uint)Math.Max(0, dict.Count);
+        }
+        catch { return 0; }
+    }
+
+    public static uint GetEolServerCount()
+    {
+        try
+        {
+            var nm = NetworkMap.instance;
+            if (nm == null) return 0;
+            var dict = nm.servers;
+            if (dict == null) return 0;
+
+            uint count = 0;
+            // copy keys first to avoid Il2Cpp iteration issues
+            var keys = new System.Collections.Generic.List<string>();
+            foreach (var kvp in dict) keys.Add(kvp.Key);
+
+            foreach (var key in keys)
+            {
+                try
+                {
+                    var server = dict[key];
+                    if (server == null) continue;
+                    if (server.isBroken) continue;
+                    // eolTime counts down; <= 0 means at/past EOL
+                    if (server.eolTime <= 0) count++;
+                }
+                catch { }
+            }
+            return count;
+        }
+        catch { return 0; }
+    }
+
+    public static uint GetEolSwitchCount()
+    {
+        try
+        {
+            var nm = NetworkMap.instance;
+            if (nm == null) return 0;
+            var dict = nm.switches;
+            if (dict == null) return 0;
+
+            uint count = 0;
+            var keys = new System.Collections.Generic.List<string>();
+            foreach (var kvp in dict) keys.Add(kvp.Key);
+
+            foreach (var key in keys)
+            {
+                try
+                {
+                    var sw = dict[key];
+                    if (sw == null) continue;
+                    if (sw.isBroken) continue;
+                    if (sw.existingWarningSigns > 0) count++;
+                }
+                catch { }
+            }
+            return count;
+        }
+        catch { return 0; }
+    }
+
+    public static uint GetFreeTechnicianCount()
+    {
+        try
+        {
+            var tm = TechnicianManager.instance;
+            if (tm == null) return 0;
+            var techs = tm.technicians;
+            if (techs == null) return 0;
+
+            uint count = 0;
+            int total = techs.Count;
+            for (int i = 0; i < total; i++)
+            {
+                try
+                {
+                    var tech = techs[i];
+                    if (tech != null && !tech.isBusy) count++;
+                }
+                catch { }
+            }
+            return count;
+        }
+        catch { return 0; }
+    }
+
+    public static uint GetTotalTechnicianCount()
+    {
+        try
+        {
+            var tm = TechnicianManager.instance;
+            if (tm == null) return 0;
+            var techs = tm.technicians;
+            if (techs == null) return 0;
+            return (uint)Math.Max(0, techs.Count);
+        }
+        catch { return 0; }
+    }
+
+    // Returns: 1 = dispatched, 0 = no target, -1 = no free technician
+    public static int DispatchRepairServer()
+    {
+        try
+        {
+            var nm = NetworkMap.instance;
+            var tm = TechnicianManager.instance;
+            if (nm == null || tm == null) return 0;
+
+            if (GetFreeTechnicianCount() == 0) return -1;
+
+            var dict = nm.brokenServers;
+            if (dict == null || dict.Count == 0) return 0;
+
+            // copy keys to avoid iteration issues
+            var keys = new System.Collections.Generic.List<string>();
+            foreach (var kvp in dict) keys.Add(kvp.Key);
+
+            foreach (var key in keys)
+            {
+                try
+                {
+                    Server server;
+                    try { server = dict[key]; } catch { continue; }
+                    if (server == null) continue;
+
+                    if (tm.IsDeviceAlreadyAssigned(null, server)) continue;
+
+                    tm.SendTechnician(null, server);
+                    return 1;
+                }
+                catch { }
+            }
+            return 0;
+        }
+        catch { return 0; }
+    }
+
+    public static int DispatchRepairSwitch()
+    {
+        try
+        {
+            var nm = NetworkMap.instance;
+            var tm = TechnicianManager.instance;
+            if (nm == null || tm == null) return 0;
+
+            if (GetFreeTechnicianCount() == 0) return -1;
+
+            var dict = nm.brokenSwitches;
+            if (dict == null || dict.Count == 0) return 0;
+
+            var keys = new System.Collections.Generic.List<string>();
+            foreach (var kvp in dict) keys.Add(kvp.Key);
+
+            foreach (var key in keys)
+            {
+                try
+                {
+                    NetworkSwitch sw;
+                    try { sw = dict[key]; } catch { continue; }
+                    if (sw == null) continue;
+
+                    if (tm.IsDeviceAlreadyAssigned(sw, null)) continue;
+
+                    tm.SendTechnician(sw, null);
+                    return 1;
+                }
+                catch { }
+            }
+            return 0;
+        }
+        catch { return 0; }
+    }
+
+    public static int DispatchReplaceServer()
+    {
+        try
+        {
+            var nm = NetworkMap.instance;
+            var tm = TechnicianManager.instance;
+            if (nm == null || tm == null) return 0;
+
+            if (GetFreeTechnicianCount() == 0) return -1;
+
+            var dict = nm.servers;
+            if (dict == null || dict.Count == 0) return 0;
+
+            var keys = new System.Collections.Generic.List<string>();
+            foreach (var kvp in dict) keys.Add(kvp.Key);
+
+            foreach (var key in keys)
+            {
+                try
+                {
+                    Server server;
+                    try { server = dict[key]; } catch { continue; }
+                    if (server == null) continue;
+                    if (server.isBroken) continue;
+                    if (server.eolTime > 0) continue; // not yet EOL
+
+                    if (tm.IsDeviceAlreadyAssigned(null, server)) continue;
+
+                    tm.SendTechnician(null, server);
+                    return 1;
+                }
+                catch { }
+            }
+            return 0;
+        }
+        catch { return 0; }
+    }
+
+    public static int DispatchReplaceSwitch()
+    {
+        try
+        {
+            var nm = NetworkMap.instance;
+            var tm = TechnicianManager.instance;
+            if (nm == null || tm == null) return 0;
+
+            if (GetFreeTechnicianCount() == 0) return -1;
+
+            var dict = nm.switches;
+            if (dict == null || dict.Count == 0) return 0;
+
+            var keys = new System.Collections.Generic.List<string>();
+            foreach (var kvp in dict) keys.Add(kvp.Key);
+
+            foreach (var key in keys)
+            {
+                try
+                {
+                    NetworkSwitch sw;
+                    try { sw = dict[key]; } catch { continue; }
+                    if (sw == null) continue;
+                    if (sw.isBroken) continue;
+                    if (sw.existingWarningSigns <= 0) continue; // no EOL warning
+
+                    if (tm.IsDeviceAlreadyAssigned(sw, null)) continue;
+
+                    tm.SendTechnician(sw, null);
+                    return 1;
+                }
+                catch { }
+            }
+            return 0;
+        }
+        catch { return 0; }
+    }
 }

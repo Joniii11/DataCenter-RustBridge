@@ -1,5 +1,30 @@
 //! FFI types and safe wrappers for writing Data Center mods in Rust.
 //!
+//! # With macros (recommended)
+//!
+//! ```rust,ignore
+//! use dc_api::*;
+//!
+//! #[dc_api::mod_entry(
+//!     id = "my_mod",
+//!     name = "My Mod",
+//!     version = "1.0.0",
+//!     author = "Author",
+//!     description = "A cool mod",
+//! )]
+//! fn init(api: &Api) -> bool {
+//!     api.log_info("Hello!");
+//!     true
+//! }
+//!
+//! #[dc_api::on_update]
+//! fn update(api: &Api, dt: f32) {
+//!     // called every frame
+//! }
+//! ```
+//!
+//! # Without macros (manual)
+//!
 //! ```rust,ignore
 //! use dc_api::*;
 //!
@@ -21,11 +46,121 @@
 pub mod events;
 pub use events::{Event, EventCategory, EventId};
 
+// Re-export proc macros so users can write `#[dc_api::mod_entry(...)]` etc.
+pub use dc_api_macros::{mod_entry, on_event, on_scene_loaded, on_shutdown, on_update};
+
 use std::ffi::{c_char, CStr, CString};
 use std::fmt;
+use std::io::Write;
+use std::path::PathBuf;
 use std::sync::OnceLock;
 
-pub const API_VERSION: u32 = 3;
+pub const API_VERSION: u32 = 4;
+
+// ── Internal helpers for proc macros ────────────────────────────────────────
+//
+// Each Rust mod is compiled as a separate `cdylib`, so these statics are
+// per-DLL — no conflicts between mods.
+
+static __MOD_API: OnceLock<Api> = OnceLock::new();
+static __CRASH_LOG_NAME: OnceLock<String> = OnceLock::new();
+
+/// Store the API reference (called by generated `mod_init`).
+#[doc(hidden)]
+pub fn __internal_set_mod_api(api: Api) {
+    let _ = __MOD_API.set(api);
+}
+
+/// Retrieve the stored API reference.
+#[doc(hidden)]
+pub fn __internal_mod_api() -> Option<&'static Api> {
+    __MOD_API.get()
+}
+
+/// Also exposed as a nice public function for manual use.
+pub fn mod_api() -> Option<&'static Api> {
+    __MOD_API.get()
+}
+
+/// Set the crash log filename (called by generated `mod_init`).
+#[doc(hidden)]
+pub fn __internal_set_crash_log(name: &str) {
+    let _ = __CRASH_LOG_NAME.set(name.to_owned());
+}
+
+/// Write a message to the mod's crash log file.
+#[doc(hidden)]
+pub fn __internal_crash_log(msg: &str) {
+    let name = __CRASH_LOG_NAME
+        .get()
+        .map(|s| s.as_str())
+        .unwrap_or("dc_mod_crash.log");
+    let path = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.join(name)))
+        .unwrap_or_else(|| PathBuf::from(name));
+    let _ = (|| -> std::io::Result<()> {
+        let mut f = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)?;
+        let ts = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
+        writeln!(f, "[{}] {}", ts, msg)?;
+        Ok(())
+    })();
+}
+
+/// Also exposed as a nice public function for manual use.
+pub fn crash_log(msg: &str) {
+    __internal_crash_log(msg);
+}
+
+/// Convert a panic payload to a printable string.
+#[doc(hidden)]
+pub fn __internal_panic_to_string(payload: &Box<dyn std::any::Any + Send>) -> String {
+    if let Some(s) = payload.downcast_ref::<&str>() {
+        (*s).to_owned()
+    } else if let Some(s) = payload.downcast_ref::<String>() {
+        s.clone()
+    } else {
+        "<non-string panic>".to_owned()
+    }
+}
+
+/// Install a panic hook that writes to the crash log (called by generated `mod_init`).
+#[doc(hidden)]
+pub fn __internal_setup_panic_hook() {
+    std::panic::set_hook(Box::new(|info| {
+        let mut message = String::from("PANIC: ");
+
+        if let Some(s) = info.payload().downcast_ref::<&str>() {
+            message.push_str(s);
+        } else if let Some(s) = info.payload().downcast_ref::<String>() {
+            message.push_str(s);
+        } else {
+            message.push_str("<non-string panic payload>");
+        }
+
+        if let Some(loc) = info.location() {
+            message.push_str(&format!(
+                " at {}:{}:{}",
+                loc.file(),
+                loc.line(),
+                loc.column()
+            ));
+        }
+
+        let bt = std::backtrace::Backtrace::capture();
+        if bt.status() == std::backtrace::BacktraceStatus::Captured {
+            message.push_str(&format!("\nBacktrace:\n{}", bt));
+        }
+
+        __internal_crash_log(&message);
+    }));
+}
 
 #[repr(C)]
 pub struct ModInfo {
@@ -108,6 +243,18 @@ pub struct GameAPI {
     pub set_netwatch_enabled: extern "C" fn(u32), // 1 = enable, 0 = disable
     pub is_netwatch_enabled: extern "C" fn() -> u32, // 1 = enabled, 0 = disabled
     pub get_netwatch_stats: extern "C" fn() -> u32, // total dispatches count
+
+    // v4 — device & technician management primitives
+    pub get_broken_server_count: extern "C" fn() -> u32,
+    pub get_broken_switch_count: extern "C" fn() -> u32,
+    pub get_eol_server_count: extern "C" fn() -> u32,
+    pub get_eol_switch_count: extern "C" fn() -> u32,
+    pub get_free_technician_count: extern "C" fn() -> u32,
+    pub get_total_technician_count: extern "C" fn() -> u32,
+    pub dispatch_repair_server: extern "C" fn() -> i32,
+    pub dispatch_repair_switch: extern "C" fn() -> i32,
+    pub dispatch_replace_server: extern "C" fn() -> i32,
+    pub dispatch_replace_switch: extern "C" fn() -> i32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -289,6 +436,90 @@ impl Api {
             return None;
         }
         Some((self.raw.get_netwatch_stats)())
+    }
+
+    /// Number of currently broken servers.
+    pub fn get_broken_server_count(&self) -> Option<u32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.get_broken_server_count)())
+    }
+
+    /// Number of currently broken switches.
+    pub fn get_broken_switch_count(&self) -> Option<u32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.get_broken_switch_count)())
+    }
+
+    /// Number of servers at/past end-of-life (eolTime <= 0, not broken).
+    pub fn get_eol_server_count(&self) -> Option<u32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.get_eol_server_count)())
+    }
+
+    /// Number of switches with EOL warnings (existingWarningSigns > 0, not broken).
+    pub fn get_eol_switch_count(&self) -> Option<u32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.get_eol_switch_count)())
+    }
+
+    /// Number of technicians currently not busy.
+    pub fn get_free_technician_count(&self) -> Option<u32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.get_free_technician_count)())
+    }
+
+    /// Total number of technicians (busy + free).
+    pub fn get_total_technician_count(&self) -> Option<u32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.get_total_technician_count)())
+    }
+
+    /// Dispatch a technician to repair the first unassigned broken server.
+    /// Returns: 1 = dispatched, 0 = no target, -1 = no free technician.
+    pub fn dispatch_repair_server(&self) -> Option<i32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.dispatch_repair_server)())
+    }
+
+    /// Dispatch a technician to repair the first unassigned broken switch.
+    /// Returns: 1 = dispatched, 0 = no target, -1 = no free technician.
+    pub fn dispatch_repair_switch(&self) -> Option<i32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.dispatch_repair_switch)())
+    }
+
+    /// Dispatch a technician to replace the first unassigned EOL server.
+    /// Returns: 1 = dispatched, 0 = no target, -1 = no free technician.
+    pub fn dispatch_replace_server(&self) -> Option<i32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.dispatch_replace_server)())
+    }
+
+    /// Dispatch a technician to replace the first unassigned EOL switch.
+    /// Returns: 1 = dispatched, 0 = no target, -1 = no free technician.
+    pub fn dispatch_replace_switch(&self) -> Option<i32> {
+        if self.raw.api_version < 4 {
+            return None;
+        }
+        Some((self.raw.dispatch_replace_switch)())
     }
 }
 

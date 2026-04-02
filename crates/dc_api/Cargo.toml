@@ -6,3 +6,4 @@ description = "FFI API types and safe wrappers for Data Center mods written in R
 
 [dependencies]
 log = { workspace = true }
+dc_api_macros = { path = "../dc_api_macros" }

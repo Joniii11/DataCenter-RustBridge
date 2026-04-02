@@ -1,0 +1,13 @@
+[package]
+name = "dc_api_macros"
+version.workspace = true
+edition.workspace = true
+description = "Proc macros for the Data Center modloader API — generates FFI boilerplate for Rust mods"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "2", features = ["full"] }
+quote = "1"
+proc-macro2 = "1"

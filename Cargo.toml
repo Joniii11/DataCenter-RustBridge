@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/dc_api",
+    "crates/dc_api_macros",
     "crates/dc_example_mod",
     "crates/dc_netwatch",
 ]

@@ -116,9 +116,6 @@ public class Core : MelonMod
                 CrashLog.LogException("Harmony patching", ex);
             }
 
-            CrashLog.Log("step: initializing NetWatchSystem");
-            NetWatchSystem.Initialize(_ffiBridge, LoggerInstance);
-
             CrashLog.Log("step: loading all mods");
             _ffiBridge.LoadAllMods();
             LoggerInstance.Msg("Modloader initialization complete.");
@@ -154,8 +151,7 @@ public class Core : MelonMod
             CrashLog.LogException("OnUpdate", ex);
         }
 
-        try { NetWatchSystem.Update(); }
-        catch (Exception ex) { CrashLog.LogException("NetWatchSystem.Update", ex); }
+
     }
 
     public override void OnFixedUpdate()
