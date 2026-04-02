@@ -127,7 +127,7 @@ public static class GameHooks
         catch { return 0; }
     }
 
-    // ── Technician & Device management (v4) ─────────────────────
+    // Technician & Device management
 
     public static uint GetBrokenServerCount()
     {

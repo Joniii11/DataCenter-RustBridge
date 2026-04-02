@@ -309,17 +309,14 @@ public static class CustomEmployeeManager
             var btnExt = buttonTransform.GetComponent<ButtonExtended>();
             if (btnExt != null)
             {
-                var clickEvent = btnExt.onClick;
-                if (clickEvent != null)
-                {
-                    clickEvent.RemoveAllListeners();
-                    UnityAction action = callback;
-                    _liveCallbacks.Add(action);
-                    clickEvent.AddListener(action);
-                    CrashLog.Log($"CustomEmployee: Wired ButtonExtended.onClick on '{buttonTransform.name}'");
-                    return;
-                }
-                CrashLog.Log($"CustomEmployee: ButtonExtended.onClick was null on '{buttonTransform.name}'");
+                // Replace entire event to nuke persistent listeners from cloned template
+                var freshEvent = new ButtonExtended.ButtonClickedEvent();
+                btnExt.m_OnClick = freshEvent;
+                UnityAction action = callback;
+                _liveCallbacks.Add(action);
+                freshEvent.AddListener(action);
+                CrashLog.Log($"CustomEmployee: Wired ButtonExtended.onClick on '{buttonTransform.name}'");
+                return;
             }
         }
         catch (Exception ex)
@@ -333,7 +330,7 @@ public static class CustomEmployeeManager
             var button = buttonTransform.GetComponent<Button>();
             if (button != null)
             {
-                button.onClick.RemoveAllListeners();
+                button.onClick = new Button.ButtonClickedEvent();
                 UnityAction action = callback;
                 _liveCallbacks.Add(action);
                 button.onClick.AddListener(action);
