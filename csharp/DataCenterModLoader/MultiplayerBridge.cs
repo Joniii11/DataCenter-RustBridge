@@ -74,6 +74,9 @@ public class MultiplayerBridge
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int MpSaveLoadCompleteDelegate();
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void MpSkipNextSaveRequestDelegate();
+
     // ═══════════════════════════════════════════════════════════════════════
     //  Structs & Inner Types
     // ═══════════════════════════════════════════════════════════════════════
@@ -117,6 +120,7 @@ public class MultiplayerBridge
     private MpGetSaveDataSizeDelegate _getSaveDataSize;
     private MpGetSaveDataDelegate _getSaveData;
     private MpSaveLoadCompleteDelegate _saveLoadComplete;
+    private MpSkipNextSaveRequestDelegate _skipNextSaveRequest;
     private readonly Dictionary<ulong, RemotePlayerGO> _remotePlayers = new();
     private bool _initialized = false;
     private float _initTimer = 0f;
@@ -145,6 +149,8 @@ public class MultiplayerBridge
     private float _deferredLoadDelay = 0f;       // small delay after scene load before triggering Load()
     private string _reconnectRoomCode = null;    // room code to auto-reconnect after scene transition
     private bool _skipSaveOnReconnect = false;   // skip save processing when reconnecting after load
+    private float _reconnectCooldown = 0f;       // cooldown to prevent rapid-fire reconnect attempts
+    private bool _gameHandledSaveLoad = false;   // true when MainMenu.Continue() handles the load
 
     // Host: cached save bytes so multiple client joins don't re-trigger SaveGame()
     private byte[] _cachedSaveData = null;
@@ -243,6 +249,12 @@ public class MultiplayerBridge
         _getSaveData = getSaveDataPtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpGetSaveDataDelegate>(getSaveDataPtr) : null;
         _saveLoadComplete = saveLoadCompletePtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpSaveLoadCompleteDelegate>(saveLoadCompletePtr) : null;
 
+        // Optional: may not exist in older DLLs — fail gracefully
+        var skipNextSaveRequestPtr = GetProcAddress(handle, "mp_skip_next_save_request");
+        _skipNextSaveRequest = skipNextSaveRequestPtr != IntPtr.Zero
+            ? Marshal.GetDelegateForFunctionPointer<MpSkipNextSaveRequestDelegate>(skipNextSaveRequestPtr)
+            : null;
+
         _initialized = true;
         _logger.Msg("[MP Bridge] dc_multiplayer detected, bridge active.");
         _logger.Msg("[MP Bridge] Keybinds: F9=Host, F10=Multiplayer Panel, F11=Disconnect");
@@ -256,6 +268,9 @@ public class MultiplayerBridge
 
     public void OnUpdate(float dt)
     {
+        // --- Decrement reconnect cooldown ---
+        if (_reconnectCooldown > 0f) _reconnectCooldown -= dt;
+
         // --- Handle pending main-menu button injection ---
         if (_pendingMenuInjection)
         {
@@ -452,9 +467,23 @@ public class MultiplayerBridge
                         }
                         else if (!IsInMainMenu())
                         {
-                            // We're now in a game scene — load the save and reconnect
-                            CrashLog.Log("[MP Join] Game scene detected after deferred wait, attempting load...");
-                            AttemptSaveLoad();
+                            if (_gameHandledSaveLoad)
+                            {
+                                // MainMenu.Continue() handled the scene transition + save load
+                                CrashLog.Log("[MP Join] Game scene loaded via MainMenu.Continue() — transitioning to Loaded");
+                                _joinState = ClientJoinState.Loaded;
+                                _gameHandledSaveLoad = false;
+                                _pendingSaveBytes = null;
+                                _pendingSaveName = null;
+                                _logger.Msg("[MP Join] Save loaded from host (via game Continue)!");
+                                try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Save loaded from host!"); } catch { }
+                            }
+                            else
+                            {
+                                // Manual approach fallback — load the save ourselves
+                                CrashLog.Log("[MP Join] Game scene detected after deferred wait, attempting load...");
+                                AttemptSaveLoad();
+                            }
                         }
                         break;
 
@@ -466,8 +495,9 @@ public class MultiplayerBridge
                             if (_saveLoadComplete != null) _saveLoadComplete();
                         }
                         // Auto-reconnect if relay died (e.g. after scene transition)
-                        if (_reconnectRoomCode != null && !relayAlive)
+                        if (_reconnectRoomCode != null && !relayAlive && _reconnectCooldown <= 0f)
                         {
+                            _reconnectCooldown = 5f; // Don't try again for 5 seconds
                             CrashLog.Log($"[MP Join] Relay not alive in Loaded state — auto-reconnecting to {_reconnectRoomCode}");
                             AutoReconnect();
                         }
@@ -507,10 +537,18 @@ public class MultiplayerBridge
             _menuButton = null;
 
             // If we were waiting for the game scene after writing the save, now is the time to load it
-            if (_joinState == ClientJoinState.WaitingForGameScene && _pendingSaveName != null)
+            if (_joinState == ClientJoinState.WaitingForGameScene)
             {
-                CrashLog.Log($"[MP Join] Game scene \"{sceneName}\" loaded — will attempt save load after short delay");
-                _deferredLoadDelay = 1.0f; // delay so the scene can finish initializing + callbacks register
+                if (_gameHandledSaveLoad)
+                {
+                    CrashLog.Log($"[MP Join] Game scene \"{sceneName}\" loaded (via Continue) — waiting for initialization");
+                    _deferredLoadDelay = 2.0f; // longer delay — game is handling the full load
+                }
+                else if (_pendingSaveName != null)
+                {
+                    CrashLog.Log($"[MP Join] Game scene \"{sceneName}\" loaded — will attempt save load after short delay");
+                    _deferredLoadDelay = 1.0f; // delay so the scene can finish initializing + callbacks register
+                }
             }
         }
     }
@@ -1162,9 +1200,61 @@ public class MultiplayerBridge
         }
         CrashLog.Log($"[MP Join] Stored room code for reconnect: \"{_reconnectRoomCode}\"");
 
+        // ── Approach 1: Use the game's own MainMenu.Continue() ──
+        // This replicates what happens when the player presses "Continue" on the
+        // main menu. The game handles isQuitting, scene transitions, save loading,
+        // callbacks, and all internal state setup. Much safer than manual scene load.
+        try
+        {
+            var menus = Resources.FindObjectsOfTypeAll<Il2Cpp.MainMenu>();
+            if (menus != null && menus.Count > 0)
+            {
+                var mainMenu = menus[0];
+                CrashLog.Log("[MP Join] Found MainMenu instance — using game's Continue() flow");
+
+                // The save we overwrote in WriteSaveToDisk is the newest save,
+                // so Continue() will load it through the normal game path.
+                _gameHandledSaveLoad = true;
+                _joinState = ClientJoinState.WaitingForGameScene;
+                _pendingSaveBytes = null; // free memory
+
+                try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Loading host's game..."); } catch { }
+
+                mainMenu.Continue();
+                CrashLog.Log("[MP Join] MainMenu.Continue() called — game will handle scene transition and save load");
+                return;
+            }
+            else
+            {
+                CrashLog.Log("[MP Join] No MainMenu instance found — falling back to manual approach");
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Join] MainMenu.Continue() failed: {ex.GetType().Name}: {ex.Message} — falling back to manual approach");
+            _gameHandledSaveLoad = false;
+        }
+
+        // ── Approach 2: Manual scene transition (fallback) ──
+        CrashLog.Log("[MP Join] Using manual scene transition fallback");
+
+        // Reset isQuitting flag — the game sets this when quitting to MainMenu
+        // and never resets it, which causes crashes during save load
+        try
+        {
+            bool wasQuitting = SaveSystem.isQuitting;
+            if (wasQuitting)
+            {
+                SaveSystem.isQuitting = false;
+                CrashLog.Log($"[MP Join] Reset SaveSystem.isQuitting (was {wasQuitting})");
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Join] Could not reset isQuitting: {ex.Message}");
+        }
+
         // Set SaveSystem.loadSaveName so the game knows which save to load
-        // after the scene transition. The host's loadSaveName format is "savename;displayname"
-        // but we'll try just the save name first.
         try
         {
             SaveSystem.loadSaveName = _pendingSaveName;
@@ -1206,7 +1296,7 @@ public class MultiplayerBridge
             {
                 CrashLog.Log($"[MP Join] Loading game scene: [{gameSceneIndex}] \"{gameSceneName}\"");
                 _joinState = ClientJoinState.WaitingForGameScene;
-                _pendingSaveBytes = null; // free memory before scene load
+                _pendingSaveBytes = null;
                 try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Loading host's game..."); } catch { }
                 SceneManager.LoadScene(gameSceneIndex);
                 return;
@@ -1249,6 +1339,19 @@ public class MultiplayerBridge
 
         bool loaded = false;
         CrashLog.Log($"[MP Join] AttemptSaveLoad: name=\"{_pendingSaveName}\", scene=\"{_currentSceneName}\"");
+
+        // Reset isQuitting flag — the game sets this when quitting to MainMenu
+        // and never resets it, which causes crashes during save load
+        try
+        {
+            bool wasQuitting = SaveSystem.isQuitting;
+            SaveSystem.isQuitting = false;
+            CrashLog.Log($"[MP Join] SaveSystem.isQuitting = false (was {wasQuitting})");
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Join] Could not reset isQuitting: {ex.Message}");
+        }
 
         // ── Approach A: Load(name, false) — standard load path ──
         CrashLog.Log($"[MP Join] Approach A: SaveSystem.Load(\"{_pendingSaveName}\", false)...");
@@ -1334,11 +1437,21 @@ public class MultiplayerBridge
             _logger.Msg("[MP Join] Save loaded from host!");
             try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Save loaded from host!"); } catch { }
 
-            // Auto-reconnect to relay (connection likely died during scene transition)
+            // Only reconnect if the relay actually died during scene transition
             if (_reconnectRoomCode != null)
             {
-                CrashLog.Log($"[MP Join] Triggering auto-reconnect to room {_reconnectRoomCode}");
-                AutoReconnect();
+                bool relayStillAlive = _isRelayActive != null && _isRelayActive() != 0;
+                bool stillConnected = _isConnected != null && _isConnected() != 0;
+
+                if (relayStillAlive && stillConnected)
+                {
+                    CrashLog.Log($"[MP Join] Relay still alive after save load (alive={relayStillAlive}, connected={stillConnected}) — no reconnect needed");
+                }
+                else
+                {
+                    CrashLog.Log($"[MP Join] Relay died during save load (alive={relayStillAlive}, connected={stillConnected}) — auto-reconnecting to {_reconnectRoomCode}");
+                    AutoReconnect();
+                }
             }
         }
         else
@@ -1363,6 +1476,13 @@ public class MultiplayerBridge
 
         CrashLog.Log($"[MP Join] AutoReconnect: joining room {_reconnectRoomCode} (skip save = true)");
         _skipSaveOnReconnect = true;
+        _reconnectCooldown = 5f;
+
+        // Tell Rust not to request save on reconnect
+        if (_skipNextSaveRequest != null)
+        {
+            _skipNextSaveRequest();
+        }
 
         byte[] codeBytes = System.Text.Encoding.UTF8.GetBytes(_reconnectRoomCode);
         IntPtr codePtr = Marshal.AllocHGlobal(codeBytes.Length);
@@ -1400,6 +1520,8 @@ public class MultiplayerBridge
         _pendingSaveFullPath = null;
         _deferredLoadDelay = 0f;
         _skipSaveOnReconnect = false;
+        _reconnectCooldown = 0f;
+        _gameHandledSaveLoad = false;
         // Note: _reconnectRoomCode is intentionally NOT cleared here
         // so auto-reconnect can still work after scene transitions.
     }

@@ -59,6 +59,8 @@ struct MultiplayerState {
     save_incoming_received: Vec<bool>,
     save_data_ready: Option<Vec<u8>>,
     save_loaded: bool,
+    /// When true, the next Welcome won't trigger a RequestSave
+    skip_next_save_request: bool,
 }
 
 impl MultiplayerState {
@@ -91,6 +93,7 @@ impl MultiplayerState {
             save_incoming_received: Vec::new(),
             save_data_ready: None,
             save_loaded: false,
+            skip_next_save_request: false,
         }
     }
 }
@@ -416,14 +419,27 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
                 s.tracker.add_player(sender, player_name.clone());
             });
 
-            // Request save data from host
-            let req = Message::RequestSave;
-            with_state(|s| {
-                if let Some(ref relay) = s.relay {
-                    relay.send_game_message(&req);
-                    dc_api::crash_log("[MP] Sent RequestSave to host");
+            // Request save data from host (unless we're reconnecting and already have it)
+            let should_request = with_state(|s| {
+                if s.skip_next_save_request {
+                    s.skip_next_save_request = false;
+                    dc_api::crash_log("[MP] Skipping save request (reconnect mode)");
+                    false
+                } else {
+                    true
                 }
-            });
+            })
+            .unwrap_or(true);
+
+            if should_request {
+                let req = Message::RequestSave;
+                with_state(|s| {
+                    if let Some(ref relay) = s.relay {
+                        relay.send_game_message(&req);
+                        dc_api::crash_log("[MP] Sent RequestSave to host");
+                    }
+                });
+            }
 
             api.show_notification(&format!("Connected to {}!", player_name));
         }
@@ -564,6 +580,7 @@ fn do_disconnect_cleanup() {
         s.save_incoming_received.clear();
         s.save_data_ready = None;
         s.save_loaded = false;
+        s.skip_next_save_request = false;
     });
 }
 
@@ -703,6 +720,14 @@ pub extern "C" fn mp_connect(room_code: *const u8, room_code_len: u32) -> i32 {
         }
     };
 
+    // Explicitly disconnect old relay before connecting new one
+    with_state(|s| {
+        if let Some(ref relay) = s.relay {
+            relay.disconnect(); // sends LeaveRoom + sets alive=false
+        }
+        s.relay = None;
+    });
+
     let my_id = with_state(|s| s.my_id).unwrap_or(0);
 
     let conn = match net::RelayConnection::connect(url) {
@@ -731,6 +756,14 @@ pub extern "C" fn mp_connect(room_code: *const u8, room_code_len: u32) -> i32 {
         s.hello_retry_count = 0;
         s.room_code = Some(code.clone());
         s.room_code_cstr = None;
+
+        // Reset save state for new connection
+        s.save_loaded = false;
+        s.save_data_ready = None;
+        s.save_incoming_total = 0;
+        s.save_incoming_chunk_count = 0;
+        s.save_incoming_data.clear();
+        s.save_incoming_received.clear();
     });
 
     dc_api::crash_log(&format!("[MP] Joining room {} via relay at {}", code, url));
@@ -777,8 +810,30 @@ pub extern "C" fn mp_disconnect() -> i32 {
         s.hello_retry_timer = 0.0;
         s.hello_retry_count = 0;
         s.tracker = player::PlayerTracker::new();
+        s.skip_next_save_request = false;
+
+        // Save sync reset
+        s.save_requested = false;
+        s.save_outgoing = None;
+        s.save_send_index = 0;
+        s.save_send_chunk_count = 0;
+        s.save_incoming_total = 0;
+        s.save_incoming_chunk_count = 0;
+        s.save_incoming_data.clear();
+        s.save_incoming_received.clear();
+        s.save_data_ready = None;
+        s.save_loaded = false;
     });
     1
+}
+
+/// Tell the Rust side to NOT request save on the next connection.
+/// Call this BEFORE mp_connect when doing an auto-reconnect.
+#[no_mangle]
+pub extern "C" fn mp_skip_next_save_request() {
+    with_state(|s| {
+        s.skip_next_save_request = true;
+    });
 }
 
 /// Host: returns 1 if a client has requested save data and C# should provide it.
