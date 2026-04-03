@@ -117,6 +117,9 @@ public class Core : MelonMod
                 CrashLog.LogException("Harmony patching", ex);
             }
 
+            CrashLog.Log("step: initializing ModConfigSystem");
+            ModConfigSystem.Initialize(LoggerInstance);
+
             CrashLog.Log("step: loading all mods");
             _ffiBridge.LoadAllMods();
 
@@ -139,9 +142,7 @@ public class Core : MelonMod
         {
             _ffiBridge?.OnSceneLoaded(sceneName);
             _mpBridge?.OnSceneLoaded(sceneName);
-
-            // Initialize extra technician hiring (safe to call multiple times)
-            TechnicianHiring.Initialize();
+            ModConfigSystem.OnSceneLoaded(sceneName);
 
             // Re-register salaries for previously hired custom employees
             CustomEmployeeManager.ReregisterSalariesIfNeeded();
@@ -158,6 +159,7 @@ public class Core : MelonMod
         {
             _ffiBridge?.OnUpdate(Time.deltaTime);
             _mpBridge?.OnUpdate(Time.deltaTime);
+            ModConfigSystem.OnUpdate(Time.deltaTime);
         }
         catch (Exception ex)
         {
@@ -184,6 +186,7 @@ public class Core : MelonMod
         try
         {
             _mpBridge?.DrawGUI();
+            ModConfigSystem.DrawGUI();
         }
         catch (Exception ex)
         {
@@ -198,6 +201,7 @@ public class Core : MelonMod
             LoggerInstance.Msg("Shutting down modloader...");
             CrashLog.Log("step: OnApplicationQuit starting");
             _mpBridge?.Shutdown();
+            ModConfigSystem.Shutdown();
             _ffiBridge?.Shutdown();
             _ffiBridge?.Dispose();
             CrashLog.Log("step: OnApplicationQuit complete");

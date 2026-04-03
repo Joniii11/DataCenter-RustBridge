@@ -22,9 +22,7 @@ public class CustomEmployeeEntry
     public bool RequiresConfirmation;
 }
 
-/// <summary>
-/// Manages mod-registered custom employees: registration, state, and HR System UI injection.
-/// </summary>
+// Manages mod-registered custom employees: registration, state, and HR UI injection.
 public static class CustomEmployeeManager
 {
     private static readonly List<CustomEmployeeEntry> _employees = new();
@@ -34,17 +32,12 @@ public static class CustomEmployeeManager
     private static readonly string _statePath =
         Path.Combine(MelonEnvironment.UserDataDirectory, "custom_employees_hired.txt");
 
-    // pending confirmation state
     private static string _pendingEmployeeId;
     private static bool _pendingIsHire;
-
-    // deferred salary re-registration after LoadState
     private static bool _salariesNeedReregistration;
 
     public static IReadOnlyList<CustomEmployeeEntry> Employees => _employees;
     public static bool HasPendingAction => _pendingEmployeeId != null;
-
-
 
     public static int Register(string id, string name, string description, float salary, float reputation, bool requiresConfirmation = false)
     {
@@ -84,7 +77,7 @@ public static class CustomEmployeeManager
         return false;
     }
 
-    /// <summary>Returns: 1 = hired, 0 = not found, -1 = insufficient reputation, -2 = already hired</summary>
+    // Returns: 1 = hired, 0 = not found, -1 = insufficient reputation, -2 = already hired
     public static int Hire(string id)
     {
         if (!_employeeIndex.TryGetValue(id, out int idx)) return 0;
@@ -109,12 +102,11 @@ public static class CustomEmployeeManager
         try { BalanceSheet.instance?.RegisterSalary((int)entry.SalaryPerHour); } catch { }
 
         EventDispatcher.FireCustomEmployeeHired(id);
-        try { TechnicianHiring.OnEmployeeHired(id); } catch (Exception ex) { CrashLog.LogException("Hire: TechnicianHiring callback", ex); }
         SaveState();
         return 1;
     }
 
-    /// <summary>Returns: 1 = fired, 0 = not found or not currently hired</summary>
+    // Returns: 1 = fired, 0 = not found or not currently hired
     public static int Fire(string id)
     {
         if (!_employeeIndex.TryGetValue(id, out int idx)) return 0;
@@ -123,7 +115,7 @@ public static class CustomEmployeeManager
         if (!entry.IsHired) return 0;
 
         entry.IsHired = false;
-        CrashLog.Log($"CustomEmployee.Fire: step 1 — set IsHired=false for '{id}' ({entry.Name})");
+        CrashLog.Log($"CustomEmployee.Fire: step 1 - set IsHired=false for '{id}' ({entry.Name})");
 
         try
         {
@@ -131,51 +123,43 @@ public static class CustomEmployeeManager
         }
         catch (Exception ex) { CrashLog.LogException("Fire: LoggerInstance.Msg", ex); }
 
-        CrashLog.Log($"CustomEmployee.Fire: step 2 — about to unregister salary ({-(int)entry.SalaryPerHour})");
+        CrashLog.Log($"CustomEmployee.Fire: step 2 - about to unregister salary ({-(int)entry.SalaryPerHour})");
         try
         {
             var bs = BalanceSheet.instance;
             if (bs != null)
             {
                 bs.RegisterSalary(-(int)entry.SalaryPerHour);
-                CrashLog.Log("CustomEmployee.Fire: step 2 — salary unregistered OK");
+                CrashLog.Log("CustomEmployee.Fire: step 2 - salary unregistered OK");
             }
             else
             {
-                CrashLog.Log("CustomEmployee.Fire: step 2 — BalanceSheet.instance is null, skipping salary");
+                CrashLog.Log("CustomEmployee.Fire: step 2 - BalanceSheet.instance is null, skipping salary");
             }
         }
         catch (Exception ex) { CrashLog.LogException("Fire: RegisterSalary", ex); }
 
-        CrashLog.Log($"CustomEmployee.Fire: step 3 — dispatching CustomEmployeeFired event for '{id}'");
+        CrashLog.Log($"CustomEmployee.Fire: step 3 - dispatching CustomEmployeeFired event for '{id}'");
         try
         {
             EventDispatcher.FireCustomEmployeeFired(id);
-            CrashLog.Log("CustomEmployee.Fire: step 3 — event dispatched OK");
+            CrashLog.Log("CustomEmployee.Fire: step 3 - event dispatched OK");
         }
         catch (Exception ex) { CrashLog.LogException("Fire: FireCustomEmployeeFired", ex); }
 
-        try { TechnicianHiring.OnEmployeeFired(id); } catch (Exception ex) { CrashLog.LogException("Fire: TechnicianHiring callback", ex); }
-
-        CrashLog.Log("CustomEmployee.Fire: step 4 — saving state");
+        CrashLog.Log("CustomEmployee.Fire: step 4 - saving state");
         SaveState();
-        CrashLog.Log("CustomEmployee.Fire: step 5 — complete");
+        CrashLog.Log("CustomEmployee.Fire: step 5 - complete");
         return 1;
     }
-
-    // UI Injection
 
 #pragma warning disable CS0414
     private static bool _scrollViewInjected = false;
 #pragma warning restore CS0414
 
-    /// <summary>
-    /// Wraps the HR System's Grid in a ScrollRect so that any number of
-    /// employee cards can be scrolled vertically.
-    /// </summary>
+    // Wraps the HR Grid in a ScrollRect for vertical scrolling of employee cards.
     private static Transform EnsureScrollView(Transform hrTransform, Transform grid)
     {
-        // If we already injected, find the existing scroll content grid
         var existingScroll = hrTransform.Find("ModScrollView");
         if (existingScroll != null)
         {
@@ -189,11 +173,10 @@ public static class CustomEmployeeManager
 
         CrashLog.Log("CustomEmployee: Creating ScrollView wrapper for Grid");
 
-        // ── 1. Capture the Grid's RectTransform so the scroll view takes its place ──
+        // Capture Grid's RectTransform so the scroll view takes its place
         var gridRect = grid.GetComponent<RectTransform>();
         var gridParent = grid.parent;
 
-        // Save grid layout values before reparenting
         var anchorMin = gridRect.anchorMin;
         var anchorMax = gridRect.anchorMax;
         var offsetMin = gridRect.offsetMin;
@@ -203,7 +186,7 @@ public static class CustomEmployeeManager
         var anchoredPos = gridRect.anchoredPosition;
         int siblingIndex = grid.GetSiblingIndex();
 
-        // ── 2. Create ScrollView container ──
+        // Create ScrollView container
         var scrollGO = new GameObject("ModScrollView");
         scrollGO.AddComponent<RectTransform>();
         scrollGO.transform.SetParent(gridParent, false);
@@ -218,7 +201,7 @@ public static class CustomEmployeeManager
         scrollRect_rt.sizeDelta = sizeDelta;
         scrollRect_rt.anchoredPosition = anchoredPos;
 
-        // ── 3. Create Viewport (child of ScrollView) with mask ──
+        // Create Viewport with mask
         var viewportGO = new GameObject("Viewport");
         viewportGO.AddComponent<RectTransform>();
         viewportGO.AddComponent<RectMask2D>();
@@ -237,7 +220,7 @@ public static class CustomEmployeeManager
         viewportImage.color = new Color(0, 0, 0, 0);
         viewportImage.raycastTarget = true;
 
-        // ── 4. Create Content container (child of Viewport) ──
+        // Create Content container
         var contentGO = new GameObject("Content");
         contentGO.AddComponent<RectTransform>();
         contentGO.AddComponent<ContentSizeFitter>();
@@ -255,8 +238,7 @@ public static class CustomEmployeeManager
         fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        // ── 5. Reparent ALL children from the original Grid into Content ──
-        // First copy the GridLayoutGroup (or other layout) from Grid onto Content
+        // Copy layout from original Grid onto Content
         var srcLayout = grid.GetComponent<GridLayoutGroup>();
         if (srcLayout != null)
         {
@@ -274,7 +256,6 @@ public static class CustomEmployeeManager
         else
         {
             CrashLog.Log("CustomEmployee: Grid has no GridLayoutGroup, checking for other layouts...");
-            // Try HorizontalLayoutGroup or VerticalLayoutGroup
             var hLayout = grid.GetComponent<HorizontalLayoutGroup>();
             if (hLayout != null)
             {
@@ -293,7 +274,7 @@ public static class CustomEmployeeManager
             }
         }
 
-        // Move all existing children from Grid to Content
+        // Move all children from Grid to Content
         var childrenToMove = new System.Collections.Generic.List<Transform>();
         for (int i = 0; i < grid.childCount; i++)
             childrenToMove.Add(grid.GetChild(i));
@@ -303,7 +284,7 @@ public static class CustomEmployeeManager
 
         CrashLog.Log($"CustomEmployee: Moved {childrenToMove.Count} children from Grid to Content");
 
-        // ── 6. Add ScrollRect to the scroll container ──
+        // Add ScrollRect component
         var scrollComp = scrollGO.AddComponent<ScrollRect>();
         scrollComp.content = contentRect;
         scrollComp.viewport = viewportRect;
@@ -314,7 +295,7 @@ public static class CustomEmployeeManager
         scrollComp.inertia = true;
         scrollComp.decelerationRate = 0.1f;
 
-        // ── 7. Hide the original Grid (now empty) ──
+        // Hide the now-empty original Grid
         grid.gameObject.SetActive(false);
 
         _scrollViewInjected = true;
@@ -332,7 +313,6 @@ public static class CustomEmployeeManager
             var hrTransform = hrSystem.gameObject.transform;
             LogHierarchy(hrTransform, 0);
 
-            // Find the Grid — it may already be hidden if we injected previously
             var grid = hrTransform.Find("Grid");
             if (grid == null)
             {
@@ -342,7 +322,7 @@ public static class CustomEmployeeManager
 
             CrashLog.Log($"CustomEmployee: Found Grid with {grid.childCount} children");
 
-            // Wrap the grid in a scroll view (idempotent — reuses if already done)
+            // Wrap grid in scroll view (idempotent, reuses if already done)
             var contentGrid = EnsureScrollView(hrTransform, grid);
 
             CrashLog.Log($"CustomEmployee: Using content grid '{contentGrid.name}' with {contentGrid.childCount} children");
@@ -396,8 +376,6 @@ public static class CustomEmployeeManager
         }
     }
 
-    // Card creation
-
     private static void CreateCard(Transform grid, Transform template, CustomEmployeeEntry entry, string cardName)
     {
         var newCardObj = UnityEngine.Object.Instantiate(template.gameObject, grid);
@@ -411,7 +389,7 @@ public static class CustomEmployeeManager
         SetTextAtPath(card, "VL/text_requiredReputation", $"Required Reputation: {entry.RequiredReputation:F0}");
 
         SetupButtons(card, entry);
-        SetPortraitToSolidColor(card);
+        SetPortrait(card, entry.EmployeeId);
 
         CrashLog.Log($"CustomEmployee: Card created for '{entry.Name}' (id={entry.EmployeeId}, hired={entry.IsHired})");
     }
@@ -423,8 +401,6 @@ public static class CustomEmployeeManager
         SetTextAtPath(card, "VL/text_requiredReputation", $"Required Reputation: {entry.RequiredReputation:F0}");
         SetupButtons(card, entry);
     }
-
-    // Text helpers
 
     private static void SetTextAtPath(Transform root, string path, string text)
     {
@@ -473,8 +449,6 @@ public static class CustomEmployeeManager
 
         return false;
     }
-
-    // Button setup
 
     private static void SetupButtons(Transform card, CustomEmployeeEntry entry)
     {
@@ -528,8 +502,6 @@ public static class CustomEmployeeManager
         CrashLog.Log($"CustomEmployee: Buttons configured for '{entry.EmployeeId}' (hired={entry.IsHired})");
     }
 
-
-
     private static void ShowOverlay(bool hire)
     {
         var hrSystems = UnityEngine.Object.FindObjectsOfType<HRSystem>();
@@ -544,7 +516,7 @@ public static class CustomEmployeeManager
         }
     }
 
-    /// <summary>Called from Harmony prefix on ButtonConfirmHire. Returns true if handled (skip vanilla).</summary>
+    // Called from Harmony prefix on ButtonConfirmHire. Returns true if handled (skip vanilla).
     public static bool HandleConfirmHire(HRSystem hr)
     {
         if (_pendingEmployeeId == null || !_pendingIsHire) return false;
@@ -557,7 +529,7 @@ public static class CustomEmployeeManager
         return true;
     }
 
-    /// <summary>Called from Harmony prefix on ButtonConfirmFireEmployee. Returns true if handled.</summary>
+    // Called from Harmony prefix on ButtonConfirmFireEmployee. Returns true if handled.
     public static bool HandleConfirmFire(HRSystem hr)
     {
         if (_pendingEmployeeId == null || _pendingIsHire) return false;
@@ -610,11 +582,8 @@ public static class CustomEmployeeManager
         catch (Exception ex) { CrashLog.LogException("LoadState", ex); }
     }
 
-    /// <summary>
-    /// Re-registers salaries for all hired custom employees with the BalanceSheet.
-    /// Should be called once after the game scene is loaded and BalanceSheet.instance is available.
-    /// Safe to call multiple times; only performs work on the first successful invocation after LoadState.
-    /// </summary>
+    // Re-registers salaries for hired custom employees once BalanceSheet is available.
+    // Safe to call multiple times; only acts once after LoadState sets the flag.
     public static void ReregisterSalariesIfNeeded()
     {
         if (!_salariesNeedReregistration) return;
@@ -644,9 +613,7 @@ public static class CustomEmployeeManager
         catch (Exception ex) { CrashLog.LogException("ReregisterSalariesIfNeeded", ex); }
     }
 
-
-
-    /// <summary>ButtonExtended : Selectable (NOT Button!), has its own onClick : ButtonClickedEvent.</summary>
+    // Wires a click handler onto ButtonExtended (Selectable subclass with its own onClick), falling back to Button.
     private static void WireButtonExtendedClick(Transform buttonTransform, System.Action callback)
     {
         if (buttonTransform == null) return;
@@ -671,7 +638,7 @@ public static class CustomEmployeeManager
             CrashLog.LogException($"WireButtonExtendedClick on '{buttonTransform.name}'", ex);
         }
 
-        // fallback
+        // Fallback to standard Button
         try
         {
             var button = buttonTransform.GetComponent<Button>();
@@ -693,36 +660,80 @@ public static class CustomEmployeeManager
         CrashLog.Log($"CustomEmployee: No ButtonExtended or Button on '{buttonTransform.name}'");
     }
 
-    // Portrait
-
-    private static void SetPortraitToSolidColor(Transform card)
+    private static void SetPortrait(Transform card, string employeeId)
     {
         try
         {
             var portraitTransform = card.Find("Image");
             if (portraitTransform == null) return;
 
-            var image = portraitTransform.GetComponent<Image>();
-            if (image != null)
+            // Try loading a custom portrait from disk
+            string imagePath = Path.Combine(MelonEnvironment.UserDataDirectory, "ModAssets", employeeId + ".png");
+
+            if (File.Exists(imagePath))
             {
-                image.sprite = null;
-                image.color = new Color(0.0f, 0.6f, 0.7f, 1f);
+                try
+                {
+                    byte[] imageData = File.ReadAllBytes(imagePath);
+                    var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    if (ImageConversion.LoadImage(tex, imageData))
+                    {
+                        var sprite = Sprite.Create(
+                            tex,
+                            new Rect(0, 0, tex.width, tex.height),
+                            new Vector2(0.5f, 0.5f),
+                            100f
+                        );
+
+                        var image = portraitTransform.GetComponent<Image>();
+                        if (image != null)
+                        {
+                            image.sprite = sprite;
+                            image.color = Color.white;
+                            image.preserveAspect = true;
+                        }
+
+                        var rawImage = portraitTransform.GetComponent<RawImage>();
+                        if (rawImage != null)
+                        {
+                            rawImage.texture = tex;
+                            rawImage.color = Color.white;
+                        }
+
+                        CrashLog.Log($"CustomEmployee: Loaded portrait from '{imagePath}' for '{employeeId}'");
+                        return;
+                    }
+                    else
+                    {
+                        CrashLog.Log($"CustomEmployee: Failed to decode image at '{imagePath}' for '{employeeId}'");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.LogException($"SetPortrait: load image for '{employeeId}'", ex);
+                }
             }
 
-            var rawImage = portraitTransform.GetComponent<RawImage>();
-            if (rawImage != null)
+            // Fallback: solid teal color
+            var fallbackImage = portraitTransform.GetComponent<Image>();
+            if (fallbackImage != null)
             {
-                rawImage.texture = null;
-                rawImage.color = new Color(0.0f, 0.6f, 0.7f, 1f);
+                fallbackImage.sprite = null;
+                fallbackImage.color = new Color(0.0f, 0.6f, 0.7f, 1f);
+            }
+
+            var fallbackRaw = portraitTransform.GetComponent<RawImage>();
+            if (fallbackRaw != null)
+            {
+                fallbackRaw.texture = null;
+                fallbackRaw.color = new Color(0.0f, 0.6f, 0.7f, 1f);
             }
         }
         catch (Exception ex)
         {
-            CrashLog.LogException("SetPortraitToSolidColor", ex);
+            CrashLog.LogException("SetPortrait", ex);
         }
     }
-
-    // Card refresh
 
     private static void RefreshAllCards()
     {
@@ -736,7 +747,7 @@ public static class CustomEmployeeManager
                 var hr = hrSystems[h];
                 if (hr == null) continue;
 
-                // Try the scroll view content first, fall back to Grid
+                // Try scroll view content first, fall back to Grid
                 Transform contentGrid = null;
                 var scrollView = hr.transform.Find("ModScrollView");
                 if (scrollView != null)
@@ -758,8 +769,6 @@ public static class CustomEmployeeManager
             CrashLog.LogException("RefreshAllCards", ex);
         }
     }
-
-    // debug
 
     private static bool _hierarchyLogged = false;
 

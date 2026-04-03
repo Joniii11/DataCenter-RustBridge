@@ -15,6 +15,7 @@ const POSITION_SEND_INTERVAL: f32 = 0.05;
 const HELLO_RETRY_INTERVAL: f32 = 2.0;
 const HELLO_MAX_RETRIES: u32 = 15;
 const DEFAULT_RELAY_URL: &str = "ws://192.99.16.77:9943"; // FIXME: Proper URL before release!
+const SAVE_CHUNK_SIZE: usize = 60_000;
 
 static STATE: OnceLock<Mutex<MultiplayerState>> = OnceLock::new();
 
@@ -44,6 +45,20 @@ struct MultiplayerState {
     room_code_cstr: Option<CString>,
     /// Whether we received JoinOk and sent our first Hello
     join_ok_received: bool,
+
+    // Save sync - host side
+    save_requested: bool,
+    save_outgoing: Option<Vec<u8>>,
+    save_send_index: u32,
+    save_send_chunk_count: u32,
+
+    // Save sync - client side
+    save_incoming_total: u32,
+    save_incoming_chunk_count: u32,
+    save_incoming_data: Vec<u8>,
+    save_incoming_received: Vec<bool>,
+    save_data_ready: Option<Vec<u8>>,
+    save_loaded: bool,
 }
 
 impl MultiplayerState {
@@ -62,6 +77,20 @@ impl MultiplayerState {
             room_code: None,
             room_code_cstr: None,
             join_ok_received: false,
+
+            // Save sync - host side
+            save_requested: false,
+            save_outgoing: None,
+            save_send_index: 0,
+            save_send_chunk_count: 0,
+
+            // Save sync - client side
+            save_incoming_total: 0,
+            save_incoming_chunk_count: 0,
+            save_incoming_data: Vec::new(),
+            save_incoming_received: Vec::new(),
+            save_data_ready: None,
+            save_loaded: false,
         }
     }
 }
@@ -195,6 +224,43 @@ fn update(api: &Api, dt: f32) {
                 }
             });
         }
+    }
+
+    let chunks_to_send: Vec<(u32, Vec<u8>)> = with_state(|s| {
+        if !s.is_host {
+            return Vec::new();
+        }
+        let outgoing = match s.save_outgoing.as_ref() {
+            Some(d) => d,
+            None => return Vec::new(),
+        };
+
+        let mut chunks = Vec::new();
+        let max_per_frame = 5;
+        for _ in 0..max_per_frame {
+            if s.save_send_index >= s.save_send_chunk_count {
+                // All chunks sent, clear outgoing
+                s.save_outgoing = None;
+                dc_api::crash_log("[MP] All save chunks sent");
+                break;
+            }
+            let offset = s.save_send_index as usize * SAVE_CHUNK_SIZE;
+            let end = (offset + SAVE_CHUNK_SIZE).min(outgoing.len());
+            let chunk_data = outgoing[offset..end].to_vec();
+            chunks.push((s.save_send_index, chunk_data));
+            s.save_send_index += 1;
+        }
+        chunks
+    })
+    .unwrap_or_default();
+
+    for (index, data) in chunks_to_send {
+        let msg = Message::SaveChunk { index, data };
+        with_state(|s| {
+            if let Some(ref relay) = s.relay {
+                relay.send_game_message(&msg);
+            }
+        });
     }
 
     // ── Cleanup stale players ──
@@ -350,6 +416,15 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
                 s.tracker.add_player(sender, player_name.clone());
             });
 
+            // Request save data from host
+            let req = Message::RequestSave;
+            with_state(|s| {
+                if let Some(ref relay) = s.relay {
+                    relay.send_game_message(&req);
+                    dc_api::crash_log("[MP] Sent RequestSave to host");
+                }
+            });
+
             api.show_notification(&format!("Connected to {}!", player_name));
         }
 
@@ -393,6 +468,70 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
         Message::Pong(_ts) => {
             // Could calculate RTT here
         }
+
+        Message::RequestSave => {
+            dc_api::crash_log(&format!("[MP] Save requested by peer {}", sender));
+            with_state(|s| {
+                if s.is_host {
+                    s.save_requested = true;
+                }
+            });
+        }
+
+        Message::SaveOffer {
+            total_bytes,
+            chunk_count,
+        } => {
+            dc_api::crash_log(&format!(
+                "[MP] Received SaveOffer: {} bytes in {} chunks",
+                total_bytes, chunk_count
+            ));
+            with_state(|s| {
+                if !s.is_host {
+                    s.save_incoming_total = total_bytes;
+                    s.save_incoming_chunk_count = chunk_count;
+                    s.save_incoming_data = vec![0u8; total_bytes as usize];
+                    s.save_incoming_received = vec![false; chunk_count as usize];
+                    s.save_data_ready = None;
+                }
+            });
+        }
+
+        Message::SaveChunk { index, data } => {
+            with_state(|s| {
+                if s.is_host {
+                    return;
+                }
+                if index as usize >= s.save_incoming_received.len() {
+                    return;
+                }
+
+                let offset = index as usize * SAVE_CHUNK_SIZE;
+                let end = (offset + data.len()).min(s.save_incoming_data.len());
+                if offset < s.save_incoming_data.len() {
+                    s.save_incoming_data[offset..end].copy_from_slice(&data[..end - offset]);
+                }
+                s.save_incoming_received[index as usize] = true;
+
+                let received_count = s.save_incoming_received.iter().filter(|&&r| r).count();
+                dc_api::crash_log(&format!(
+                    "[MP] Save chunk {}/{} received ({} bytes)",
+                    received_count,
+                    s.save_incoming_chunk_count,
+                    data.len()
+                ));
+
+                if s.save_incoming_received.iter().all(|&r| r) {
+                    dc_api::crash_log(&format!(
+                        "[MP] All save chunks received! Total: {} bytes",
+                        s.save_incoming_total
+                    ));
+                    let complete = std::mem::take(&mut s.save_incoming_data);
+                    s.save_data_ready = Some(complete);
+                    s.save_incoming_received.clear();
+                }
+            });
+        }
     }
 }
 
@@ -413,6 +552,18 @@ fn do_disconnect_cleanup() {
         s.hello_retry_timer = 0.0;
         s.hello_retry_count = 0;
         s.tracker = player::PlayerTracker::new();
+
+        // Save sync reset
+        s.save_requested = false;
+        s.save_outgoing = None;
+        s.save_send_index = 0;
+        s.save_send_chunk_count = 0;
+        s.save_incoming_total = 0;
+        s.save_incoming_chunk_count = 0;
+        s.save_incoming_data.clear();
+        s.save_incoming_received.clear();
+        s.save_data_ready = None;
+        s.save_loaded = false;
     });
 }
 
@@ -626,6 +777,107 @@ pub extern "C" fn mp_disconnect() -> i32 {
         s.hello_retry_timer = 0.0;
         s.hello_retry_count = 0;
         s.tracker = player::PlayerTracker::new();
+    });
+    1
+}
+
+/// Host: returns 1 if a client has requested save data and C# should provide it.
+#[no_mangle]
+pub extern "C" fn mp_should_send_save() -> u32 {
+    with_state(|s| if s.save_requested { 1u32 } else { 0u32 }).unwrap_or(0)
+}
+
+/// Host: C# provides save file bytes. Rust will chunk and send them.
+/// Returns 1 on success, 0 on failure.
+#[no_mangle]
+pub extern "C" fn mp_send_save_data(data: *const u8, len: u32) -> i32 {
+    if data.is_null() || len == 0 {
+        return 0;
+    }
+
+    let bytes = unsafe { std::slice::from_raw_parts(data, len as usize) }.to_vec();
+    let total_bytes = bytes.len() as u32;
+    let chunk_count = ((bytes.len() + SAVE_CHUNK_SIZE - 1) / SAVE_CHUNK_SIZE) as u32;
+
+    dc_api::crash_log(&format!(
+        "[MP] Sending save data: {} bytes in {} chunks",
+        total_bytes, chunk_count
+    ));
+
+    // Send SaveOffer first
+    let offer = Message::SaveOffer {
+        total_bytes,
+        chunk_count,
+    };
+    let sent = with_state(|s| {
+        s.save_requested = false;
+        s.save_outgoing = Some(bytes);
+        s.save_send_index = 0;
+        s.save_send_chunk_count = chunk_count;
+
+        if let Some(ref relay) = s.relay {
+            relay.send_game_message(&offer)
+        } else {
+            false
+        }
+    })
+    .unwrap_or(false);
+
+    if sent {
+        1
+    } else {
+        0
+    }
+}
+
+/// Client: returns 1 if complete save data from host is ready.
+#[no_mangle]
+pub extern "C" fn mp_has_pending_save() -> u32 {
+    with_state(|s| {
+        if s.save_data_ready.is_some() && !s.save_loaded {
+            1u32
+        } else {
+            0u32
+        }
+    })
+    .unwrap_or(0)
+}
+
+/// Client: returns the size in bytes of the pending save data (0 if none).
+#[no_mangle]
+pub extern "C" fn mp_get_save_data_size() -> u32 {
+    with_state(|s| s.save_data_ready.as_ref().map_or(0u32, |d| d.len() as u32)).unwrap_or(0)
+}
+
+/// Client: copies pending save data into the provided buffer.
+/// Returns number of bytes copied, or 0 if no data available.
+#[no_mangle]
+pub extern "C" fn mp_get_save_data(buf: *mut u8, max_len: u32) -> u32 {
+    if buf.is_null() || max_len == 0 {
+        return 0;
+    }
+
+    with_state(|s| {
+        if let Some(ref data) = s.save_data_ready {
+            let copy_len = data.len().min(max_len as usize);
+            unsafe {
+                std::ptr::copy_nonoverlapping(data.as_ptr(), buf, copy_len);
+            }
+            copy_len as u32
+        } else {
+            0u32
+        }
+    })
+    .unwrap_or(0)
+}
+
+/// Client: signal that the save was loaded. Cleans up the pending data.
+#[no_mangle]
+pub extern "C" fn mp_save_load_complete() -> i32 {
+    with_state(|s| {
+        s.save_data_ready = None;
+        s.save_loaded = true;
+        dc_api::crash_log("[MP] Save load complete, pending data cleared");
     });
     1
 }

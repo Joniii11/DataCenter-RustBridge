@@ -29,6 +29,16 @@ pub enum Message {
     /// Simple ping/pong for connection health
     Ping(u64),
     Pong(u64),
+
+    RequestSave,
+    SaveOffer {
+        total_bytes: u32,
+        chunk_count: u32,
+    },
+    SaveChunk {
+        index: u32,
+        data: Vec<u8>,
+    },
 }
 
 const BINCODE_CONFIG: bincode::config::Configuration = bincode::config::standard();

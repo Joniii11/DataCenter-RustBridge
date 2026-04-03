@@ -1,48 +1,31 @@
-//! SysAdmin mod — auto-dispatches technicians for broken/EOL devices.
-//!
-//! The SysAdmin is a **hireable employee** in the HR System panel. The player
-//! must hire the SysAdmin before auto-dispatch activates. Firing the SysAdmin
-//! disables all automation (but keeps statistics for the session).
-//!
-//! This mod uses `dc_api` proc macros to eliminate all FFI boilerplate.
+//! SysAdmin mod auto-dispatches technicians for broken/EOL devices.
 
 use dc_api::*;
 use std::sync::{Mutex, OnceLock};
 
+const PORTRAIT_PNG: &[u8] = include_bytes!("../assets/SysAdmin.png");
+
 const EMPLOYEE_ID: &str = "sysadmin";
 const EMPLOYEE_NAME: &str = "SysAdmin";
 const EMPLOYEE_DESC: &str = "Automatically dispatches technicians to repair broken devices and replace end-of-life hardware.";
-const SALARY_PER_HOUR: f32 = 4500.0;
-const REQUIRED_REPUTATION: f32 = 500.0;
+const SALARY_PER_HOUR: f32 = 10000.0;
+const REQUIRED_REPUTATION: f32 = 2000.0;
 
 const SCAN_INTERVAL: f32 = 5.0;
 const MAX_DISPATCHES_PER_SCAN: u32 = 10;
 
 static STATE: OnceLock<Mutex<NetWatchState>> = OnceLock::new();
 
-/// IDs for the 7 extra technician employees (must match TechnicianHiring.cs)
-const TECH_IDS: [&str; 7] = [
-    "tech_extra_1",
-    "tech_extra_2",
-    "tech_extra_3",
-    "tech_extra_4",
-    "tech_extra_5",
-    "tech_extra_6",
-    "tech_extra_7",
-];
-
 struct NetWatchState {
-    /// Whether the SysAdmin is currently hired (toggled by HR events).
     hired: bool,
     scan_timer: f32,
-    // statistics (persist across hire/fire within a session)
     total_dispatches: u32,
     broken_repairs: u32,
     eol_replacements: u32,
-    /// Counter to throttle "nothing to do" logs (every 6th scan = ~30s)
+    /// Throttles "nothing to do" logs (~30s)
     idle_log_counter: u32,
-    /// How many extra technicians are currently hired through us
-    extra_techs_hired: u32,
+    /// Throttles config logs (~30s)
+    config_log_counter: u32,
 }
 
 impl NetWatchState {
@@ -54,7 +37,7 @@ impl NetWatchState {
             broken_repairs: 0,
             eol_replacements: 0,
             idle_log_counter: 0,
-            extra_techs_hired: 0,
+            config_log_counter: 0,
         }
     }
 }
@@ -72,6 +55,49 @@ where
 fn scan_and_dispatch(api: &Api, state: &mut NetWatchState) {
     if api.version() < 4 {
         dc_api::crash_log("[scan] API version < 4, v4 primitives not available");
+        return;
+    }
+
+    let repair_broken_servers = api
+        .config_get_bool("sysadmin", "repair_broken_servers")
+        .unwrap_or(true);
+    let repair_broken_switches = api
+        .config_get_bool("sysadmin", "repair_broken_switches")
+        .unwrap_or(true);
+    let replace_eol_servers = api
+        .config_get_bool("sysadmin", "replace_eol_servers")
+        .unwrap_or(true);
+    let replace_eol_switches = api
+        .config_get_bool("sysadmin", "replace_eol_switches")
+        .unwrap_or(true);
+    let prioritize_switches = api
+        .config_get_bool("sysadmin", "prioritize_switches")
+        .unwrap_or(false);
+    let max_dispatches = api
+        .config_get_int("sysadmin", "max_dispatches")
+        .unwrap_or(MAX_DISPATCHES_PER_SCAN as i32) as u32;
+
+    state.config_log_counter += 1;
+    let should_log_config = state.config_log_counter >= 6;
+    if should_log_config {
+        state.config_log_counter = 0;
+    }
+
+    if should_log_config {
+        dc_api::crash_log(&format!(
+            "[scan] CONFIG: repair_srv={} repair_sw={} replace_eol_srv={} replace_eol_sw={} prio_sw={} max_disp={} (api_ver={})",
+            repair_broken_servers, repair_broken_switches, replace_eol_servers, replace_eol_switches, prioritize_switches, max_dispatches, api.version()
+        ));
+    }
+
+    if !repair_broken_servers
+        && !repair_broken_switches
+        && !replace_eol_servers
+        && !replace_eol_switches
+    {
+        if should_log_config {
+            dc_api::crash_log("[scan] ALL dispatch categories disabled — skipping entire scan");
+        }
         return;
     }
 
@@ -103,7 +129,6 @@ fn scan_and_dispatch(api: &Api, state: &mut NetWatchState) {
         return;
     }
 
-    // We have work to do — reset idle counter
     state.idle_log_counter = 0;
 
     dc_api::crash_log(&format!(
@@ -113,99 +138,133 @@ fn scan_and_dispatch(api: &Api, state: &mut NetWatchState) {
 
     let mut dispatched: u32 = 0;
 
-    // Priority order: broken devices first (they're actively down), then EOL
+    struct DispatchStep {
+        enabled: bool,
+        is_repair: bool,
+        label: &'static str,
+    }
 
-    // 1. Broken servers (highest priority — actively down)
-    while dispatched < MAX_DISPATCHES_PER_SCAN {
-        match api.dispatch_repair_server() {
-            Some(1) => {
-                dispatched += 1;
-                state.total_dispatches += 1;
-                state.broken_repairs += 1;
-                api.log_info("[SysAdmin] Dispatched technician: broken server (repair)");
+    let steps: [DispatchStep; 4] = if prioritize_switches {
+        [
+            DispatchStep {
+                enabled: repair_broken_switches,
+                is_repair: true,
+                label: "broken switch (repair)",
+            },
+            DispatchStep {
+                enabled: repair_broken_servers,
+                is_repair: true,
+                label: "broken server (repair)",
+            },
+            DispatchStep {
+                enabled: replace_eol_switches,
+                is_repair: false,
+                label: "switch EOL (replacement)",
+            },
+            DispatchStep {
+                enabled: replace_eol_servers,
+                is_repair: false,
+                label: "server EOL (replacement)",
+            },
+        ]
+    } else {
+        [
+            DispatchStep {
+                enabled: repair_broken_servers,
+                is_repair: true,
+                label: "broken server (repair)",
+            },
+            DispatchStep {
+                enabled: repair_broken_switches,
+                is_repair: true,
+                label: "broken switch (repair)",
+            },
+            DispatchStep {
+                enabled: replace_eol_servers,
+                is_repair: false,
+                label: "server EOL (replacement)",
+            },
+            DispatchStep {
+                enabled: replace_eol_switches,
+                is_repair: false,
+                label: "switch EOL (replacement)",
+            },
+        ]
+    };
+
+    for (i, step) in steps.iter().enumerate() {
+        if !step.enabled {
+            dc_api::crash_log(&format!(
+                "[scan] step {}: '{}' DISABLED, skipping",
+                i, step.label
+            ));
+            continue;
+        }
+
+        dc_api::crash_log(&format!(
+            "[scan] step {}: '{}' ENABLED, dispatching...",
+            i, step.label
+        ));
+
+        while dispatched < max_dispatches {
+            let result = match (step.is_repair, step.label.contains("switch")) {
+                (true, false) => api.dispatch_repair_server(),
+                (true, true) => api.dispatch_repair_switch(),
+                (false, false) => api.dispatch_replace_server(),
+                (false, true) => api.dispatch_replace_switch(),
+            };
+
+            match result {
+                Some(1) => {
+                    dispatched += 1;
+                    state.total_dispatches += 1;
+                    if step.is_repair {
+                        state.broken_repairs += 1;
+                    } else {
+                        state.eol_replacements += 1;
+                    }
+                    dc_api::crash_log(&format!(
+                        "[scan] DISPATCHED: '{}' (total this scan: {})",
+                        step.label, dispatched
+                    ));
+                    api.log_info(&format!("[SysAdmin] Dispatched technician: {}", step.label));
+                }
+                Some(-1) => {
+                    dc_api::crash_log(&format!(
+                        "[scan] step {}: '{}' — no free technician, stopping all",
+                        i, step.label
+                    ));
+                    if dispatched > 0 {
+                        api.log_info(&format!(
+                            "[SysAdmin] Scan complete, dispatched {} technician(s). Total: {} (repairs: {}, replacements: {})",
+                            dispatched, state.total_dispatches, state.broken_repairs, state.eol_replacements
+                        ));
+                    }
+                    return;
+                }
+                _ => {
+                    dc_api::crash_log(&format!(
+                        "[scan] step {}: '{}' — no more targets",
+                        i, step.label
+                    ));
+                    break;
+                }
             }
-            Some(-1) => {
-                dc_api::crash_log("[dispatch] repair server: no free technician, stopping");
-                return;
-            }
-            other => {
-                dc_api::crash_log(&format!(
-                    "[dispatch] repair server: no more targets (result={:?})",
-                    other
-                ));
-                break;
-            }
+        }
+
+        if dispatched >= max_dispatches {
+            dc_api::crash_log(&format!(
+                "[scan] reached max_dispatches={}, stopping",
+                max_dispatches
+            ));
+            break;
         }
     }
 
-    // 2. Broken switches
-    while dispatched < MAX_DISPATCHES_PER_SCAN {
-        match api.dispatch_repair_switch() {
-            Some(1) => {
-                dispatched += 1;
-                state.total_dispatches += 1;
-                state.broken_repairs += 1;
-                api.log_info("[SysAdmin] Dispatched technician: broken switch (repair)");
-            }
-            Some(-1) => {
-                dc_api::crash_log("[dispatch] repair switch: no free technician, stopping");
-                return;
-            }
-            other => {
-                dc_api::crash_log(&format!(
-                    "[dispatch] repair switch: no more targets (result={:?})",
-                    other
-                ));
-                break;
-            }
-        }
-    }
-
-    // 3. EOL servers
-    while dispatched < MAX_DISPATCHES_PER_SCAN {
-        match api.dispatch_replace_server() {
-            Some(1) => {
-                dispatched += 1;
-                state.total_dispatches += 1;
-                state.eol_replacements += 1;
-                api.log_info("[SysAdmin] Dispatched technician: server EOL (replacement)");
-            }
-            Some(-1) => {
-                dc_api::crash_log("[dispatch] replace server: no free technician, stopping");
-                return;
-            }
-            other => {
-                dc_api::crash_log(&format!(
-                    "[dispatch] replace server: no more targets (result={:?})",
-                    other
-                ));
-                break;
-            }
-        }
-    }
-
-    // 4. EOL switches
-    while dispatched < MAX_DISPATCHES_PER_SCAN {
-        match api.dispatch_replace_switch() {
-            Some(1) => {
-                dispatched += 1;
-                state.total_dispatches += 1;
-                state.eol_replacements += 1;
-                api.log_info("[SysAdmin] Dispatched technician: switch EOL (replacement)");
-            }
-            Some(-1) => {
-                dc_api::crash_log("[dispatch] replace switch: no free technician, stopping");
-                return;
-            }
-            other => {
-                dc_api::crash_log(&format!(
-                    "[dispatch] replace switch: no more targets (result={:?})",
-                    other
-                ));
-                break;
-            }
-        }
-    }
+    dc_api::crash_log(&format!(
+        "[scan] DONE: dispatched={} total_dispatches={}",
+        dispatched, state.total_dispatches
+    ));
 
     if dispatched > 0 {
         api.log_info(&format!(
@@ -215,10 +274,36 @@ fn scan_and_dispatch(api: &Api, state: &mut NetWatchState) {
     }
 }
 
+fn deploy_portrait(api: &Api) {
+    let dir = std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|d| d.join("UserData").join("ModAssets")));
+
+    let Some(dir) = dir else {
+        api.log_warning("[SysAdmin] Could not determine game directory for portrait deployment.");
+        return;
+    };
+
+    if let Err(e) = std::fs::create_dir_all(&dir) {
+        api.log_warning(&format!("[SysAdmin] Failed to create ModAssets dir: {}", e));
+        return;
+    }
+
+    let dest = dir.join(format!("{}.png", EMPLOYEE_ID));
+    if dest.exists() {
+        return;
+    }
+
+    match std::fs::write(&dest, PORTRAIT_PNG) {
+        Ok(_) => api.log_info(&format!("[SysAdmin] Portrait deployed to {:?}", dest)),
+        Err(e) => api.log_warning(&format!("[SysAdmin] Failed to write portrait: {}", e)),
+    }
+}
+
 #[dc_api::mod_entry(
     id = "sysadmin",
     name = "SysAdmin",
-    version = "1.1.0",
+    version = "2.0.0",
     author = "Joniii",
     description = "Hireable SysAdmin employee — automatically dispatches technicians for broken/EOL devices."
 )]
@@ -231,7 +316,9 @@ fn init(api: &Api) -> bool {
 
     let _ = STATE.set(Mutex::new(NetWatchState::new()));
 
-    // Register as a hireable employee in the HR System panel (requires API v5)
+    deploy_portrait(api);
+
+    // Register as hireable employee (v5+)
     if api.version() >= 5 {
         match api.register_custom_employee(
             EMPLOYEE_ID,
@@ -267,19 +354,81 @@ fn init(api: &Api) -> bool {
         with_state(|s| s.hired = true);
     }
 
+    // Register config entries (v8+)
+    if api.version() >= 8 {
+        api.config_register_bool(
+            "sysadmin",
+            "repair_broken_servers",
+            "Repair Broken Servers",
+            true,
+            "Dispatch technicians to repair broken (dead) servers",
+        );
+        api.config_register_bool(
+            "sysadmin",
+            "repair_broken_switches",
+            "Repair Broken Switches",
+            true,
+            "Dispatch technicians to repair broken (dead) switches",
+        );
+        api.config_register_bool(
+            "sysadmin",
+            "replace_eol_servers",
+            "Replace EOL Servers",
+            true,
+            "Dispatch technicians to replace end-of-life servers",
+        );
+        api.config_register_bool(
+            "sysadmin",
+            "replace_eol_switches",
+            "Replace EOL Switches",
+            true,
+            "Dispatch technicians to replace end-of-life switches",
+        );
+        api.config_register_bool(
+            "sysadmin",
+            "prioritize_switches",
+            "Prioritize Switches",
+            false,
+            "Fix switches before servers (default: servers first)",
+        );
+        api.config_register_float(
+            "sysadmin",
+            "scan_interval",
+            "Scan Interval (seconds)",
+            5.0,
+            1.0,
+            60.0,
+            "How often the SysAdmin checks for broken/EOL devices",
+        );
+        api.config_register_int(
+            "sysadmin",
+            "max_dispatches",
+            "Max Dispatches Per Scan",
+            10,
+            1,
+            50,
+            "Maximum technician dispatches per scan cycle",
+        );
+        api.log_info("[SysAdmin] Configuration entries registered.");
+    }
+
     api.log_info("[SysAdmin] Initialized successfully.");
     true
 }
 
 #[dc_api::on_update]
 fn update(api: &Api, dt: f32) {
+    let scan_interval = api
+        .config_get_float("sysadmin", "scan_interval")
+        .unwrap_or(SCAN_INTERVAL);
+
     let should_scan = with_state(|state| {
         if !state.hired {
             return false;
         }
 
         state.scan_timer += dt;
-        if state.scan_timer >= SCAN_INTERVAL {
+        if state.scan_timer >= scan_interval {
             state.scan_timer = 0.0;
             true
         } else {
@@ -298,7 +447,6 @@ fn update(api: &Api, dt: f32) {
 fn scene_loaded(api: &Api, name: &str) {
     api.log_info(&format!("[SysAdmin] Scene loaded: {}", name));
 
-    // Re-check hire state after scene transitions
     if api.version() >= 5 {
         if let Some(hired) = api.is_custom_employee_hired(EMPLOYEE_ID) {
             with_state(|s| s.hired = hired);
@@ -348,74 +496,23 @@ fn handle_event(api: &Api, event: Event) {
             }
         }
 
-        // ── Extra technician hire/fire events ──────────────────────────
-        Event::CustomEmployeeHired { ref employee_id }
-            if TECH_IDS.iter().any(|id| id == employee_id) =>
-        {
-            let count = with_state(|s| {
-                s.extra_techs_hired += 1;
-                s.extra_techs_hired
-            })
-            .unwrap_or(0);
-            api.log_info(&format!(
-                "[SysAdmin] Extra technician hired: {} (total extra: {})",
-                employee_id, count
-            ));
-            if api.version() >= 4 {
-                let total = api.get_total_technician_count().unwrap_or(0);
-                let free = api.get_free_technician_count().unwrap_or(0);
-                api.log_info(&format!(
-                    "[SysAdmin] Technician pool now: {}/{} available",
-                    free, total
-                ));
-            }
-        }
-
-        Event::CustomEmployeeFired { ref employee_id }
-            if TECH_IDS.iter().any(|id| id == employee_id) =>
-        {
-            let count = with_state(|s| {
-                s.extra_techs_hired = s.extra_techs_hired.saturating_sub(1);
-                s.extra_techs_hired
-            })
-            .unwrap_or(0);
-            api.log_info(&format!(
-                "[SysAdmin] Extra technician fired: {} (total extra: {})",
-                employee_id, count
-            ));
-            if api.version() >= 4 {
-                let total = api.get_total_technician_count().unwrap_or(0);
-                let free = api.get_free_technician_count().unwrap_or(0);
-                api.log_info(&format!(
-                    "[SysAdmin] Technician pool now: {}/{} available",
-                    free, total
-                ));
-            }
-        }
-
         Event::DayEnded { day } => {
             let is_hired = with_state(|s| s.hired).unwrap_or(false);
             if !is_hired {
                 return;
             }
 
-            if let Some((total, repairs, replacements, extra)) = with_state(|s| {
-                (
-                    s.total_dispatches,
-                    s.broken_repairs,
-                    s.eol_replacements,
-                    s.extra_techs_hired,
-                )
-            }) {
+            if let Some((total, repairs, replacements)) =
+                with_state(|s| (s.total_dispatches, s.broken_repairs, s.eol_replacements))
+            {
                 api.log_info(&format!(
-                    "[SysAdmin] Day {} report — dispatches: {} (repairs: {}, replacements: {}), extra techs: {}",
-                    day, total, repairs, replacements, extra
+                    "[SysAdmin] Day {} report — dispatches: {} (repairs: {}, replacements: {})",
+                    day, total, repairs, replacements
                 ));
             }
         }
 
         Event::GameLoaded => {
-            // Re-check hire state after loading a save
             if api.version() >= 5 {
                 if let Some(hired) = api.is_custom_employee_hired(EMPLOYEE_ID) {
                     with_state(|s| s.hired = hired);
@@ -425,23 +522,7 @@ fn handle_event(api: &Api, event: Event) {
                         api.log_info("[SysAdmin] Game loaded — SysAdmin not hired.");
                     }
                 }
-
-                // Re-count extra technicians that were restored from save
-                let mut extra_count = 0u32;
-                for tech_id in &TECH_IDS {
-                    if let Some(true) = api.is_custom_employee_hired(tech_id) {
-                        extra_count += 1;
-                    }
-                }
-                with_state(|s| s.extra_techs_hired = extra_count);
-                if extra_count > 0 {
-                    api.log_info(&format!(
-                        "[SysAdmin] Game loaded — {} extra technician(s) restored from save.",
-                        extra_count
-                    ));
-                }
             } else {
-                // Fallback: re-enable
                 with_state(|s| s.hired = true);
                 api.log_info("[SysAdmin] Game loaded, NetWatch re-enabled (legacy mode).");
             }

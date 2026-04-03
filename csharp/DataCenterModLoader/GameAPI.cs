@@ -87,12 +87,20 @@ public struct GameAPITable
     public IntPtr SteamAcceptP2P;
     public IntPtr SteamPollEvent;
     public IntPtr GetPlayerPosition;
+
+    // v8 — Mod Configuration
+    public IntPtr ConfigRegisterBool;
+    public IntPtr ConfigRegisterInt;
+    public IntPtr ConfigRegisterFloat;
+    public IntPtr ConfigGetBool;
+    public IntPtr ConfigGetInt;
+    public IntPtr ConfigGetFloat;
 }
 
 // manages the api table, delegates stored as fields to prevent GC
 public class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 7;
+    public const uint API_VERSION = 8;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -122,6 +130,14 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void AcceptP2PDelegate(ulong remote);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint PollEventDelegate(IntPtr outType, IntPtr outData);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void GetPlayerPositionDelegate(IntPtr outX, IntPtr outY, IntPtr outZ, IntPtr outRy);
+
+    // v8 delegate types
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint ConfigRegisterBoolDelegate(IntPtr modId, IntPtr key, IntPtr displayName, uint defaultValue, IntPtr description);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint ConfigRegisterIntDelegate(IntPtr modId, IntPtr key, IntPtr displayName, int defaultValue, int min, int max, IntPtr description);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint ConfigRegisterFloatDelegate(IntPtr modId, IntPtr key, IntPtr displayName, float defaultValue, float min, float max, IntPtr description);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint ConfigGetBoolDelegate(IntPtr modId, IntPtr key);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int ConfigGetIntDelegate(IntPtr modId, IntPtr key);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate float ConfigGetFloatDelegate(IntPtr modId, IntPtr key);
 
     // Steam native API imports (old ISteamNetworking — NAT traversal, works for any game)
     [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
@@ -211,6 +227,13 @@ public class GameAPIManager : IDisposable
     private readonly AcceptP2PDelegate _steamAcceptP2P;
     private readonly PollEventDelegate _steamPollEvent;
     private readonly GetPlayerPositionDelegate _getPlayerPosition;
+    // v8
+    private readonly ConfigRegisterBoolDelegate _configRegisterBool;
+    private readonly ConfigRegisterIntDelegate _configRegisterInt;
+    private readonly ConfigRegisterFloatDelegate _configRegisterFloat;
+    private readonly ConfigGetBoolDelegate _configGetBool;
+    private readonly ConfigGetIntDelegate _configGetInt;
+    private readonly ConfigGetFloatDelegate _configGetFloat;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
@@ -297,6 +320,14 @@ public class GameAPIManager : IDisposable
         _steamPollEvent = SteamPollEventImpl;
         _getPlayerPosition = GetPlayerPositionImpl;
 
+        // v8
+        _configRegisterBool = ConfigRegisterBoolImpl;
+        _configRegisterInt = ConfigRegisterIntImpl;
+        _configRegisterFloat = ConfigRegisterFloatImpl;
+        _configGetBool = ConfigGetBoolImpl;
+        _configGetInt = ConfigGetIntImpl;
+        _configGetFloat = ConfigGetFloatImpl;
+
         _table = new GameAPITable
         {
             ApiVersion = API_VERSION,
@@ -366,6 +397,13 @@ public class GameAPIManager : IDisposable
             SteamAcceptP2P = Marshal.GetFunctionPointerForDelegate(_steamAcceptP2P),
             SteamPollEvent = Marshal.GetFunctionPointerForDelegate(_steamPollEvent),
             GetPlayerPosition = Marshal.GetFunctionPointerForDelegate(_getPlayerPosition),
+            // v8
+            ConfigRegisterBool = Marshal.GetFunctionPointerForDelegate(_configRegisterBool),
+            ConfigRegisterInt = Marshal.GetFunctionPointerForDelegate(_configRegisterInt),
+            ConfigRegisterFloat = Marshal.GetFunctionPointerForDelegate(_configRegisterFloat),
+            ConfigGetBool = Marshal.GetFunctionPointerForDelegate(_configGetBool),
+            ConfigGetInt = Marshal.GetFunctionPointerForDelegate(_configGetInt),
+            ConfigGetFloat = Marshal.GetFunctionPointerForDelegate(_configGetFloat),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -772,6 +810,79 @@ public class GameAPIManager : IDisposable
             if (outRy != IntPtr.Zero) Marshal.Copy(new float[] { rot.y }, 0, outRy, 1);
         }
         catch (Exception ex) { CrashLog.LogException("GetPlayerPosition", ex); }
+    }
+
+    // ── v8 — Mod Configuration ──────────────────────────────────────────
+    private static uint ConfigRegisterBoolImpl(IntPtr modId, IntPtr key, IntPtr displayName, uint defaultValue, IntPtr description)
+    {
+        try
+        {
+            string mId = Marshal.PtrToStringAnsi(modId) ?? "";
+            string k = Marshal.PtrToStringAnsi(key) ?? "";
+            string dn = Marshal.PtrToStringAnsi(displayName) ?? k;
+            string desc = Marshal.PtrToStringAnsi(description) ?? "";
+            return ModConfigSystem.RegisterBool(mId, k, dn, defaultValue != 0, desc);
+        }
+        catch (Exception ex) { CrashLog.LogException("ConfigRegisterBoolImpl", ex); return 0; }
+    }
+
+    private static uint ConfigRegisterIntImpl(IntPtr modId, IntPtr key, IntPtr displayName, int defaultValue, int min, int max, IntPtr description)
+    {
+        try
+        {
+            string mId = Marshal.PtrToStringAnsi(modId) ?? "";
+            string k = Marshal.PtrToStringAnsi(key) ?? "";
+            string dn = Marshal.PtrToStringAnsi(displayName) ?? k;
+            string desc = Marshal.PtrToStringAnsi(description) ?? "";
+            return ModConfigSystem.RegisterInt(mId, k, dn, defaultValue, min, max, desc);
+        }
+        catch (Exception ex) { CrashLog.LogException("ConfigRegisterIntImpl", ex); return 0; }
+    }
+
+    private static uint ConfigRegisterFloatImpl(IntPtr modId, IntPtr key, IntPtr displayName, float defaultValue, float min, float max, IntPtr description)
+    {
+        try
+        {
+            string mId = Marshal.PtrToStringAnsi(modId) ?? "";
+            string k = Marshal.PtrToStringAnsi(key) ?? "";
+            string dn = Marshal.PtrToStringAnsi(displayName) ?? k;
+            string desc = Marshal.PtrToStringAnsi(description) ?? "";
+            return ModConfigSystem.RegisterFloat(mId, k, dn, defaultValue, min, max, desc);
+        }
+        catch (Exception ex) { CrashLog.LogException("ConfigRegisterFloatImpl", ex); return 0; }
+    }
+
+    private static uint ConfigGetBoolImpl(IntPtr modId, IntPtr key)
+    {
+        try
+        {
+            string mId = Marshal.PtrToStringAnsi(modId) ?? "";
+            string k = Marshal.PtrToStringAnsi(key) ?? "";
+            return ModConfigSystem.GetBool(mId, k);
+        }
+        catch (Exception ex) { CrashLog.LogException("ConfigGetBoolImpl", ex); return 0xFFFFFFFF; }
+    }
+
+    private static int ConfigGetIntImpl(IntPtr modId, IntPtr key)
+    {
+        try
+        {
+            string mId = Marshal.PtrToStringAnsi(modId) ?? "";
+            string k = Marshal.PtrToStringAnsi(key) ?? "";
+            return ModConfigSystem.GetInt(mId, k);
+        }
+        catch (Exception ex) { CrashLog.LogException("ConfigGetIntImpl", ex); return 0; }
+    }
+
+    private static float ConfigGetFloatImpl(IntPtr modId, IntPtr key)
+    {
+        try
+        {
+            string mId = Marshal.PtrToStringAnsi(modId) ?? "";
+            string k = Marshal.PtrToStringAnsi(key) ?? "";
+            return ModConfigSystem.GetFloat(mId, k);
+        }
+        catch (Exception ex) { CrashLog.LogException("ConfigGetFloatImpl", ex); return 0f; }
     }
 
     public void Dispose()

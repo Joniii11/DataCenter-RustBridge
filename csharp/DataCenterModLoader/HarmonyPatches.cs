@@ -246,7 +246,7 @@ internal static class Patch_SaveSystem_Load
         {
             CustomEmployeeManager.LoadState();
             EventDispatcher.FireSimple(EventIds.GameLoaded);
-            TechnicianHiring.RestoreOnLoad();
+
         }
         catch (Exception ex) { EventDispatcher.LogError($"Load: {ex.Message}"); }
     }

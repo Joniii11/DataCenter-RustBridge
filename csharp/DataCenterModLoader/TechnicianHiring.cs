@@ -5,15 +5,9 @@ using UnityEngine;
 
 namespace DataCenterModLoader;
 
-/// <summary>
-/// Manages 7 extra hireable technician employees.
-/// Registers them with <see cref="CustomEmployeeManager"/> and handles spawning/despawning
-/// cloned Technician GameObjects when they are hired or fired.
-/// </summary>
+// Manages 7 extra hireable technician employees via CustomEmployeeManager.
 public static class TechnicianHiring
 {
-    // ── Inner definition type ───────────────────────────────────────────
-
     private readonly struct TechDef
     {
         public readonly string Id;
@@ -32,8 +26,6 @@ public static class TechnicianHiring
         }
     }
 
-    // ── The 7 technician definitions ────────────────────────────────────
-
     private static readonly List<TechDef> _definitions = new()
     {
         new TechDef("tech_extra_1", "Junior Technician I",   "A fresh hire eager to learn the ropes. Slow but cheap.",       1500f,    0f),
@@ -45,23 +37,15 @@ public static class TechnicianHiring
         new TechDef("tech_extra_7", "Lead Technician",       "The best in the business. Worth every penny.",                  9000f, 1800f),
     };
 
-    // ── State ───────────────────────────────────────────────────────────
-
-    /// <summary>Tracks technicianIDs of technicians we have spawned so we can fire (remove) them in LIFO order.</summary>
+    // Spawned tech IDs in hire order (LIFO for firing).
     private static readonly List<int> _spawnedTechIds = new();
 
-    /// <summary>Next technician ID to assign. Starts at 1000 to avoid collisions with the game's built-in technicians.</summary>
+    // Starts at 1000 to avoid collisions with built-in technicians.
     private static int _nextTechId = 1000;
 
-    /// <summary>Whether <see cref="Initialize"/> has already been called.</summary>
     private static bool _initialized = false;
 
-    // ── Public API ──────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Registers all 7 technician employee definitions with <see cref="CustomEmployeeManager"/>.
-    /// Safe to call more than once — subsequent calls are ignored.
-    /// </summary>
+    // Registers all 7 technician definitions. Safe to call multiple times.
     public static void Initialize()
     {
         if (_initialized) return;
@@ -102,11 +86,7 @@ public static class TechnicianHiring
         }
     }
 
-    /// <summary>
-    /// Called when ANY custom employee is hired. If the <paramref name="employeeId"/> belongs to
-    /// one of our technicians (starts with <c>"tech_extra_"</c>), we clone an existing in-game
-    /// technician and register it with <see cref="TechnicianManager"/>.
-    /// </summary>
+    // Handles hiring: clones an existing in-game technician if employeeId is one of ours.
     public static void OnEmployeeHired(string employeeId)
     {
         try
@@ -134,7 +114,7 @@ public static class TechnicianHiring
 
             int existingCount = existing.Count;
 
-            // Cycle through existing technicians to pick a model (greg / john / woman rotation)
+            // Cycle through existing technicians to pick a model
             int sourceIndex = _spawnedTechIds.Count % existingCount;
             var source = existing[sourceIndex];
             if (source == null)
@@ -145,7 +125,6 @@ public static class TechnicianHiring
 
             CrashLog.Log($"TechnicianHiring.OnEmployeeHired: cloning technician at index {sourceIndex} ('{source.technicianName}')");
 
-            // Clone the entire GameObject
             var clone = UnityEngine.Object.Instantiate(source.gameObject);
             if (clone == null)
             {
@@ -161,20 +140,20 @@ public static class TechnicianHiring
                 return;
             }
 
-            // Assign a unique ID that won't collide with built-in technicians
+            // Assign unique ID and name
             int newId = _nextTechId++;
             tech.technicianID = newId;
             tech.technicianName = "Mod Tech " + newId;
 
-            // Salary is handled by CustomEmployeeManager, not the game's built-in salary system
+            // Salary handled by CustomEmployeeManager, zero it out here
             tech.salary = 0;
 
-            // Wire up shared transforms from TechnicianManager
+            // Wire up shared transforms
             tech.transformContainer = tm.transformContainer;
             tech.transformDumpster = tm.transformDumpster;
             tech.transformDeviceSpawnPosition = tm.transformDeviceSpawnPosition;
 
-            // Assign an idle position (cycle through available transforms)
+            // Assign idle position (cycle through available transforms)
             if (tm.transformIdle != null && tm.transformIdle.Length > 0)
             {
                 int idleIndex = _spawnedTechIds.Count % tm.transformIdle.Length;
@@ -186,7 +165,6 @@ public static class TechnicianHiring
                 CrashLog.Log("TechnicianHiring.OnEmployeeHired: no idle transforms available on TechnicianManager");
             }
 
-            // Register with the manager
             tm.AddTechnician(tech);
             _spawnedTechIds.Add(newId);
 
@@ -199,11 +177,7 @@ public static class TechnicianHiring
         }
     }
 
-    /// <summary>
-    /// Called when ANY custom employee is fired. If the <paramref name="employeeId"/> belongs to
-    /// one of our technicians, we pop the most recently spawned technician and fire it via
-    /// <see cref="TechnicianManager.FireTechnician"/>.
-    /// </summary>
+    // Handles firing: pops the most recently spawned technician (LIFO).
     public static void OnEmployeeFired(string employeeId)
     {
         try
@@ -220,7 +194,6 @@ public static class TechnicianHiring
                 return;
             }
 
-            // Pop the last (most recently hired) technician
             var id = _spawnedTechIds[^1];
             _spawnedTechIds.RemoveAt(_spawnedTechIds.Count - 1);
 
@@ -237,18 +210,13 @@ public static class TechnicianHiring
         }
     }
 
-    /// <summary>
-    /// Called after a game save is loaded. Checks which of the 7 technician employees are currently
-    /// marked as hired in <see cref="CustomEmployeeManager"/> and re-spawns them.
-    /// This handles the case where the player reloads a save with extra technicians already hired.
-    /// </summary>
+    // Re-spawns previously hired technicians after a save is loaded.
     public static void RestoreOnLoad()
     {
         try
         {
             CrashLog.Log("TechnicianHiring.RestoreOnLoad: checking for previously hired technicians");
 
-            // Clear any existing spawned state — we are rebuilding from saved hire flags
             _spawnedTechIds.Clear();
 
             int restored = 0;

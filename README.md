@@ -104,6 +104,38 @@ pub extern "C" fn mod_on_event(event_id: u32, event_data: *const u8, data_size: 
 | 700 | `GameSaved`         | —                             | `SaveSystem.SaveGame`                |
 | 701 | `GameLoaded`        | —                             | `SaveSystem.Load`                    |
 
+## Mod Config System
+
+The modloader includes a **runtime configuration system** that lets mods register settings (bools, ints, floats) editable through an in-game IMGUI panel.
+
+- Press **F8** to toggle the Mod Settings panel
+- Or click **Settings** in the main menu and choose **"Mod Settings"**
+- All values are persisted to `UserData/ModConfigs/<modId>.json`
+
+### For C# MelonLoader Mods
+
+```csharp
+using DataCenterModLoader;
+
+// Set display info (shown in the panel header)
+ModConfigSystem.SetModInfo("my_mod", "YourName", "1.0.0");
+
+// Register options
+ModConfigSystem.RegisterBoolOption("my_mod", "god_mode", "God Mode", false, "Prevents all damage");
+ModConfigSystem.RegisterIntOption("my_mod", "speed", "Move Speed", 5, 1, 20, "Speed multiplier");
+ModConfigSystem.RegisterFloatOption("my_mod", "gravity", "Gravity", 1.0f, 0.0f, 3.0f);
+
+// Read values at any time
+bool godMode = ModConfigSystem.GetBoolValue("my_mod", "god_mode");
+int speed    = ModConfigSystem.GetIntValue("my_mod", "speed", 5);
+```
+
+### For Rust Native Mods
+
+Rust mods register config entries through the FFI bridge automatically via the `dc_api` config functions. See `crates/dc_api` for details.
+
+> **Full API reference:** [docs/mod_config_system.md](docs/mod_config_system.md)
+
 ## Architecture
 
 ```
@@ -147,6 +179,14 @@ Game (Data Center — Unity 6, IL2CPP)
 | Engine | Unity 6000.3.12f1 (IL2CPP) |
 | Developer | Waseku |
 | Install Path | `C:\Program Files (x86)\Steam\steamapps\common\Data Center` |
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Mod Config System](docs/mod_config_system.md) | Developer guide for registering and using mod settings from C# mods |
+| [Game API Reference](docs/game_api_reference.md) | Il2Cpp API reference for game classes (Server, Technician, PlayerManager, etc.) |
+| [Multiplayer Roadmap](docs/multiplayer_roadmap.md) | Design doc and roadmap for the multiplayer mod |
 
 ## License
 

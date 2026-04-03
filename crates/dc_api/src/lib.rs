@@ -55,7 +55,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-pub const API_VERSION: u32 = 7;
+pub const API_VERSION: u32 = 8;
 
 //
 // Each Rust mod is compiled as a separate `cdylib`, so these statics are
@@ -289,6 +289,36 @@ pub struct GameAPI {
     pub steam_poll_event: extern "C" fn(out_type: *mut u32, out_data: *mut u64) -> u32,
     pub get_player_position:
         extern "C" fn(out_x: *mut f32, out_y: *mut f32, out_z: *mut f32, out_ry: *mut f32),
+
+    // v8 — Mod Configuration
+    pub config_register_bool: extern "C" fn(
+        mod_id: *const c_char,
+        key: *const c_char,
+        display_name: *const c_char,
+        default_value: u32,
+        description: *const c_char,
+    ) -> u32,
+    pub config_register_int: extern "C" fn(
+        mod_id: *const c_char,
+        key: *const c_char,
+        display_name: *const c_char,
+        default_value: i32,
+        min: i32,
+        max: i32,
+        description: *const c_char,
+    ) -> u32,
+    pub config_register_float: extern "C" fn(
+        mod_id: *const c_char,
+        key: *const c_char,
+        display_name: *const c_char,
+        default_value: f32,
+        min: f32,
+        max: f32,
+        description: *const c_char,
+    ) -> u32,
+    pub config_get_bool: extern "C" fn(mod_id: *const c_char, key: *const c_char) -> u32,
+    pub config_get_int: extern "C" fn(mod_id: *const c_char, key: *const c_char) -> i32,
+    pub config_get_float: extern "C" fn(mod_id: *const c_char, key: *const c_char) -> f32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -848,6 +878,133 @@ impl Api {
         let (mut x, mut y, mut z, mut ry) = (0f32, 0f32, 0f32, 0f32);
         (self.raw.get_player_position)(&mut x, &mut y, &mut z, &mut ry);
         Some((x, y, z, ry))
+    }
+
+    // ── v8 — Mod Configuration ──────────────────────────────────────────
+
+    /// Register a boolean config entry for this mod.
+    /// Returns Some(1) on success, Some(0) if key already exists.
+    /// Returns None if API version < 8.
+    pub fn config_register_bool(
+        &self,
+        mod_id: &str,
+        key: &str,
+        display_name: &str,
+        default_value: bool,
+        description: &str,
+    ) -> Option<u32> {
+        if self.version() < 8 {
+            return None;
+        }
+        let c_mod_id = CString::new(mod_id).ok()?;
+        let c_key = CString::new(key).ok()?;
+        let c_display_name = CString::new(display_name).ok()?;
+        let c_description = CString::new(description).ok()?;
+        Some((self.raw.config_register_bool)(
+            c_mod_id.as_ptr(),
+            c_key.as_ptr(),
+            c_display_name.as_ptr(),
+            if default_value { 1 } else { 0 },
+            c_description.as_ptr(),
+        ))
+    }
+
+    /// Register an integer config entry for this mod.
+    /// Returns Some(1) on success, Some(0) if key already exists.
+    pub fn config_register_int(
+        &self,
+        mod_id: &str,
+        key: &str,
+        display_name: &str,
+        default_value: i32,
+        min: i32,
+        max: i32,
+        description: &str,
+    ) -> Option<u32> {
+        if self.version() < 8 {
+            return None;
+        }
+        let c_mod_id = CString::new(mod_id).ok()?;
+        let c_key = CString::new(key).ok()?;
+        let c_display_name = CString::new(display_name).ok()?;
+        let c_description = CString::new(description).ok()?;
+        Some((self.raw.config_register_int)(
+            c_mod_id.as_ptr(),
+            c_key.as_ptr(),
+            c_display_name.as_ptr(),
+            default_value,
+            min,
+            max,
+            c_description.as_ptr(),
+        ))
+    }
+
+    /// Register a float config entry for this mod.
+    /// Returns Some(1) on success, Some(0) if key already exists.
+    pub fn config_register_float(
+        &self,
+        mod_id: &str,
+        key: &str,
+        display_name: &str,
+        default_value: f32,
+        min: f32,
+        max: f32,
+        description: &str,
+    ) -> Option<u32> {
+        if self.version() < 8 {
+            return None;
+        }
+        let c_mod_id = CString::new(mod_id).ok()?;
+        let c_key = CString::new(key).ok()?;
+        let c_display_name = CString::new(display_name).ok()?;
+        let c_description = CString::new(description).ok()?;
+        Some((self.raw.config_register_float)(
+            c_mod_id.as_ptr(),
+            c_key.as_ptr(),
+            c_display_name.as_ptr(),
+            default_value,
+            min,
+            max,
+            c_description.as_ptr(),
+        ))
+    }
+
+    /// Get a boolean config value. Returns Some(true/false) or None if not found or API < 8.
+    pub fn config_get_bool(&self, mod_id: &str, key: &str) -> Option<bool> {
+        if self.version() < 8 {
+            return None;
+        }
+        let c_mod_id = CString::new(mod_id).ok()?;
+        let c_key = CString::new(key).ok()?;
+        let result = (self.raw.config_get_bool)(c_mod_id.as_ptr(), c_key.as_ptr());
+        if result == 0xFFFFFFFF {
+            None
+        } else {
+            Some(result != 0)
+        }
+    }
+
+    /// Get an integer config value. Returns Some(value) or None if API < 8.
+    pub fn config_get_int(&self, mod_id: &str, key: &str) -> Option<i32> {
+        if self.version() < 8 {
+            return None;
+        }
+        let c_mod_id = CString::new(mod_id).ok()?;
+        let c_key = CString::new(key).ok()?;
+        Some((self.raw.config_get_int)(c_mod_id.as_ptr(), c_key.as_ptr()))
+    }
+
+    /// Get a float config value. Returns Some(value) or None if API < 8.
+    pub fn config_get_float(&self, mod_id: &str, key: &str) -> Option<f32> {
+        if self.version() < 8 {
+            return None;
+        }
+        let c_mod_id = CString::new(mod_id).ok()?;
+        let c_key = CString::new(key).ok()?;
+        Some((self.raw.config_get_float)(
+            c_mod_id.as_ptr(),
+            c_key.as_ptr(),
+        ))
     }
 }
 

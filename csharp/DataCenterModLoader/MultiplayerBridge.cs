@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using MelonLoader;
 using UnityEngine;
@@ -14,6 +15,8 @@ namespace DataCenterModLoader;
 /// Manages the multiplayer bridge between C# (MelonLoader) and the Rust DLL (dc_multiplayer.dll).
 /// Handles relay-based networking, remote player rendering, UI panel, and main menu button injection.
 /// </summary>
+using UnityEngine.SceneManagement;
+
 public class MultiplayerBridge
 {
     [DllImport("kernel32.dll")]
@@ -53,6 +56,24 @@ public class MultiplayerBridge
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate IntPtr MpGetRoomCodeDelegate();
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint MpShouldSendSaveDelegate();
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int MpSendSaveDataDelegate(IntPtr data, uint len);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint MpHasPendingSaveDelegate();
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint MpGetSaveDataSizeDelegate();
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint MpGetSaveDataDelegate(IntPtr buf, uint maxLen);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int MpSaveLoadCompleteDelegate();
+
     // ═══════════════════════════════════════════════════════════════════════
     //  Structs & Inner Types
     // ═══════════════════════════════════════════════════════════════════════
@@ -90,11 +111,45 @@ public class MultiplayerBridge
     private MpConnectDelegate _connect;
     private MpDisconnectDelegate _disconnect;
     private MpGetRoomCodeDelegate _getRoomCode;
+    private MpShouldSendSaveDelegate _shouldSendSave;
+    private MpSendSaveDataDelegate _sendSaveData;
+    private MpHasPendingSaveDelegate _hasPendingSave;
+    private MpGetSaveDataSizeDelegate _getSaveDataSize;
+    private MpGetSaveDataDelegate _getSaveData;
+    private MpSaveLoadCompleteDelegate _saveLoadComplete;
     private readonly Dictionary<ulong, RemotePlayerGO> _remotePlayers = new();
     private bool _initialized = false;
     private float _initTimer = 0f;
     private bool _isHosting = false;
     private bool _isConnectedState = false;
+    private string _discoveredSavePath = null;
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  Client Join State Machine
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private enum ClientJoinState
+    {
+        Idle,               // Not joining / hosting
+        WaitingForSave,     // Connected as client, waiting for save from host
+        SaveReceived,       // Got save bytes from Rust, need to process them
+        WaitingForGameScene,// Save written to disk, waiting for game scene (we're in menu)
+        Loaded              // Save loaded, playing in host's world
+    }
+
+    private ClientJoinState _joinState = ClientJoinState.Idle;
+    private string _currentSceneName = "";
+    private byte[] _pendingSaveBytes = null;
+    private string _pendingSaveName = null;     // save name (without extension) written to disk
+    private string _pendingSaveFullPath = null;  // full path to the written save file
+    private float _deferredLoadDelay = 0f;       // small delay after scene load before triggering Load()
+    private string _reconnectRoomCode = null;    // room code to auto-reconnect after scene transition
+    private bool _skipSaveOnReconnect = false;   // skip save processing when reconnecting after load
+
+    // Host: cached save bytes so multiple client joins don't re-trigger SaveGame()
+    private byte[] _cachedSaveData = null;
+    private float _cachedSaveAge = 0f;
+    private const float SAVE_CACHE_LIFETIME = 30f; // seconds before cache expires
 
     // ═══════════════════════════════════════════════════════════════════════
     //  Fields: Relay / Room Code
@@ -163,6 +218,12 @@ public class MultiplayerBridge
         var connectPtr = GetProcAddress(handle, "mp_connect");
         var disconnectPtr = GetProcAddress(handle, "mp_disconnect");
         var roomCodePtr = GetProcAddress(handle, "mp_get_room_code");
+        var shouldSendSavePtr = GetProcAddress(handle, "mp_should_send_save");
+        var sendSaveDataPtr = GetProcAddress(handle, "mp_send_save_data");
+        var hasPendingSavePtr = GetProcAddress(handle, "mp_has_pending_save");
+        var getSaveDataSizePtr = GetProcAddress(handle, "mp_get_save_data_size");
+        var getSaveDataPtr = GetProcAddress(handle, "mp_get_save_data");
+        var saveLoadCompletePtr = GetProcAddress(handle, "mp_save_load_complete");
 
         if (getPlayersPtr == IntPtr.Zero || isConnectedPtr == IntPtr.Zero) return false;
 
@@ -175,6 +236,12 @@ public class MultiplayerBridge
         _connect = connectPtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpConnectDelegate>(connectPtr) : null;
         _disconnect = disconnectPtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpDisconnectDelegate>(disconnectPtr) : null;
         _getRoomCode = roomCodePtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpGetRoomCodeDelegate>(roomCodePtr) : null;
+        _shouldSendSave = shouldSendSavePtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpShouldSendSaveDelegate>(shouldSendSavePtr) : null;
+        _sendSaveData = sendSaveDataPtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpSendSaveDataDelegate>(sendSaveDataPtr) : null;
+        _hasPendingSave = hasPendingSavePtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpHasPendingSaveDelegate>(hasPendingSavePtr) : null;
+        _getSaveDataSize = getSaveDataSizePtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpGetSaveDataSizeDelegate>(getSaveDataSizePtr) : null;
+        _getSaveData = getSaveDataPtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpGetSaveDataDelegate>(getSaveDataPtr) : null;
+        _saveLoadComplete = saveLoadCompletePtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpSaveLoadCompleteDelegate>(saveLoadCompletePtr) : null;
 
         _initialized = true;
         _logger.Msg("[MP Bridge] dc_multiplayer detected, bridge active.");
@@ -322,6 +389,96 @@ public class MultiplayerBridge
                 return;
             }
 
+            // Save sync: Host sends save when requested
+            if (_isHosting && _shouldSendSave != null && _shouldSendSave() != 0)
+            {
+                SendSaveToClients();
+            }
+
+            // Age the save cache
+            if (_isHosting && _cachedSaveData != null)
+            {
+                _cachedSaveAge += dt;
+                if (_cachedSaveAge >= SAVE_CACHE_LIFETIME)
+                {
+                    _cachedSaveData = null;
+                    _cachedSaveAge = 0f;
+                    CrashLog.Log("[MP Save] Save cache expired");
+                }
+            }
+
+            // ── Client join state machine ──
+            if (!_isHosting)
+            {
+                switch (_joinState)
+                {
+                    case ClientJoinState.WaitingForSave:
+                        if (_skipSaveOnReconnect)
+                        {
+                            // We already loaded the save — discard any incoming save data
+                            if (_hasPendingSave != null && _hasPendingSave() != 0)
+                            {
+                                CrashLog.Log("[MP Join] Discarding save data (already loaded on reconnect)");
+                                if (_saveLoadComplete != null) _saveLoadComplete();
+                            }
+                            // Once connected, transition to Loaded
+                            if (_isConnectedState)
+                            {
+                                CrashLog.Log("[MP Join] Reconnect complete — state → Loaded");
+                                _joinState = ClientJoinState.Loaded;
+                                _skipSaveOnReconnect = false;
+                            }
+                            break;
+                        }
+                        // Poll Rust for completed save transfer
+                        if (_hasPendingSave != null && _hasPendingSave() != 0)
+                        {
+                            CrashLog.Log("[MP Join] Save data ready from Rust — transitioning to SaveReceived");
+                            _joinState = ClientJoinState.SaveReceived;
+                            try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Received save from host, loading..."); } catch { }
+                        }
+                        break;
+
+                    case ClientJoinState.SaveReceived:
+                        // Grab the bytes and decide how to load
+                        FetchAndProcessSave();
+                        break;
+
+                    case ClientJoinState.WaitingForGameScene:
+                        // Save is on disk, scene transition triggered — wait for game scene
+                        if (_deferredLoadDelay > 0f)
+                        {
+                            _deferredLoadDelay -= dt;
+                        }
+                        else if (!IsInMainMenu())
+                        {
+                            // We're now in a game scene — load the save and reconnect
+                            CrashLog.Log("[MP Join] Game scene detected after deferred wait, attempting load...");
+                            AttemptSaveLoad();
+                        }
+                        break;
+
+                    case ClientJoinState.Loaded:
+                        // Discard any late-arriving save data
+                        if (_hasPendingSave != null && _hasPendingSave() != 0)
+                        {
+                            CrashLog.Log("[MP Join] Discarding late save data (already loaded)");
+                            if (_saveLoadComplete != null) _saveLoadComplete();
+                        }
+                        // Auto-reconnect if relay died (e.g. after scene transition)
+                        if (_reconnectRoomCode != null && !relayAlive)
+                        {
+                            CrashLog.Log($"[MP Join] Relay not alive in Loaded state — auto-reconnecting to {_reconnectRoomCode}");
+                            AutoReconnect();
+                        }
+                        break;
+
+                    case ClientJoinState.Idle:
+                    default:
+                        break;
+                }
+            }
+
             UpdateRemotePlayers();
         }
         catch (Exception ex)
@@ -336,6 +493,9 @@ public class MultiplayerBridge
 
     public void OnSceneLoaded(string sceneName)
     {
+        _currentSceneName = sceneName ?? "";
+        CrashLog.Log($"[MP Join] OnSceneLoaded: \"{_currentSceneName}\" (joinState={_joinState})");
+
         if (sceneName == "MainMenu")
         {
             _pendingMenuInjection = true;
@@ -345,6 +505,13 @@ public class MultiplayerBridge
         {
             // Clean up menu button reference on scene change
             _menuButton = null;
+
+            // If we were waiting for the game scene after writing the save, now is the time to load it
+            if (_joinState == ClientJoinState.WaitingForGameScene && _pendingSaveName != null)
+            {
+                CrashLog.Log($"[MP Join] Game scene \"{sceneName}\" loaded — will attempt save load after short delay");
+                _deferredLoadDelay = 1.0f; // delay so the scene can finish initializing + callbacks register
+            }
         }
     }
 
@@ -567,6 +734,18 @@ public class MultiplayerBridge
 
         CrashLog.Log($"[MP Bridge] DoConnect: room={code}");
 
+        // Prevent joining when already busy
+        if (_joinState != ClientJoinState.Idle && _joinState != ClientJoinState.Loaded)
+        {
+            CrashLog.Log($"[MP Bridge] DoConnect: blocked — already in state {_joinState}");
+            _logger.Msg("[MP Bridge] Already joining, please wait...");
+            try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Already joining, please wait..."); } catch { }
+            return;
+        }
+
+        // Reset join state for a fresh attempt
+        ResetJoinState();
+
         byte[] codeBytes = System.Text.Encoding.UTF8.GetBytes(code);
         IntPtr codePtr = Marshal.AllocHGlobal(codeBytes.Length);
         try
@@ -577,7 +756,9 @@ public class MultiplayerBridge
 
             if (result == 1)
             {
+                _joinState = ClientJoinState.WaitingForSave;
                 _logger.Msg($"[MP Bridge] Joining room {code}...");
+                CrashLog.Log($"[MP Join] State → WaitingForSave");
                 try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField($"Multiplayer: Joining room {code}..."); } catch { }
             }
             else
@@ -594,6 +775,7 @@ public class MultiplayerBridge
 
     private void DoDisconnect()
     {
+        ResetJoinState();
         if (_disconnect == null)
         {
             _logger.Warning("[MP Bridge] mp_disconnect export not available.");
@@ -603,6 +785,9 @@ public class MultiplayerBridge
         _disconnect();
         _isHosting = false;
         _displayRoomCode = "";
+        _discoveredSavePath = null;
+        _cachedSaveData = null;
+        _cachedSaveAge = 0f;
         _logger.Msg("[MP Bridge] Disconnected.");
 
         try
@@ -616,6 +801,7 @@ public class MultiplayerBridge
 
     private void DoStopHosting()
     {
+        ResetJoinState();
         if (_disconnect == null)
         {
             _logger.Warning("[MP Bridge] mp_disconnect export not available.");
@@ -625,6 +811,9 @@ public class MultiplayerBridge
         _disconnect();
         _isHosting = false;
         _displayRoomCode = "";
+        _discoveredSavePath = null;
+        _cachedSaveData = null;
+        _cachedSaveAge = 0f;
         _logger.Msg("[MP Bridge] Stopped hosting.");
 
         try
@@ -634,6 +823,769 @@ public class MultiplayerBridge
                 ui.AddMeesageInField("Multiplayer: Stopped hosting.");
         }
         catch { }
+    }
+
+
+
+    private void SendSaveToClients()
+    {
+        try
+        {
+            CrashLog.Log("[MP Save] Host: sending save to clients...");
+
+            byte[] saveData;
+
+            // Check if we have a recent cached save (avoids re-saving when multiple clients join)
+            if (_cachedSaveData != null && _cachedSaveAge < SAVE_CACHE_LIFETIME)
+            {
+                saveData = _cachedSaveData;
+                CrashLog.Log($"[MP Save] Using cached save data ({saveData.Length} bytes, {_cachedSaveAge:F1}s old)");
+            }
+            else
+            {
+                // Save to a temp name so we don't pollute the save directory
+                string tempSaveName = "_mp_temp";
+
+                try
+                {
+                    SaveSystem.SaveGame(tempSaveName, tempSaveName);
+                    CrashLog.Log("[MP Save] SaveGame(\"_mp_temp\", \"_mp_temp\") OK");
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[MP Save] SaveGame with temp name failed: {ex.Message} — falling back to parameterless SaveGame");
+                    try { SaveSystem.SaveGame(); }
+                    catch (Exception ex2) { CrashLog.LogException("MP Save: SaveGame()", ex2); return; }
+                }
+
+                // Give the save a moment to flush to disk
+                System.Threading.Thread.Sleep(300);
+
+                // Try to find the temp save file first; fall back to newest save
+                string saveDirPath = null;
+                try { saveDirPath = SaveSystem.saveDirPath; }
+                catch { }
+
+                string savePath = null;
+                bool isTempFile = false;
+
+                if (!string.IsNullOrEmpty(saveDirPath))
+                {
+                    string tempPath = Path.Combine(saveDirPath, tempSaveName + ".save");
+                    if (File.Exists(tempPath))
+                    {
+                        savePath = tempPath;
+                        isTempFile = true;
+                        CrashLog.Log($"[MP Save] Found temp save: {tempPath}");
+                    }
+                }
+
+                if (savePath == null)
+                    savePath = DiscoverSaveFile();
+
+                if (savePath == null)
+                {
+                    CrashLog.Log("[MP Save] ERROR: Could not find any save file!");
+                    _logger.Error("[MP Save] Could not locate save file to send.");
+                    return;
+                }
+
+                saveData = File.ReadAllBytes(savePath);
+                CrashLog.Log($"[MP Save] Read {saveData.Length} bytes from {savePath}");
+
+                if (saveData.Length == 0)
+                {
+                    CrashLog.Log("[MP Save] ERROR: Save file is empty!");
+                    if (isTempFile) TryDeleteFile(savePath);
+                    return;
+                }
+
+                // Clean up temp file
+                if (isTempFile) TryDeleteFile(savePath);
+                try { SaveSystem.DeleteSaveFile(tempSaveName); } catch { }
+
+                // Cache for future requests
+                _cachedSaveData = saveData;
+                _cachedSaveAge = 0f;
+                CrashLog.Log($"[MP Save] Cached {saveData.Length} bytes for {SAVE_CACHE_LIFETIME}s");
+            }
+
+            // Pass to Rust for chunked transfer
+            IntPtr ptr = Marshal.AllocHGlobal(saveData.Length);
+            try
+            {
+                Marshal.Copy(saveData, 0, ptr, saveData.Length);
+                int result = _sendSaveData(ptr, (uint)saveData.Length);
+                CrashLog.Log($"[MP Save] mp_send_save_data returned {result}");
+
+                if (result == 1)
+                {
+                    _logger.Msg("[MP Save] Save data queued for transfer.");
+                    try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Sending save to client..."); } catch { }
+                }
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("SendSaveToClients", ex);
+        }
+    }
+
+    private void TryDeleteFile(string path)
+    {
+        try
+        {
+            File.Delete(path);
+            CrashLog.Log($"[MP Save] Deleted temp file: {path}");
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Save] Could not delete temp file: {ex.Message}");
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    //  Client Join: State Machine Helpers
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private bool IsInMainMenu()
+    {
+        if (!string.IsNullOrEmpty(_currentSceneName))
+            return _currentSceneName.Equals("MainMenu", StringComparison.OrdinalIgnoreCase);
+
+        // Fallback: query scene manager directly
+        try
+        {
+            string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name ?? "";
+            _currentSceneName = scene;
+            return scene.Equals("MainMenu", StringComparison.OrdinalIgnoreCase);
+        }
+        catch { return false; }
+    }
+
+    /// <summary>
+    /// Called from OnUpdate when joinState == SaveReceived.
+    /// Fetches bytes from Rust, writes them to disk, then decides how to load.
+    /// </summary>
+    private void FetchAndProcessSave()
+    {
+        try
+        {
+            // ── 1. Grab the raw bytes from Rust ──
+            uint size = _getSaveDataSize != null ? _getSaveDataSize() : 0;
+            if (size == 0)
+            {
+                CrashLog.Log("[MP Join] Pending save has 0 bytes — aborting");
+                ResetJoinState();
+                return;
+            }
+
+            CrashLog.Log($"[MP Join] Fetching {size} bytes from Rust...");
+            byte[] saveData = new byte[size];
+            IntPtr ptr = Marshal.AllocHGlobal((int)size);
+            try
+            {
+                uint copied = _getSaveData(ptr, size);
+                Marshal.Copy(ptr, saveData, 0, (int)copied);
+                CrashLog.Log($"[MP Join] Got {copied} bytes");
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(ptr);
+            }
+
+            // Peek first bytes for diagnostics
+            if (saveData.Length > 0)
+            {
+                int peekLen = Math.Min(saveData.Length, 200);
+                string peekText = System.Text.Encoding.UTF8.GetString(saveData, 0, peekLen).Replace("\r", "").Replace("\n", "\\n");
+                CrashLog.Log($"[MP Join] First {peekLen} bytes: {peekText}");
+            }
+
+            _pendingSaveBytes = saveData;
+
+            // Tell Rust we consumed the buffer
+            if (_saveLoadComplete != null) _saveLoadComplete();
+
+            // ── 2. Write to disk ──
+            WriteSaveToDisk();
+
+            // ── 3. Attempt load (scene-aware) ──
+            if (_pendingSaveName == null)
+            {
+                CrashLog.Log("[MP Join] ERROR: WriteSaveToDisk failed to produce a save name");
+                _logger.Error("[MP Join] Failed to write save to disk.");
+                try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Failed to write host save!"); } catch { }
+                ResetJoinState();
+                return;
+            }
+
+            // Decide how to load based on current scene
+            CrashLog.Log($"[MP Join] Current scene: \"{_currentSceneName}\"");
+
+            if (IsInMainMenu())
+            {
+                // From MainMenu: SaveSystem.Load() does NOT trigger a scene transition
+                // (onLoadingData callbacks aren't registered yet).
+                // We must: set loadSaveName, then manually load the game scene.
+                CrashLog.Log("[MP Join] In MainMenu — initiating manual scene transition");
+                InitiateSceneTransition();
+            }
+            else
+            {
+                // Already in-game: SaveSystem.Load() should work (callbacks are registered)
+                AttemptSaveLoad();
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("FetchAndProcessSave", ex);
+            _logger.Error($"[MP Join] Exception during save processing: {ex.Message}");
+            try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Error processing host save!"); } catch { }
+            ResetJoinState();
+        }
+    }
+
+    /// <summary>
+    /// Writes _pendingSaveBytes to disk. Handles both "overwrite existing" and "fresh install" cases.
+    /// Sets _pendingSaveName and _pendingSaveFullPath on success.
+    /// </summary>
+    private void WriteSaveToDisk()
+    {
+        DumpSaveSystemMethods();
+
+        string saveDir = DiscoverSaveDirectory();
+        if (saveDir == null)
+        {
+            CrashLog.Log("[MP Join] ERROR: Could not find save directory!");
+            // Last resort: use persistentDataPath directly
+            saveDir = Application.persistentDataPath;
+            try { Directory.CreateDirectory(saveDir); } catch { }
+        }
+
+        // ── Scan existing saves ──
+        string existingSaveName = null;
+        string existingSavePath = null;
+        string ext = ".save";
+
+        try
+        {
+            var existingFiles = Directory.GetFiles(saveDir);
+            CrashLog.Log($"[MP Join] Save directory has {existingFiles.Length} files:");
+            foreach (var f in existingFiles)
+            {
+                string fname = Path.GetFileName(f);
+                string fext = Path.GetExtension(f).ToLower();
+                var finfo = new FileInfo(f);
+                CrashLog.Log($"[MP Join]   {fname} ({finfo.Length} bytes, {finfo.LastWriteTime:HH:mm:ss})");
+
+                if (fext == ".save" || fext == ".json" || fext == ".sav" || fext == ".dat")
+                {
+                    ext = fext;
+                    string nameNoExt = Path.GetFileNameWithoutExtension(f);
+                    if (nameNoExt.StartsWith("_mp_")) continue;
+                    if (fext == ".vdf") continue;
+
+                    if (existingSavePath == null || finfo.LastWriteTime > new FileInfo(existingSavePath).LastWriteTime)
+                    {
+                        existingSaveName = nameNoExt;
+                        existingSavePath = f;
+                    }
+                }
+            }
+        }
+        catch (Exception ex) { CrashLog.Log($"[MP Join] Error scanning save dir: {ex.Message}"); }
+
+        // ── Always write a debug/_mp_sync copy ──
+        string tempPath = Path.Combine(saveDir, "_mp_sync" + ext);
+        File.WriteAllBytes(tempPath, _pendingSaveBytes);
+        CrashLog.Log($"[MP Join] Wrote debug copy: {tempPath}");
+
+        // ── Strategy A: Overwrite an existing save (game already knows about it) ──
+        if (existingSaveName != null && existingSavePath != null)
+        {
+            // Backup the original
+            string backupPath = existingSavePath + ".mp_backup";
+            try
+            {
+                File.Copy(existingSavePath, backupPath, true);
+                CrashLog.Log($"[MP Join] Backed up: {existingSavePath} -> {backupPath}");
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[MP Join] Backup warning: {ex.Message}");
+            }
+
+            File.WriteAllBytes(existingSavePath, _pendingSaveBytes);
+            _pendingSaveName = existingSaveName;
+            _pendingSaveFullPath = existingSavePath;
+            CrashLog.Log($"[MP Join] Overwrote existing save: \"{existingSaveName}\" at {existingSavePath} ({_pendingSaveBytes.Length} bytes)");
+            return;
+        }
+
+        // ── Strategy B: No existing save (fresh install) — create one with a timestamp name ──
+        CrashLog.Log("[MP Join] No existing save found — creating new save file for fresh install");
+        string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+        string newPath = Path.Combine(saveDir, timestamp + ext);
+        File.WriteAllBytes(newPath, _pendingSaveBytes);
+        _pendingSaveName = timestamp;
+        _pendingSaveFullPath = newPath;
+        CrashLog.Log($"[MP Join] Created new save: \"{timestamp}\" at {newPath} ({_pendingSaveBytes.Length} bytes)");
+    }
+
+    /// <summary>
+    /// Called when client is in MainMenu: sets loadSaveName on SaveSystem and
+    /// triggers a scene transition to the game scene. After the scene loads,
+    /// OnSceneLoaded → deferred delay → AttemptSaveLoad() will apply the save.
+    /// </summary>
+    private void InitiateSceneTransition()
+    {
+        // Store room code for auto-reconnect after scene transition
+        _reconnectRoomCode = _roomCode?.Trim().ToUpper();
+        if (string.IsNullOrEmpty(_reconnectRoomCode))
+        {
+            // Try to get it from Rust state
+            try
+            {
+                IntPtr codePtr = _getRoomCode != null ? _getRoomCode() : IntPtr.Zero;
+                if (codePtr != IntPtr.Zero)
+                {
+                    string code = Marshal.PtrToStringAnsi(codePtr);
+                    if (!string.IsNullOrEmpty(code)) _reconnectRoomCode = code;
+                }
+            }
+            catch { }
+        }
+        CrashLog.Log($"[MP Join] Stored room code for reconnect: \"{_reconnectRoomCode}\"");
+
+        // Set SaveSystem.loadSaveName so the game knows which save to load
+        // after the scene transition. The host's loadSaveName format is "savename;displayname"
+        // but we'll try just the save name first.
+        try
+        {
+            SaveSystem.loadSaveName = _pendingSaveName;
+            CrashLog.Log($"[MP Join] Set SaveSystem.loadSaveName = \"{_pendingSaveName}\"");
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Join] Failed to set loadSaveName: {ex.Message}");
+        }
+
+        // Enumerate available scenes and find the game scene
+        try
+        {
+            int sceneCount = SceneManager.sceneCountInBuildSettings;
+            CrashLog.Log($"[MP Join] Build has {sceneCount} scenes:");
+            string gameSceneName = null;
+            int gameSceneIndex = -1;
+
+            for (int i = 0; i < sceneCount; i++)
+            {
+                string path = SceneUtility.GetScenePathByBuildIndex(i);
+                string name = System.IO.Path.GetFileNameWithoutExtension(path);
+                CrashLog.Log($"[MP Join]   [{i}] \"{name}\" ({path})");
+
+                if (!name.Equals("MainMenu", StringComparison.OrdinalIgnoreCase)
+                    && !name.Equals("Init", StringComparison.OrdinalIgnoreCase)
+                    && !name.Equals("Splash", StringComparison.OrdinalIgnoreCase)
+                    && !name.Equals("Loading", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (gameSceneName == null)
+                    {
+                        gameSceneName = name;
+                        gameSceneIndex = i;
+                    }
+                }
+            }
+
+            if (gameSceneIndex >= 0)
+            {
+                CrashLog.Log($"[MP Join] Loading game scene: [{gameSceneIndex}] \"{gameSceneName}\"");
+                _joinState = ClientJoinState.WaitingForGameScene;
+                _pendingSaveBytes = null; // free memory before scene load
+                try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Loading host's game..."); } catch { }
+                SceneManager.LoadScene(gameSceneIndex);
+                return;
+            }
+            else
+            {
+                CrashLog.Log("[MP Join] Could not identify game scene — trying build index 1");
+                _joinState = ClientJoinState.WaitingForGameScene;
+                _pendingSaveBytes = null;
+                try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Loading host's game..."); } catch { }
+                SceneManager.LoadScene(1);
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Join] Scene enumeration failed: {ex.GetType().Name}: {ex.Message}");
+            CrashLog.Log("[MP Join] Falling back to SceneManager.LoadScene(1)");
+            _joinState = ClientJoinState.WaitingForGameScene;
+            _pendingSaveBytes = null;
+            try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Loading host's game..."); } catch { }
+            try { SceneManager.LoadScene(1); }
+            catch (Exception ex2) { CrashLog.Log($"[MP Join] LoadScene(1) failed: {ex2.Message}"); }
+        }
+    }
+
+    /// <summary>
+    /// Called after the game scene has loaded (from WaitingForGameScene state).
+    /// Applies the save via SaveSystem.Load() — now the onLoadingData callbacks ARE registered.
+    /// Then triggers auto-reconnect to the relay.
+    /// </summary>
+    private void AttemptSaveLoad()
+    {
+        if (_pendingSaveName == null)
+        {
+            CrashLog.Log("[MP Join] AttemptSaveLoad: no pending save name — aborting");
+            ResetJoinState();
+            return;
+        }
+
+        bool loaded = false;
+        CrashLog.Log($"[MP Join] AttemptSaveLoad: name=\"{_pendingSaveName}\", scene=\"{_currentSceneName}\"");
+
+        // ── Approach A: Load(name, false) — standard load path ──
+        CrashLog.Log($"[MP Join] Approach A: SaveSystem.Load(\"{_pendingSaveName}\", false)...");
+        try
+        {
+            SaveSystem.Load(_pendingSaveName, false);
+            CrashLog.Log("[MP Join] Approach A returned OK");
+            loaded = true;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Join] Approach A threw: {ex.GetType().Name}: {ex.Message}");
+        }
+
+        // ── Approach B: Load(name, true) — "from pause menu" path ──
+        if (!loaded)
+        {
+            CrashLog.Log($"[MP Join] Approach B: SaveSystem.Load(\"{_pendingSaveName}\", true)...");
+            try
+            {
+                SaveSystem.Load(_pendingSaveName, true);
+                CrashLog.Log("[MP Join] Approach B returned OK");
+                loaded = true;
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[MP Join] Approach B threw: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        // ── Approach C: Try _mp_sync name directly ──
+        if (!loaded)
+        {
+            CrashLog.Log("[MP Join] Approach C: SaveSystem.Load(\"_mp_sync\", false)...");
+            try
+            {
+                SaveSystem.Load("_mp_sync", false);
+                CrashLog.Log("[MP Join] Approach C returned OK");
+                loaded = true;
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[MP Join] Approach C threw: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        // ── Approach D: Reflection — LoadGame(string) + LoadGameData() ──
+        if (!loaded)
+        {
+            CrashLog.Log("[MP Join] Approach D: Trying reflection-based load...");
+            try
+            {
+                var ssType = typeof(SaveSystem);
+                var loadGame = ssType.GetMethod("LoadGame",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static,
+                    null, new Type[] { typeof(string) }, null);
+                if (loadGame != null)
+                {
+                    CrashLog.Log($"[MP Join] Found LoadGame(string), invoking with \"{_pendingSaveName}\"...");
+                    loadGame.Invoke(null, new object[] { _pendingSaveName });
+                    CrashLog.Log("[MP Join] Approach D (LoadGame) returned OK — now calling LoadGameData()...");
+                    try { SaveSystem.LoadGameData(); CrashLog.Log("[MP Join] LoadGameData() OK"); }
+                    catch (Exception ex3) { CrashLog.Log($"[MP Join] LoadGameData() threw: {ex3.Message}"); }
+                    loaded = true;
+                }
+                else
+                {
+                    CrashLog.Log("[MP Join] LoadGame(string) not found via reflection");
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[MP Join] Approach D threw: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        CrashLog.Log($"[MP Join] AttemptSaveLoad finished: loaded={loaded}");
+
+        if (loaded)
+        {
+            _joinState = ClientJoinState.Loaded;
+            _pendingSaveBytes = null; // free memory
+            _logger.Msg("[MP Join] Save loaded from host!");
+            try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Save loaded from host!"); } catch { }
+
+            // Auto-reconnect to relay (connection likely died during scene transition)
+            if (_reconnectRoomCode != null)
+            {
+                CrashLog.Log($"[MP Join] Triggering auto-reconnect to room {_reconnectRoomCode}");
+                AutoReconnect();
+            }
+        }
+        else
+        {
+            CrashLog.Log("[MP Join] All load approaches failed — giving up");
+            _logger.Warning("[MP Join] Could not load save — check dc_modloader_debug.log for details.");
+            try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Failed to load host save! Check logs."); } catch { }
+            ResetJoinState();
+        }
+    }
+
+    /// <summary>
+    /// Auto-reconnects to the relay after a scene transition, skipping save re-request.
+    /// </summary>
+    private void AutoReconnect()
+    {
+        if (_connect == null || string.IsNullOrEmpty(_reconnectRoomCode))
+        {
+            CrashLog.Log("[MP Join] AutoReconnect: no connect delegate or room code");
+            return;
+        }
+
+        CrashLog.Log($"[MP Join] AutoReconnect: joining room {_reconnectRoomCode} (skip save = true)");
+        _skipSaveOnReconnect = true;
+
+        byte[] codeBytes = System.Text.Encoding.UTF8.GetBytes(_reconnectRoomCode);
+        IntPtr codePtr = Marshal.AllocHGlobal(codeBytes.Length);
+        try
+        {
+            Marshal.Copy(codeBytes, 0, codePtr, codeBytes.Length);
+            int result = _connect(codePtr, (uint)codeBytes.Length);
+            CrashLog.Log($"[MP Join] AutoReconnect: mp_connect returned {result}");
+
+            if (result == 1)
+            {
+                _joinState = ClientJoinState.WaitingForSave; // will be handled by skip logic
+                try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Reconnecting..."); } catch { }
+            }
+            else
+            {
+                CrashLog.Log("[MP Join] AutoReconnect failed");
+                _skipSaveOnReconnect = false;
+            }
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(codePtr);
+        }
+    }
+
+    /// <summary>
+    /// Resets join state back to Idle and clears pending data.
+    /// </summary>
+    private void ResetJoinState()
+    {
+        _joinState = ClientJoinState.Idle;
+        _pendingSaveBytes = null;
+        _pendingSaveName = null;
+        _pendingSaveFullPath = null;
+        _deferredLoadDelay = 0f;
+        _skipSaveOnReconnect = false;
+        // Note: _reconnectRoomCode is intentionally NOT cleared here
+        // so auto-reconnect can still work after scene transitions.
+    }
+
+    private void DumpSaveSystemMethods()
+    {
+        try
+        {
+            CrashLog.Log("[MP Save] === SaveSystem method dump ===");
+            var ssType = typeof(SaveSystem);
+            var methods = ssType.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance);
+            foreach (var m in methods)
+            {
+                var parms = m.GetParameters();
+                var parmStr = string.Join(", ", Array.ConvertAll(parms, p => $"{p.ParameterType.Name} {p.Name}"));
+                CrashLog.Log($"[MP Save]   {(m.IsStatic ? "static " : "")}{m.ReturnType.Name} {m.Name}({parmStr})");
+            }
+            CrashLog.Log("[MP Save] === end SaveSystem dump ===");
+
+            // Also dump static fields/properties
+            var fields = ssType.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            if (fields.Length > 0)
+            {
+                CrashLog.Log("[MP Save] === SaveSystem fields ===");
+                foreach (var f in fields)
+                {
+                    try
+                    {
+                        var val = f.GetValue(null);
+                        CrashLog.Log($"[MP Save]   {(f.IsStatic ? "static " : "")}{f.FieldType.Name} {f.Name} = {val}");
+                    }
+                    catch
+                    {
+                        CrashLog.Log($"[MP Save]   {(f.IsStatic ? "static " : "")}{f.FieldType.Name} {f.Name} = <error reading>");
+                    }
+                }
+                CrashLog.Log("[MP Save] === end SaveSystem fields ===");
+            }
+
+            var props = ssType.GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            if (props.Length > 0)
+            {
+                CrashLog.Log("[MP Save] === SaveSystem properties ===");
+                foreach (var p in props)
+                {
+                    try
+                    {
+                        var val = p.GetValue(null);
+                        CrashLog.Log($"[MP Save]   {p.PropertyType.Name} {p.Name} = {val}");
+                    }
+                    catch
+                    {
+                        CrashLog.Log($"[MP Save]   {p.PropertyType.Name} {p.Name} = <error reading>");
+                    }
+                }
+                CrashLog.Log("[MP Save] === end SaveSystem properties ===");
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Save] SaveSystem reflection failed: {ex.GetType().Name}: {ex.Message}");
+        }
+    }
+
+    private string DiscoverSaveDirectory()
+    {
+        if (_discoveredSavePath != null)
+        {
+            string dir = Path.GetDirectoryName(_discoveredSavePath);
+            if (Directory.Exists(dir)) return dir;
+        }
+
+        string basePath = Application.persistentDataPath;
+        CrashLog.Log($"[MP Save] persistentDataPath = {basePath}");
+
+        // Check common save subdirectories
+        string[] subDirs = { "Saves", "SaveGames", "Save", "" };
+        foreach (var sub in subDirs)
+        {
+            string candidate = string.IsNullOrEmpty(sub) ? basePath : Path.Combine(basePath, sub);
+            if (Directory.Exists(candidate))
+            {
+                // Check if it has any save-looking files
+                try
+                {
+                    var files = Directory.GetFiles(candidate);
+                    if (files.Length > 0)
+                    {
+                        CrashLog.Log($"[MP Save] Found save directory: {candidate} ({files.Length} files)");
+                        return candidate;
+                    }
+                }
+                catch { }
+            }
+        }
+
+        // Fallback: use persistentDataPath directly
+        CrashLog.Log($"[MP Save] Using persistentDataPath as save directory: {basePath}");
+        return basePath;
+    }
+
+    private string DiscoverSaveFile()
+    {
+        if (_discoveredSavePath != null && File.Exists(_discoveredSavePath))
+            return _discoveredSavePath;
+
+        string basePath = Application.persistentDataPath;
+        CrashLog.Log($"[MP Save] Searching for save files in: {basePath}");
+
+        // Log directory contents for debugging
+        try
+        {
+            LogDirectoryContents(basePath, 0);
+        }
+        catch (Exception ex) { CrashLog.Log($"[MP Save] Error listing dir: {ex.Message}"); }
+
+        // Strategy: find the most recently modified save file
+        string bestFile = null;
+        DateTime bestTime = DateTime.MinValue;
+
+        string[] searchDirs = { basePath };
+        try
+        {
+            // Also search subdirectories
+            var subDirs = Directory.GetDirectories(basePath);
+            var allDirs = new List<string>(subDirs);
+            allDirs.Insert(0, basePath);
+            searchDirs = allDirs.ToArray();
+        }
+        catch { }
+
+        string[] saveExtensions = { ".json", ".sav", ".save", ".dat" };
+
+        foreach (var dir in searchDirs)
+        {
+            try
+            {
+                foreach (var file in Directory.GetFiles(dir))
+                {
+                    string ext = Path.GetExtension(file).ToLower();
+                    if (Array.IndexOf(saveExtensions, ext) < 0) continue;
+
+                    var info = new FileInfo(file);
+                    CrashLog.Log($"[MP Save] Candidate: {file} (size={info.Length}, modified={info.LastWriteTime:HH:mm:ss})");
+
+                    if (info.LastWriteTime > bestTime)
+                    {
+                        bestTime = info.LastWriteTime;
+                        bestFile = file;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        if (bestFile != null)
+        {
+            CrashLog.Log($"[MP Save] Selected save file: {bestFile}");
+            _discoveredSavePath = bestFile;
+        }
+
+        return bestFile;
+    }
+
+    private void LogDirectoryContents(string path, int depth)
+    {
+        if (depth > 2) return; // don't recurse too deep
+        string indent = new string(' ', depth * 2);
+
+        try
+        {
+            foreach (var file in Directory.GetFiles(path))
+            {
+                var info = new FileInfo(file);
+                CrashLog.Log($"[MP Save] {indent}FILE: {Path.GetFileName(file)} ({info.Length} bytes, {info.LastWriteTime:yyyy-MM-dd HH:mm:ss})");
+            }
+            foreach (var dir in Directory.GetDirectories(path))
+            {
+                CrashLog.Log($"[MP Save] {indent}DIR: {Path.GetFileName(dir)}/");
+                LogDirectoryContents(dir, depth + 1);
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Save] {indent}Error: {ex.Message}");
+        }
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -957,8 +1909,17 @@ public class MultiplayerBridge
         }
         y += 38f;
 
-        if (!_initialized) GUI.enabled = false;
-        string joinLabel = _initialized ? "JOIN GAME" : "JOIN GAME  (waiting...)";
+        bool joinBlocked = !_initialized || (_joinState != ClientJoinState.Idle && _joinState != ClientJoinState.Loaded);
+        if (joinBlocked) GUI.enabled = false;
+        string joinLabel;
+        if (!_initialized)
+            joinLabel = "JOIN GAME  (waiting...)";
+        else if (_joinState == ClientJoinState.WaitingForSave)
+            joinLabel = "JOINING...  (receiving save)";
+        else if (_joinState == ClientJoinState.SaveReceived || _joinState == ClientJoinState.WaitingForGameScene)
+            joinLabel = "JOINING...  (loading game)";
+        else
+            joinLabel = "JOIN GAME";
         if (GUI.Button(new Rect(cx, y, cw, 40f), joinLabel, _buttonStyle))
             DoConnect();
         GUI.enabled = true;
@@ -1334,6 +2295,9 @@ public class MultiplayerBridge
 
     private void CleanupAll()
     {
+        // Don't reset join state here — CleanupAll is called every frame when
+        // not connected, and we may still be in WaitingForGameScene after disconnect.
+        // Join state is reset explicitly in DoDisconnect/DoStopHosting/ResetJoinState.
         foreach (var kvp in _remotePlayers)
         {
             if (kvp.Value.GO != null)

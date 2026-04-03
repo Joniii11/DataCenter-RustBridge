@@ -159,6 +159,12 @@ public class FFIBridge : IDisposable
             _logger.Warning($"  '{fileName}' has no mod_init() export.");
         }
 
+        // Pass mod metadata to config system so it can display author/version
+        if (!string.IsNullOrEmpty(mod.Id) && mod.Id != "unknown")
+        {
+            ModConfigSystem.SetModInfo(mod.Id, mod.Author, mod.Version);
+        }
+
         // Optional exports
         CrashLog.Log($"LoadMod: resolving optional export 'mod_update' for '{mod.Name}'");
         var updatePtr = GetProcAddress(handle, "mod_update");
@@ -251,7 +257,6 @@ public class FFIBridge : IDisposable
         foreach (var mod in _loadedMods)
         {
             if (mod.OnEvent == null) continue;
-            CrashLog.Log($"DispatchEvent: calling mod_on_event(id={eventId}, dataSize={dataSize}) on '{mod.Name}'");
             try { mod.OnEvent.Invoke(eventId, eventData, dataSize); }
             catch (Exception ex) { _logger.Error($"[{mod.Name}] mod_on_event(id={eventId}) crashed: {ex.Message}"); }
         }

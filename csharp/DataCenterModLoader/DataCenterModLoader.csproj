@@ -129,6 +129,12 @@
       <Private>false</Private>
     </Reference>
 
+    <!-- Image Conversion Module (needed for ImageConversion.LoadImage to load PNG portraits) -->
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.ImageConversionModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
   </ItemGroup>
 
 </Project>
