@@ -667,10 +667,16 @@ public static class CustomEmployeeManager
             var portraitTransform = card.Find("Image");
             if (portraitTransform == null) return;
 
-            // Try loading a custom portrait from disk
-            string imagePath = Path.Combine(MelonEnvironment.UserDataDirectory, "ModAssets", employeeId + ".png");
+            // Try loading a custom portrait from disk (jpg first, then png)
+            string assetsDir = Path.Combine(MelonEnvironment.UserDataDirectory, "ModAssets");
+            string imagePath = null;
+            foreach (var ext in new[] { ".jpg", ".png" })
+            {
+                string candidate = Path.Combine(assetsDir, employeeId + ext);
+                if (File.Exists(candidate)) { imagePath = candidate; break; }
+            }
 
-            if (File.Exists(imagePath))
+            if (imagePath != null)
             {
                 try
                 {

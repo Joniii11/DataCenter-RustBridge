@@ -3,7 +3,7 @@
 use dc_api::*;
 use std::sync::{Mutex, OnceLock};
 
-const PORTRAIT_PNG: &[u8] = include_bytes!("../assets/SysAdmin.png");
+const PORTRAIT_PNG: &[u8] = include_bytes!("../assets/SysAdmin.jpg");
 
 const EMPLOYEE_ID: &str = "sysadmin";
 const EMPLOYEE_NAME: &str = "SysAdmin";
@@ -289,13 +289,14 @@ fn deploy_portrait(api: &Api) {
         return;
     }
 
-    let dest = dir.join(format!("{}.png", EMPLOYEE_ID));
-    if dest.exists() {
+    let png = dir.join(format!("{}.png", EMPLOYEE_ID));
+    let jpg = dir.join(format!("{}.jpg", EMPLOYEE_ID));
+    if png.exists() || jpg.exists() {
         return;
     }
 
-    match std::fs::write(&dest, PORTRAIT_PNG) {
-        Ok(_) => api.log_info(&format!("[SysAdmin] Portrait deployed to {:?}", dest)),
+    match std::fs::write(&png, PORTRAIT_PNG) {
+        Ok(_) => api.log_info(&format!("[SysAdmin] Portrait deployed to {:?}", png)),
         Err(e) => api.log_warning(&format!("[SysAdmin] Failed to write portrait: {}", e)),
     }
 }
