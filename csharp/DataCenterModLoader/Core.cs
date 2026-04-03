@@ -5,7 +5,7 @@ using System.IO;
 using HarmonyLib;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(DataCenterModLoader.Core), "DataCenterModLoader", "0.1.0", "DataCenterModding")]
+[assembly: MelonInfo(typeof(DataCenterModLoader.Core), "RustBridge", "0.1.0", "Joniii")]
 [assembly: MelonGame("Waseku", "Data Center")]
 
 namespace DataCenterModLoader;
@@ -22,7 +22,7 @@ public static class CrashLog
         {
             _logPath = Path.Combine(gameRoot, "dc_modloader_debug.log");
             var header =
-                $"===== DataCenterModLoader Debug Log ====={Environment.NewLine}" +
+                $"===== RustBridge Debug Log ====={Environment.NewLine}" +
                 $"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}{Environment.NewLine}" +
                 $"========================================={Environment.NewLine}";
             File.WriteAllText(_logPath, header);
@@ -72,6 +72,7 @@ public class Core : MelonMod
     public static Core Instance { get; private set; }
 
     private FFIBridge _ffiBridge;
+    private MultiplayerBridge _mpBridge;
     private string _modsPath;
 
     public override void OnInitializeMelon()
@@ -86,8 +87,8 @@ public class Core : MelonMod
             _modsPath = Path.Combine(MelonEnvironment.GameRootDirectory, "Mods", "native");
 
             LoggerInstance.Msg("╔══════════════════════════════════════════╗");
-            LoggerInstance.Msg("║   Data Center Modloader v0.1.0          ║");
-            LoggerInstance.Msg("║   Rust FFI Bridge Active                ║");
+            LoggerInstance.Msg("║   Rust Bridge v0.1.0                     ║");
+            LoggerInstance.Msg("║   Rust FFI Bridge Active                 ║");
             LoggerInstance.Msg("╚══════════════════════════════════════════╝");
 
             if (!Directory.Exists(_modsPath))
@@ -118,6 +119,10 @@ public class Core : MelonMod
 
             CrashLog.Log("step: loading all mods");
             _ffiBridge.LoadAllMods();
+
+            CrashLog.Log("step: creating MultiplayerBridge");
+            _mpBridge = new MultiplayerBridge(LoggerInstance);
+
             LoggerInstance.Msg("Modloader initialization complete.");
             CrashLog.Log("step: OnInitializeMelon complete");
         }
@@ -133,6 +138,13 @@ public class Core : MelonMod
         try
         {
             _ffiBridge?.OnSceneLoaded(sceneName);
+            _mpBridge?.OnSceneLoaded(sceneName);
+
+            // Initialize extra technician hiring (safe to call multiple times)
+            TechnicianHiring.Initialize();
+
+            // Re-register salaries for previously hired custom employees
+            CustomEmployeeManager.ReregisterSalariesIfNeeded();
         }
         catch (Exception ex)
         {
@@ -145,6 +157,7 @@ public class Core : MelonMod
         try
         {
             _ffiBridge?.OnUpdate(Time.deltaTime);
+            _mpBridge?.OnUpdate(Time.deltaTime);
         }
         catch (Exception ex)
         {
@@ -166,12 +179,25 @@ public class Core : MelonMod
         }
     }
 
+    public override void OnGUI()
+    {
+        try
+        {
+            _mpBridge?.DrawGUI();
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("OnGUI", ex);
+        }
+    }
+
     public override void OnApplicationQuit()
     {
         try
         {
             LoggerInstance.Msg("Shutting down modloader...");
             CrashLog.Log("step: OnApplicationQuit starting");
+            _mpBridge?.Shutdown();
             _ffiBridge?.Shutdown();
             _ffiBridge?.Dispose();
             CrashLog.Log("step: OnApplicationQuit complete");

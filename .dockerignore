@@ -1,0 +1,13 @@
+target/
+.git/
+.gitignore
+*.md
+docs/
+inspect_tool/
+tools/
+csharp/
+crates/dc_api/
+crates/dc_api_macros/
+crates/dc_example_mod/
+crates/dc_multiplayer/
+crates/dc_netwatch/

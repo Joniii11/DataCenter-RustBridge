@@ -38,6 +38,9 @@ public static class CustomEmployeeManager
     private static string _pendingEmployeeId;
     private static bool _pendingIsHire;
 
+    // deferred salary re-registration after LoadState
+    private static bool _salariesNeedReregistration;
+
     public static IReadOnlyList<CustomEmployeeEntry> Employees => _employees;
     public static bool HasPendingAction => _pendingEmployeeId != null;
 
@@ -106,6 +109,7 @@ public static class CustomEmployeeManager
         try { BalanceSheet.instance?.RegisterSalary((int)entry.SalaryPerHour); } catch { }
 
         EventDispatcher.FireCustomEmployeeHired(id);
+        try { TechnicianHiring.OnEmployeeHired(id); } catch (Exception ex) { CrashLog.LogException("Hire: TechnicianHiring callback", ex); }
         SaveState();
         return 1;
     }
@@ -119,17 +123,205 @@ public static class CustomEmployeeManager
         if (!entry.IsHired) return 0;
 
         entry.IsHired = false;
-        CrashLog.Log($"CustomEmployee fired: {id} ({entry.Name})");
-        Core.Instance?.LoggerInstance.Msg($"[CustomEmployee] Fired: {entry.Name}");
+        CrashLog.Log($"CustomEmployee.Fire: step 1 — set IsHired=false for '{id}' ({entry.Name})");
 
-        try { BalanceSheet.instance?.RegisterSalary(-(int)entry.SalaryPerHour); } catch { }
+        try
+        {
+            Core.Instance?.LoggerInstance.Msg($"[CustomEmployee] Fired: {entry.Name}");
+        }
+        catch (Exception ex) { CrashLog.LogException("Fire: LoggerInstance.Msg", ex); }
 
-        EventDispatcher.FireCustomEmployeeFired(id);
+        CrashLog.Log($"CustomEmployee.Fire: step 2 — about to unregister salary ({-(int)entry.SalaryPerHour})");
+        try
+        {
+            var bs = BalanceSheet.instance;
+            if (bs != null)
+            {
+                bs.RegisterSalary(-(int)entry.SalaryPerHour);
+                CrashLog.Log("CustomEmployee.Fire: step 2 — salary unregistered OK");
+            }
+            else
+            {
+                CrashLog.Log("CustomEmployee.Fire: step 2 — BalanceSheet.instance is null, skipping salary");
+            }
+        }
+        catch (Exception ex) { CrashLog.LogException("Fire: RegisterSalary", ex); }
+
+        CrashLog.Log($"CustomEmployee.Fire: step 3 — dispatching CustomEmployeeFired event for '{id}'");
+        try
+        {
+            EventDispatcher.FireCustomEmployeeFired(id);
+            CrashLog.Log("CustomEmployee.Fire: step 3 — event dispatched OK");
+        }
+        catch (Exception ex) { CrashLog.LogException("Fire: FireCustomEmployeeFired", ex); }
+
+        try { TechnicianHiring.OnEmployeeFired(id); } catch (Exception ex) { CrashLog.LogException("Fire: TechnicianHiring callback", ex); }
+
+        CrashLog.Log("CustomEmployee.Fire: step 4 — saving state");
         SaveState();
+        CrashLog.Log("CustomEmployee.Fire: step 5 — complete");
         return 1;
     }
 
     // UI Injection
+
+#pragma warning disable CS0414
+    private static bool _scrollViewInjected = false;
+#pragma warning restore CS0414
+
+    /// <summary>
+    /// Wraps the HR System's Grid in a ScrollRect so that any number of
+    /// employee cards can be scrolled vertically.
+    /// </summary>
+    private static Transform EnsureScrollView(Transform hrTransform, Transform grid)
+    {
+        // If we already injected, find the existing scroll content grid
+        var existingScroll = hrTransform.Find("ModScrollView");
+        if (existingScroll != null)
+        {
+            var existingContent = existingScroll.Find("Viewport/Content");
+            if (existingContent != null)
+            {
+                CrashLog.Log("CustomEmployee: ScrollView already exists, reusing");
+                return existingContent;
+            }
+        }
+
+        CrashLog.Log("CustomEmployee: Creating ScrollView wrapper for Grid");
+
+        // ── 1. Capture the Grid's RectTransform so the scroll view takes its place ──
+        var gridRect = grid.GetComponent<RectTransform>();
+        var gridParent = grid.parent;
+
+        // Save grid layout values before reparenting
+        var anchorMin = gridRect.anchorMin;
+        var anchorMax = gridRect.anchorMax;
+        var offsetMin = gridRect.offsetMin;
+        var offsetMax = gridRect.offsetMax;
+        var pivot = gridRect.pivot;
+        var sizeDelta = gridRect.sizeDelta;
+        var anchoredPos = gridRect.anchoredPosition;
+        int siblingIndex = grid.GetSiblingIndex();
+
+        // ── 2. Create ScrollView container ──
+        var scrollGO = new GameObject("ModScrollView");
+        scrollGO.AddComponent<RectTransform>();
+        scrollGO.transform.SetParent(gridParent, false);
+        scrollGO.transform.SetSiblingIndex(siblingIndex);
+
+        var scrollRect_rt = scrollGO.GetComponent<RectTransform>();
+        scrollRect_rt.anchorMin = anchorMin;
+        scrollRect_rt.anchorMax = anchorMax;
+        scrollRect_rt.offsetMin = offsetMin;
+        scrollRect_rt.offsetMax = offsetMax;
+        scrollRect_rt.pivot = pivot;
+        scrollRect_rt.sizeDelta = sizeDelta;
+        scrollRect_rt.anchoredPosition = anchoredPos;
+
+        // ── 3. Create Viewport (child of ScrollView) with mask ──
+        var viewportGO = new GameObject("Viewport");
+        viewportGO.AddComponent<RectTransform>();
+        viewportGO.AddComponent<RectMask2D>();
+        viewportGO.AddComponent<Image>();
+        viewportGO.transform.SetParent(scrollGO.transform, false);
+
+        var viewportRect = viewportGO.GetComponent<RectTransform>();
+        viewportRect.anchorMin = Vector2.zero;
+        viewportRect.anchorMax = Vector2.one;
+        viewportRect.offsetMin = Vector2.zero;
+        viewportRect.offsetMax = Vector2.zero;
+        viewportRect.pivot = new Vector2(0.5f, 1f);
+
+        // Transparent image needed for RectMask2D / raycasting
+        var viewportImage = viewportGO.GetComponent<Image>();
+        viewportImage.color = new Color(0, 0, 0, 0);
+        viewportImage.raycastTarget = true;
+
+        // ── 4. Create Content container (child of Viewport) ──
+        var contentGO = new GameObject("Content");
+        contentGO.AddComponent<RectTransform>();
+        contentGO.AddComponent<ContentSizeFitter>();
+        contentGO.transform.SetParent(viewportGO.transform, false);
+
+        var contentRect = contentGO.GetComponent<RectTransform>();
+        contentRect.anchorMin = new Vector2(0, 1);
+        contentRect.anchorMax = new Vector2(1, 1);
+        contentRect.pivot = new Vector2(0.5f, 1f);
+        contentRect.offsetMin = new Vector2(0, 0);
+        contentRect.offsetMax = new Vector2(0, 0);
+        contentRect.sizeDelta = new Vector2(0, 0);
+
+        var fitter = contentGO.GetComponent<ContentSizeFitter>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        // ── 5. Reparent ALL children from the original Grid into Content ──
+        // First copy the GridLayoutGroup (or other layout) from Grid onto Content
+        var srcLayout = grid.GetComponent<GridLayoutGroup>();
+        if (srcLayout != null)
+        {
+            var dstLayout = contentGO.AddComponent<GridLayoutGroup>();
+            dstLayout.cellSize = srcLayout.cellSize;
+            dstLayout.spacing = srcLayout.spacing;
+            dstLayout.startCorner = srcLayout.startCorner;
+            dstLayout.startAxis = srcLayout.startAxis;
+            dstLayout.childAlignment = srcLayout.childAlignment;
+            dstLayout.constraint = srcLayout.constraint;
+            dstLayout.constraintCount = srcLayout.constraintCount;
+            dstLayout.padding = srcLayout.padding;
+            CrashLog.Log($"CustomEmployee: Copied GridLayoutGroup (cellSize={dstLayout.cellSize}, spacing={dstLayout.spacing}, constraint={dstLayout.constraint}, count={dstLayout.constraintCount})");
+        }
+        else
+        {
+            CrashLog.Log("CustomEmployee: Grid has no GridLayoutGroup, checking for other layouts...");
+            // Try HorizontalLayoutGroup or VerticalLayoutGroup
+            var hLayout = grid.GetComponent<HorizontalLayoutGroup>();
+            if (hLayout != null)
+            {
+                var dst = contentGO.AddComponent<HorizontalLayoutGroup>();
+                dst.spacing = hLayout.spacing;
+                dst.childAlignment = hLayout.childAlignment;
+                dst.padding = hLayout.padding;
+            }
+            var vLayout = grid.GetComponent<VerticalLayoutGroup>();
+            if (vLayout != null)
+            {
+                var dst = contentGO.AddComponent<VerticalLayoutGroup>();
+                dst.spacing = vLayout.spacing;
+                dst.childAlignment = vLayout.childAlignment;
+                dst.padding = vLayout.padding;
+            }
+        }
+
+        // Move all existing children from Grid to Content
+        var childrenToMove = new System.Collections.Generic.List<Transform>();
+        for (int i = 0; i < grid.childCount; i++)
+            childrenToMove.Add(grid.GetChild(i));
+
+        foreach (var child in childrenToMove)
+            child.SetParent(contentGO.transform, false);
+
+        CrashLog.Log($"CustomEmployee: Moved {childrenToMove.Count} children from Grid to Content");
+
+        // ── 6. Add ScrollRect to the scroll container ──
+        var scrollComp = scrollGO.AddComponent<ScrollRect>();
+        scrollComp.content = contentRect;
+        scrollComp.viewport = viewportRect;
+        scrollComp.horizontal = false;
+        scrollComp.vertical = true;
+        scrollComp.movementType = ScrollRect.MovementType.Clamped;
+        scrollComp.scrollSensitivity = 30f;
+        scrollComp.inertia = true;
+        scrollComp.decelerationRate = 0.1f;
+
+        // ── 7. Hide the original Grid (now empty) ──
+        grid.gameObject.SetActive(false);
+
+        _scrollViewInjected = true;
+        CrashLog.Log("CustomEmployee: ScrollView injection complete");
+
+        return contentGO.transform;
+    }
 
     public static void InjectIntoHRSystem(HRSystem hrSystem)
     {
@@ -140,6 +332,7 @@ public static class CustomEmployeeManager
             var hrTransform = hrSystem.gameObject.transform;
             LogHierarchy(hrTransform, 0);
 
+            // Find the Grid — it may already be hidden if we injected previously
             var grid = hrTransform.Find("Grid");
             if (grid == null)
             {
@@ -149,10 +342,16 @@ public static class CustomEmployeeManager
 
             CrashLog.Log($"CustomEmployee: Found Grid with {grid.childCount} children");
 
+            // Wrap the grid in a scroll view (idempotent — reuses if already done)
+            var contentGrid = EnsureScrollView(hrTransform, grid);
+
+            CrashLog.Log($"CustomEmployee: Using content grid '{contentGrid.name}' with {contentGrid.childCount} children");
+
+            // Find a template card from the content grid
             Transform templateCard = null;
-            for (int i = grid.childCount - 1; i >= 0; i--)
+            for (int i = contentGrid.childCount - 1; i >= 0; i--)
             {
-                var child = grid.GetChild(i);
+                var child = contentGrid.GetChild(i);
                 if (child.gameObject.activeSelf &&
                     child.name.StartsWith("EmployeeCard") &&
                     !child.name.StartsWith("CustomEmployee_"))
@@ -164,7 +363,7 @@ public static class CustomEmployeeManager
 
             if (templateCard == null)
             {
-                CrashLog.Log("CustomEmployee: No EmployeeCard template found in Grid");
+                CrashLog.Log("CustomEmployee: No EmployeeCard template found in content grid");
                 return;
             }
 
@@ -174,7 +373,7 @@ public static class CustomEmployeeManager
             {
                 string cardName = "CustomEmployee_" + entry.EmployeeId;
 
-                var existing = grid.Find(cardName);
+                var existing = contentGrid.Find(cardName);
                 if (existing != null)
                 {
                     UpdateCard(existing, entry);
@@ -183,7 +382,7 @@ public static class CustomEmployeeManager
 
                 try
                 {
-                    CreateCard(grid, templateCard, entry, cardName);
+                    CreateCard(contentGrid, templateCard, entry, cardName);
                 }
                 catch (Exception ex)
                 {
@@ -351,6 +550,7 @@ public static class CustomEmployeeManager
         if (_pendingEmployeeId == null || !_pendingIsHire) return false;
         string id = _pendingEmployeeId;
         _pendingEmployeeId = null;
+        CrashLog.Log($"HandleConfirmHire: confirming hire for '{id}'");
         Hire(id);
         hr.confirmHireOverlay?.SetActive(false);
         RefreshAllCards();
@@ -363,6 +563,7 @@ public static class CustomEmployeeManager
         if (_pendingEmployeeId == null || _pendingIsHire) return false;
         string id = _pendingEmployeeId;
         _pendingEmployeeId = null;
+        CrashLog.Log($"HandleConfirmFire: confirming fire for '{id}'");
         Fire(id);
         hr.confirmFireOverlay?.SetActive(false);
         RefreshAllCards();
@@ -390,13 +591,57 @@ public static class CustomEmployeeManager
         {
             if (!File.Exists(_statePath)) return;
             var hired = new HashSet<string>(File.ReadAllLines(_statePath));
+            bool anyRestored = false;
             foreach (var e in _employees)
             {
                 if (hired.Contains(e.EmployeeId))
+                {
                     e.IsHired = true;
+                    anyRestored = true;
+                    CrashLog.Log($"LoadState: restored IsHired for '{e.EmployeeId}' ({e.Name}), salary={e.SalaryPerHour}");
+                }
+            }
+            if (anyRestored)
+            {
+                _salariesNeedReregistration = true;
+                CrashLog.Log("LoadState: salaries need re-registration (deferred until BalanceSheet is ready)");
             }
         }
         catch (Exception ex) { CrashLog.LogException("LoadState", ex); }
+    }
+
+    /// <summary>
+    /// Re-registers salaries for all hired custom employees with the BalanceSheet.
+    /// Should be called once after the game scene is loaded and BalanceSheet.instance is available.
+    /// Safe to call multiple times; only performs work on the first successful invocation after LoadState.
+    /// </summary>
+    public static void ReregisterSalariesIfNeeded()
+    {
+        if (!_salariesNeedReregistration) return;
+
+        try
+        {
+            if (BalanceSheet.instance == null)
+            {
+                CrashLog.Log("ReregisterSalariesIfNeeded: BalanceSheet.instance is null, skipping (will retry later)");
+                return;
+            }
+
+            int count = 0;
+            foreach (var e in _employees)
+            {
+                if (e.IsHired)
+                {
+                    BalanceSheet.instance.RegisterSalary((int)e.SalaryPerHour);
+                    count++;
+                    CrashLog.Log($"ReregisterSalariesIfNeeded: registered salary {e.SalaryPerHour} for '{e.EmployeeId}' ({e.Name})");
+                }
+            }
+
+            _salariesNeedReregistration = false;
+            CrashLog.Log($"ReregisterSalariesIfNeeded: done, re-registered {count} salary entries");
+        }
+        catch (Exception ex) { CrashLog.LogException("ReregisterSalariesIfNeeded", ex); }
     }
 
 
@@ -491,12 +736,18 @@ public static class CustomEmployeeManager
                 var hr = hrSystems[h];
                 if (hr == null) continue;
 
-                var grid = hr.transform.Find("Grid");
-                if (grid == null) continue;
+                // Try the scroll view content first, fall back to Grid
+                Transform contentGrid = null;
+                var scrollView = hr.transform.Find("ModScrollView");
+                if (scrollView != null)
+                    contentGrid = scrollView.Find("Viewport/Content");
+                if (contentGrid == null)
+                    contentGrid = hr.transform.Find("Grid");
+                if (contentGrid == null) continue;
 
                 foreach (var entry in _employees)
                 {
-                    var cardTransform = grid.Find("CustomEmployee_" + entry.EmployeeId);
+                    var cardTransform = contentGrid.Find("CustomEmployee_" + entry.EmployeeId);
                     if (cardTransform != null)
                         UpdateCard(cardTransform, entry);
                 }

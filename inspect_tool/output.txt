@@ -1,0 +1,2705 @@
+=== ALL TYPES IN Assembly-CSharp.dll (478 total) ===
+
+  public class Il2Cpp.__JobReflectionRegistrationOutput__1221673671587648887
+  public class Il2Cpp.__UnmanagedPostProcessorOutput__1221673671587648887
+  public class Il2Cpp._PrivateImplementationDetails_
+  public struct Il2Cpp._PrivateImplementationDetails_+ValueTypeNPrivateSealed0
+  public struct Il2Cpp._PrivateImplementationDetails_+ValueTypeNPrivateSealed1
+  public struct Il2Cpp._PrivateImplementationDetails_+ValueTypeNPrivateSealed2
+  public struct Il2Cpp._PrivateImplementationDetails_+ValueTypeNPrivateSealed3
+  public struct Il2Cpp._PrivateImplementationDetails_+ValueTypeNPrivateSealed4
+  public class Il2Cpp.ActionKeyHint : MonoBehaviour
+  public class Il2Cpp.ActionKeyHint+_DelayedUpdateUI_d__12
+  public class Il2Cpp.AICharacterControl : MonoBehaviour
+  public class Il2Cpp.AICharacterControl+_Start_d__28
+  public class Il2Cpp.AICharacterExpressions : MonoBehaviour
+  public class Il2Cpp.AICharacterExpressions+_Talking_d__7
+  public class Il2Cpp.AssetManagement : MonoBehaviour
+  public class Il2Cpp.AssetManagementDeviceLine : MonoBehaviour
+  public class Il2Cpp.AssetManagementDeviceLineData
+  public class Il2Cpp.AudioManager : MonoBehaviour
+  public class Il2Cpp.AudioManager+_FadeIn_d__33
+  public class Il2Cpp.AudioManager+_FadeOut_d__32
+  public class Il2Cpp.AudioManager+_FadeOut_FadeIn_d__34
+  public class Il2Cpp.AutoDisable : MonoBehaviour
+  public class Il2Cpp.AutoDisable+_TurnOffAfterXseconds_d__4
+  public class Il2Cpp.AutoScrollRect : MonoBehaviour
+  public class Il2Cpp.BalanceSheet : MonoBehaviour
+  public class Il2Cpp.BalanceSheet+_TrackFinances_d__16
+  public class Il2Cpp.BalanceSheet+CustomerRecord
+  public class Il2Cpp.BalanceSheet+MonthlySnapshot
+  public class Il2Cpp.BalanceSheet+MonthlySnapshot+__c
+  public class Il2Cpp.BalanceSheetRow : MonoBehaviour
+  public class Il2Cpp.BalanceSheetSaveData
+  public class Il2Cpp.CableEndpointSaveData
+  public struct Il2Cpp.CableIDComponent
+  public class Il2Cpp.CableLink : Interact
+  public enum Il2Cpp.CableLink+TypeOfLink
+  public class Il2Cpp.CablePositions : MonoBehaviour
+  public class Il2Cpp.CablePositions+CableEntityInfo
+  public class Il2Cpp.CableSaveData
+  public class Il2Cpp.CableSpinner : UsableObject
+  public class Il2Cpp.ChatController : MonoBehaviour
+  public class Il2Cpp.CheckIfTouchingWall : MonoBehaviour
+  public class Il2Cpp.CheckIfTouchingWall+_DelayedOverlapCheck_d__6
+  public class Il2Cpp.ColorSerializationSurrogate
+  public class Il2Cpp.ComputerShop : Interact
+  public class Il2Cpp.ComputerShop+__c
+  public class Il2Cpp.ComputerShop+__c__DisplayClass48_0
+  public class Il2Cpp.ComputerShop+__c__DisplayClass62_0
+  public class Il2Cpp.CustomerBase : MonoBehaviour
+  public class Il2Cpp.CustomerBase+__c
+  public class Il2Cpp.CustomerBase+__c__DisplayClass39_0
+  public class Il2Cpp.CustomerBase+_CheckIfAppRequirementsAreMet_d__35
+  public class Il2Cpp.CustomerBase+_DelayedAppDoorOpening_d__45
+  public class Il2Cpp.CustomerBase+_UpdateMoney_d__36
+  public class Il2Cpp.CustomerBase+AppConnectionInfo
+  public class Il2Cpp.CustomerBaseDoor : Interact
+  public class Il2Cpp.CustomerBaseSaveData
+  public class Il2Cpp.CustomerCard : MonoBehaviour
+  public class Il2Cpp.CustomerColor
+  public class Il2Cpp.CustomerItem : ScriptableObject
+  public class Il2Cpp.CustomerRecordSaveData
+  public class Il2Cpp.DropdownSample : MonoBehaviour
+  public class Il2Cpp.Dumpster : Interact
+  public class Il2Cpp.EnvMapAnimator : MonoBehaviour
+  public class Il2Cpp.EnvMapAnimator+_Start_d__4
+  public class Il2Cpp.FCP_Persistence : MonoBehaviour
+  public enum Il2Cpp.FCP_Persistence+SaveStrategy
+  public class Il2Cpp.FCP_SpriteMeshEditor : MonoBehaviour
+  public enum Il2Cpp.FCP_SpriteMeshEditor+MeshType
+  public class Il2Cpp.FlexibleColorPicker : MonoBehaviour
+  public class Il2Cpp.FlexibleColorPicker+AdvancedSettings
+  public class Il2Cpp.FlexibleColorPicker+AdvancedSettings+PSettings
+  public class Il2Cpp.FlexibleColorPicker+BufferedColor
+  public class Il2Cpp.FlexibleColorPicker+ColorUpdateEvent : UnityEvent`1
+  public enum Il2Cpp.FlexibleColorPicker+MainPickingMode
+  public class Il2Cpp.FlexibleColorPicker+Picker
+  public enum Il2Cpp.FlexibleColorPicker+PickerType
+  public class Il2Cpp.FootSteps : MonoBehaviour
+  public class Il2Cpp.FootSteps+_checkGroundMaterial_d__21
+  public class Il2Cpp.GamepadIcons : ScriptableObject
+  public class Il2Cpp.GateLever : Interact
+  public class Il2Cpp.GateLever+_GateCoroutine_d__15
+  public class Il2Cpp.GetCurrentVersion : MonoBehaviour
+  public class Il2Cpp.GetValueFromPlayerPrefs : MonoBehaviour
+  public class Il2Cpp.GODMOD : MonoBehaviour
+  public class Il2Cpp.GODMOD+_DelayedLoad_d__7
+  public class Il2Cpp.GODMOD+_GODMOD_delayed_d__10
+  public class Il2Cpp.HRSystem : MonoBehaviour
+  public class Il2Cpp.InputController
+  public class Il2Cpp.InputController+IPlayerActions : Il2CppObjectBase
+  public class Il2Cpp.InputController+IUIActions : Il2CppObjectBase
+  public class Il2Cpp.InputController+PlayerActions
+  public class Il2Cpp.InputController+UIActions
+  public class Il2Cpp.InputManager : MonoBehaviour
+  public class Il2Cpp.InputManager+__c__DisplayClass20_0
+  public class Il2Cpp.InputManager+OnControlChange : MulticastDelegate
+  public class Il2Cpp.Interact : MonoBehaviour
+  public class Il2Cpp.InteractObjectData
+  public class Il2Cpp.Item : ScriptableObject
+  public class Il2Cpp.KeyHint : MonoBehaviour
+  public class Il2Cpp.LACPGroupSaveData
+  public class Il2Cpp.LanguageObject
+  public class Il2Cpp.LeanTweenUIElement : MonoBehaviour
+  public class Il2Cpp.LeanTweenUIElement+_Disabling_d__20
+  public class Il2Cpp.LeanTweenUIElement+_KeepRotating_d__24
+  public class Il2Cpp.LeanTweenUIElement+_TweenScaleInOut_d__23
+  public enum Il2Cpp.LeanTweenUIElement+LeanTweanType
+  public class Il2Cpp.LoadingScreen : MonoBehaviour
+  public class Il2Cpp.LoadingScreen+_AsynchronousLoad_d__17
+  public class Il2Cpp.LoadingScreen+_AsynchronousUnLoad_d__18
+  public class Il2Cpp.LoadingScreen+_LoadGameLoadScene_d__13
+  public class Il2Cpp.LoadingScreen+_LoadPlayerAndNPCDataWithDelay_d__12
+  public class Il2Cpp.LoadingScreen+_Start_d__10
+  public class Il2Cpp.LoadingScreen+GameIsLoaded : MulticastDelegate
+  public class Il2Cpp.Localisation : MonoBehaviour
+  public class Il2Cpp.Localisation+__c__DisplayClass9_0
+  public enum Il2Cpp.Localisation+Languages
+  public class Il2Cpp.Localisation+OnLanguageChange : MulticastDelegate
+  public class Il2Cpp.LocalisedText : MonoBehaviour
+  public class Il2Cpp.MainGameManager : MonoBehaviour
+  public class Il2Cpp.MainGameManager+__c
+  public class Il2Cpp.MainGameManager+__c__DisplayClass71_0
+  public class Il2Cpp.MainGameManager+__c__DisplayClass76_0
+  public class Il2Cpp.MainGameManager+__c__DisplayClass78_0
+  public class Il2Cpp.MainGameManager+_AutoSaveCoroutine_d__92
+  public class Il2Cpp.MainMenu : MonoBehaviour
+  public class Il2Cpp.MainMenuCamera : MonoBehaviour
+  public class Il2Cpp.ModConfig
+  public class Il2Cpp.ModItemSaveData
+  public class Il2Cpp.ModLoader : MonoBehaviour
+  public class Il2Cpp.ModShopItem : MonoBehaviour
+  public class Il2Cpp.MonthlySnapshotSaveData
+  public class Il2Cpp.MusicPlayer : Interact
+  public class Il2Cpp.NetworkMap : MonoBehaviour
+  public class Il2Cpp.NetworkMap+__c
+  public class Il2Cpp.NetworkMap+__c__DisplayClass38_0
+  public class Il2Cpp.NetworkMap+Device
+  public class Il2Cpp.NetworkMap+LACPGroup
+  public class Il2Cpp.NetworkSaveData
+  public class Il2Cpp.NetworkSwitch : UsableObject
+  public class Il2Cpp.NetworkSwitch+_BrekingInProgress_d__29
+  public class Il2Cpp.NetworkSwitchConfiguration : MonoBehaviour
+  public class Il2Cpp.NetworkSwitchConfiguration+__c
+  public class Il2Cpp.NetworkSwitchConfiguration+__c__DisplayClass16_0
+  public class Il2Cpp.NetworkSwitchConfiguration+__c__DisplayClass9_0
+  public class Il2Cpp.ObjectiveObject : MonoBehaviour
+  public class Il2Cpp.Objectives : MonoBehaviour
+  public class Il2Cpp.Objectives+__c__DisplayClass32_0
+  public class Il2Cpp.Objectives+_EffectOnDestroy_d__27
+  public class Il2Cpp.ObjectiveTimed : MonoBehaviour
+  public class Il2Cpp.ObjectPrivateAbstractSealedInVo0
+  public class Il2Cpp.ObjImporter
+  public class Il2Cpp.OpenURL : MonoBehaviour
+  public struct Il2Cpp.PacketComponent
+  public class Il2Cpp.PacketSpawnerAuthoring : MonoBehaviour
+  public class Il2Cpp.PacketSpawnerAuthoring+Baker : Baker`1
+  public class Il2Cpp.PacketSpawnerComponent
+  public class Il2Cpp.PacketSpawnerSystem
+  public struct Il2Cpp.PacketSpawnerSystem+IFE_23355594_0
+  public class Il2Cpp.PacketSpawnerSystem+IFE_23355594_0+Enumerator
+  public struct Il2Cpp.PacketSpawnerSystem+IFE_23355594_0+ResolvedChunk
+  public class Il2Cpp.PacketSpawnerSystem+IFE_23355594_0+TypeHandle
+  public class Il2Cpp.PacketSpawnerSystem+MulticastDelegateNInternalSealedVoInA_InVoObseA_stBe0 : MulticastDelegate
+  public class Il2Cpp.PacketSpawnerSystem+MulticastDelegateNInternalSealedVoInA_InVoObseA_stBe1 : MulticastDelegate
+  public class Il2Cpp.PacketSpawnerSystem+ObjectNInternalAbstractSealedInPoGeVoA_ObseGeInVo0
+  public class Il2Cpp.PacketSpawnerSystem+ObjectNInternalAbstractSealedInPoGeVoA_ObseGeInVo1
+  public class Il2Cpp.PacketSpawnerSystem+TypeHandle
+  public class Il2Cpp.PacketSpawnerSystem+UpdatePacketsJob
+  public struct Il2Cpp.PacketSpawnerSystem+UpdatePacketsJob+InternalCompiler
+  public class Il2Cpp.PacketSpawnerSystem+UpdatePacketsJob+InternalCompilerQueryAndHandleData
+  public class Il2Cpp.PacketSpawnerSystem+UpdatePacketsJob+InternalCompilerQueryAndHandleData+TypeHandle
+  public class Il2Cpp.PatchPanel : UsableObject
+  public class Il2Cpp.PatchPanel+__c
+  public class Il2Cpp.PatchPanelSaveData
+  public class Il2Cpp.PauseMenu : MonoBehaviour
+  public class Il2Cpp.PauseMenu_TabButton : MonoBehaviour
+  public class Il2Cpp.PauseMenu_TabGroup : MonoBehaviour
+  public class Il2Cpp.PauseMenu+_LoadWithOverlay_d__45
+  public class Il2Cpp.PauseMenu+OnPauseMenuClose : MulticastDelegate
+  public class Il2Cpp.PauseMenu+OnPauseMenuOpen : MulticastDelegate
+  public class Il2Cpp.PauseMenuVideoTutorial : MonoBehaviour
+  public class Il2Cpp.Player : MonoBehaviour
+  public class Il2Cpp.Player+_TurnOnCharacterControllerDelayed_d__10
+  public class Il2Cpp.PlayerData
+  public class Il2Cpp.PlayerHit : MonoBehaviour
+  public class Il2Cpp.PlayerManager : MonoBehaviour
+  public class Il2Cpp.PlayerManager+_WaitForActionToFinish_d__30
+  public enum Il2Cpp.PlayerManager+ObjectInHand
+  public class Il2Cpp.PlayerManager+OnBuyingWall : MulticastDelegate
+  public class Il2Cpp.PositionIndicator : MonoBehaviour
+  public class Il2Cpp.PulsatingImageColor : MonoBehaviour
+  public class Il2Cpp.PulsatingText : MonoBehaviour
+  public class Il2Cpp.PushTrolleyHandle : Interact
+  public class Il2Cpp.QuaternionSerializationSurrogate
+  public class Il2Cpp.Rack : MonoBehaviour
+  public class Il2Cpp.Rack+__c
+  public class Il2Cpp.Rack+_UnmountRack_d__18
+  public class Il2Cpp.RackAudioCuller : MonoBehaviour
+  public class Il2Cpp.RackAudioCuller+__c
+  public class Il2Cpp.RackAudioCuller+_CullLoop_d__13
+  public class Il2Cpp.RackDoor : Interact
+  public class Il2Cpp.RackMount : Interact
+  public class Il2Cpp.RackMount+__c
+  public class Il2Cpp.RackMount+__c__DisplayClass6_0
+  public class Il2Cpp.RackMount+_InstallRack_d__6
+  public class Il2Cpp.RackPosition : Interact
+  public class Il2Cpp.RackPosition+__c__DisplayClass7_0
+  public class Il2Cpp.RackPosition+_InsertItemInRack_d__7
+  public class Il2Cpp.ReBindUI : MonoBehaviour
+  public class Il2Cpp.RebindUIv2 : MonoBehaviour
+  public class Il2Cpp.RebindUIv2+__c__DisplayClass29_0
+  public class Il2Cpp.RebindUIv2+__c__DisplayClass33_0
+  public class Il2Cpp.RebindUIv2+InteractiveRebindEvent : UnityEvent`2
+  public class Il2Cpp.RebindUIv2+UpdateBindingUIEvent : UnityEvent`4
+  public class Il2Cpp.RectExtensions
+  public class Il2Cpp.RepairJobSaveData
+  public class Il2Cpp.ReusableFunctions
+  public class Il2Cpp.ReusableFunctions+__c__DisplayClass5_0
+  public class Il2Cpp.ReusableFunctions+_DisableGameObjectWithDelay_d__6
+  public class Il2Cpp.ReusableFunctions+_ImageScrollingUI_d__3
+  public class Il2Cpp.ReusableFunctions+_NumberScrollingUI_d__2
+  public class Il2Cpp.SaveData
+  public class Il2Cpp.SaveSystem
+  public class Il2Cpp.SaveSystem+__c
+  public class Il2Cpp.SaveSystem+__c__DisplayClass20_0
+  public class Il2Cpp.SaveSystem+OnLoadingData : MulticastDelegate
+  public class Il2Cpp.SaveSystem+OnLoadingDataLater : MulticastDelegate
+  public class Il2Cpp.SaveSystem+OnSavingData : MulticastDelegate
+  public class Il2Cpp.Server : UsableObject
+  public class Il2Cpp.Server+_BrekingInProgress_d__45
+  public class Il2Cpp.ServerSaveData
+  public class Il2Cpp.SetIP : MonoBehaviour
+  public class Il2Cpp.SettingsControls : MonoBehaviour
+  public class Il2Cpp.SettingsGameplay : MonoBehaviour
+  public class Il2Cpp.SettingsGameplay+__c
+  public class Il2Cpp.SettingsGraphics : MonoBehaviour
+  public class Il2Cpp.SettingsGraphics+__c
+  public class Il2Cpp.SettingsGraphics+_AvailableRefreshRatesAfterFrame_d__32
+  public class Il2Cpp.SettingsSingleton : MonoBehaviour
+  public class Il2Cpp.SettingsSingleton+_DisableOnAfterFirstSettingUp_d__5
+  public class Il2Cpp.SettingsSingleton+OnTurnOffPublic : MulticastDelegate
+  public class Il2Cpp.SettingsVolume : MonoBehaviour
+  public class Il2Cpp.SFPBox : UsableObject
+  public class Il2Cpp.SFPBox+_ParentTheObjectWithDelay_d__6
+  public class Il2Cpp.SFPModule : UsableObject
+  public class Il2Cpp.SFPModule+_SlideIntoPort_d__12
+  public class Il2Cpp.SFPSaveData
+  public class Il2Cpp.ShopCartItem : MonoBehaviour
+  public class Il2Cpp.ShopItem : MonoBehaviour
+  public class Il2Cpp.ShopItemSO : ScriptableObject
+  public class Il2Cpp.StaminaOverlayOnEnable : MonoBehaviour
+  public class Il2Cpp.StaticUIElements : MonoBehaviour
+  public class Il2Cpp.StaticUIElements+_UpdateCoinsAndPrestige_TopLeft_d__48
+  public class Il2Cpp.StaticUIElements+_UpdateMessagesCoroutine_d__55
+  public class Il2Cpp.SteamLeaderboards
+  public class Il2Cpp.SteamManager : MonoBehaviour
+  public class Il2Cpp.SteamStatsOnMainMenuTop : MonoBehaviour
+  public class Il2Cpp.SteamStatsOnMainMenuTop+_WaitAndDisplay_d__5
+  public class Il2Cpp.SwitchSaveData
+  public class Il2Cpp.Technician : MonoBehaviour
+  public class Il2Cpp.Technician+_GettingNewServer_d__30
+  public class Il2Cpp.Technician+_ReplacingServer_d__31
+  public class Il2Cpp.Technician+_RequestJobDelayed_d__25
+  public class Il2Cpp.Technician+_SendToContainer_d__29
+  public class Il2Cpp.Technician+_SetHandIKWeight_d__36
+  public class Il2Cpp.Technician+_StartTextingAnimation_d__28
+  public class Il2Cpp.Technician+_ThrowingOutServer_d__32
+  public enum Il2Cpp.Technician+TechnicianState
+  public class Il2Cpp.TechnicianManager : MonoBehaviour
+  public class Il2Cpp.TechnicianManager+__c__DisplayClass26_0
+  public class Il2Cpp.TechnicianManager+_ProcessDispatchQueue_d__21
+  public class Il2Cpp.TechnicianManager+RepairJob
+  public class Il2Cpp.TechnicianSaveData
+  public class Il2Cpp.TerrainDetector
+  public class Il2Cpp.TimeController : MonoBehaviour
+  public class Il2Cpp.TimeController+OnEndOfTheDay : MulticastDelegate
+  public class Il2Cpp.Tooltip : MonoBehaviour
+  public class Il2Cpp.ToolTipInteract : MonoBehaviour
+  public class Il2Cpp.ToolTipOnUIText : MonoBehaviour
+  public class Il2Cpp.TrolleyLoadingBay : Interact
+  public class Il2Cpp.TrolleyLoadingBay+_ParentTheObjectWithDelay_d__10
+  public class Il2Cpp.TrolleyTrigger : MonoBehaviour
+  public class Il2Cpp.TrolleyTrigger+_ObjectAdded_d__3
+  public class Il2Cpp.Tutorials : MonoBehaviour
+  public class Il2Cpp.UI_Section : MonoBehaviour
+  public class Il2Cpp.UI_SelectedBorder : MonoBehaviour
+  public class Il2Cpp.UIExtension
+  public class Il2Cpp.UnitySourceGeneratedAssemblyMonoScriptTypes_v1
+  public class Il2Cpp.UnitySourceGeneratedAssemblyMonoScriptTypes_v1+MonoScriptData
+  public class Il2Cpp.UsableObject : Interact
+  public class Il2Cpp.UsableObject+_CheckIfLost_d__55
+  public class Il2Cpp.UsableObject+_DisalowDrop_d__51
+  public class Il2Cpp.UsableObject+_MakeInteractableAgain_d__48
+  public class Il2Cpp.UserReport : MonoBehaviour
+  public class Il2Cpp.UserReport+_ShowError_d__25
+  public class Il2Cpp.UserReport+_Start_d__15
+  public class Il2Cpp.UserReport+SystemInfoData
+  public enum Il2Cpp.UserReport+UserReportingState
+  public class Il2Cpp.Vector3SerializationSurrogate
+  public class Il2Cpp.Wall : Interact
+  public class Il2Cpp.WaypointInitializationSystem : SystemBase
+  public class Il2Cpp.WaypointInitializationSystem+___LoadNetworkStateCoroutine_592A83D2_d__46
+  public class Il2Cpp.WaypointInitializationSystem+__c
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass12_0
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass12_1
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass24_0
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass27_0
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass46_0
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass46_1
+  public class Il2Cpp.WaypointInitializationSystem+_LoadNetworkStateCoroutine_d__12
+  public class Il2Cpp.WaypointInitializationSystem+CableEndpoint
+  public class Il2Cpp.WaypointInitializationSystem+CableInfo
+  public class Il2Cpp.WaypointInitializationSystem+CustomerNetworkInfo
+  public struct Il2Cpp.WaypointInitializationSystem+TypeHandle
+  public class Il2Cpp.WaypointsBlob
+  public class Il2Cpp.WorldCanvasCuller : MonoBehaviour
+  public class Il2Cpp.WorldObjectButton : Interact
+  public class Il2CppGogoGaga.OptimizedRopesAndCables.Rope : MonoBehaviour
+  public class Il2CppGogoGaga.OptimizedRopesAndCables.RopeMesh : MonoBehaviour
+  public class Il2CppGogoGaga.OptimizedRopesAndCables.RopeWindEffect : MonoBehaviour
+  public class Il2CppPolyAndCode.UI.HorizontalRecyclingSystem : RecyclingSystem
+  public class Il2CppPolyAndCode.UI.HorizontalRecyclingSystem+__c
+  public class Il2CppPolyAndCode.UI.HorizontalRecyclingSystem+__c__DisplayClass19_0
+  public class Il2CppPolyAndCode.UI.HorizontalRecyclingSystem+__c__DisplayClass20_0
+  public class Il2CppPolyAndCode.UI.HorizontalRecyclingSystem+_InitCoroutine_d__15
+  public class Il2CppPolyAndCode.UI.ICell : Il2CppObjectBase
+  public class Il2CppPolyAndCode.UI.IRecyclableScrollRectDataSource : Il2CppObjectBase
+  public class Il2CppPolyAndCode.UI.RecyclableScrollRect : ScrollRect
+  public enum Il2CppPolyAndCode.UI.RecyclableScrollRect+DirectionType
+  public class Il2CppPolyAndCode.UI.RecyclingSystem
+  public class Il2CppPolyAndCode.UI.VerticalRecyclingSystem : RecyclingSystem
+  public class Il2CppPolyAndCode.UI.VerticalRecyclingSystem+__c
+  public class Il2CppPolyAndCode.UI.VerticalRecyclingSystem+__c__DisplayClass19_0
+  public class Il2CppPolyAndCode.UI.VerticalRecyclingSystem+__c__DisplayClass20_0
+  public class Il2CppPolyAndCode.UI.VerticalRecyclingSystem+_InitCoroutine_d__15
+  public class Il2CppPolyStang.CarController : MonoBehaviour
+  public class Il2CppPolyStang.CarController+__c__DisplayClass37_0
+  public class Il2CppPolyStang.CarController+__c__DisplayClass38_0
+  public class Il2CppPolyStang.CarController+_DisableTheTriggerColliderAfterDealy_d__44
+  public class Il2CppPolyStang.CarController+_ResetingTrollerPosition_d__41
+  public enum Il2CppPolyStang.CarController+Axel
+  public enum Il2CppPolyStang.CarController+TypeOfSpeedLimit
+  public class Il2CppPolyStang.CarController+Wheel
+  public class Il2CppTMPro.Examples.Benchmark01 : MonoBehaviour
+  public class Il2CppTMPro.Examples.Benchmark01_UGUI : MonoBehaviour
+  public class Il2CppTMPro.Examples.Benchmark01_UGUI+_Start_d__10
+  public class Il2CppTMPro.Examples.Benchmark01+_Start_d__10
+  public class Il2CppTMPro.Examples.Benchmark02 : MonoBehaviour
+  public class Il2CppTMPro.Examples.Benchmark03 : MonoBehaviour
+  public enum Il2CppTMPro.Examples.Benchmark03+BenchmarkType
+  public class Il2CppTMPro.Examples.Benchmark04 : MonoBehaviour
+  public class Il2CppTMPro.Examples.CameraController : MonoBehaviour
+  public enum Il2CppTMPro.Examples.CameraController+CameraModes
+  public class Il2CppTMPro.Examples.ObjectSpin : MonoBehaviour
+  public enum Il2CppTMPro.Examples.ObjectSpin+MotionType
+  public class Il2CppTMPro.Examples.ShaderPropAnimator : MonoBehaviour
+  public class Il2CppTMPro.Examples.ShaderPropAnimator+_AnimateProperties_d__6
+  public class Il2CppTMPro.Examples.SimpleScript : MonoBehaviour
+  public class Il2CppTMPro.Examples.SkewTextExample : MonoBehaviour
+  public class Il2CppTMPro.Examples.SkewTextExample+_WarpText_d__7
+  public class Il2CppTMPro.Examples.TeleType : MonoBehaviour
+  public class Il2CppTMPro.Examples.TeleType+_Start_d__4
+  public class Il2CppTMPro.Examples.TextConsoleSimulator : MonoBehaviour
+  public class Il2CppTMPro.Examples.TextConsoleSimulator+_RevealCharacters_d__7
+  public class Il2CppTMPro.Examples.TextConsoleSimulator+_RevealWords_d__8
+  public class Il2CppTMPro.Examples.TextMeshProFloatingText : MonoBehaviour
+  public class Il2CppTMPro.Examples.TextMeshProFloatingText+_DisplayTextMeshFloatingText_d__16
+  public class Il2CppTMPro.Examples.TextMeshProFloatingText+_DisplayTextMeshProFloatingText_d__15
+  public class Il2CppTMPro.Examples.TextMeshSpawner : MonoBehaviour
+  public class Il2CppTMPro.Examples.TMP_ExampleScript_01 : MonoBehaviour
+  public enum Il2CppTMPro.Examples.TMP_ExampleScript_01+objectType
+  public class Il2CppTMPro.Examples.TMP_FrameRateCounter : MonoBehaviour
+  public enum Il2CppTMPro.Examples.TMP_FrameRateCounter+FpsCounterAnchorPositions
+  public class Il2CppTMPro.Examples.TMP_TextEventCheck : MonoBehaviour
+  public class Il2CppTMPro.Examples.TMP_TextInfoDebugTool : MonoBehaviour
+  public class Il2CppTMPro.Examples.TMP_TextSelector_A : MonoBehaviour
+  public class Il2CppTMPro.Examples.TMP_TextSelector_B : MonoBehaviour
+  public class Il2CppTMPro.Examples.TMP_UiFrameRateCounter : MonoBehaviour
+  public enum Il2CppTMPro.Examples.TMP_UiFrameRateCounter+FpsCounterAnchorPositions
+  public class Il2CppTMPro.Examples.TMPro_InstructionOverlay : MonoBehaviour
+  public enum Il2CppTMPro.Examples.TMPro_InstructionOverlay+FpsCounterAnchorPositions
+  public class Il2CppTMPro.Examples.VertexColorCycler : MonoBehaviour
+  public class Il2CppTMPro.Examples.VertexColorCycler+_AnimateVertexColors_d__3
+  public class Il2CppTMPro.Examples.VertexJitter : MonoBehaviour
+  public class Il2CppTMPro.Examples.VertexJitter+_AnimateVertexColors_d__11
+  public struct Il2CppTMPro.Examples.VertexJitter+VertexAnim
+  public class Il2CppTMPro.Examples.VertexShakeA : MonoBehaviour
+  public class Il2CppTMPro.Examples.VertexShakeA+_AnimateVertexColors_d__11
+  public class Il2CppTMPro.Examples.VertexShakeB : MonoBehaviour
+  public class Il2CppTMPro.Examples.VertexShakeB+_AnimateVertexColors_d__10
+  public class Il2CppTMPro.Examples.VertexZoom : MonoBehaviour
+  public class Il2CppTMPro.Examples.VertexZoom+__c__DisplayClass10_0
+  public class Il2CppTMPro.Examples.VertexZoom+_AnimateVertexColors_d__10
+  public class Il2CppTMPro.Examples.WarpTextExample : MonoBehaviour
+  public class Il2CppTMPro.Examples.WarpTextExample+_WarpText_d__8
+  public class Il2CppTMPro.TMP_DigitValidator : TMP_InputValidator
+  public class Il2CppTMPro.TMP_PhoneNumberValidator : TMP_InputValidator
+  public class Il2CppTMPro.TMP_TextEventHandler : MonoBehaviour
+  public class Il2CppTMPro.TMP_TextEventHandler+CharacterSelectionEvent : UnityEvent`2
+  public class Il2CppTMPro.TMP_TextEventHandler+LineSelectionEvent : UnityEvent`3
+  public class Il2CppTMPro.TMP_TextEventHandler+LinkSelectionEvent : UnityEvent`3
+  public class Il2CppTMPro.TMP_TextEventHandler+SpriteSelectionEvent : UnityEvent`2
+  public class Il2CppTMPro.TMP_TextEventHandler+WordSelectionEvent : UnityEvent`3
+  public class Il2CppviperOSK.AccentEntry
+  public class Il2CppviperOSK.HexRange
+  public class Il2CppviperOSK.I_OSK_Cursor : Il2CppObjectBase
+  public class Il2CppviperOSK.I_OSK_Key : Il2CppObjectBase
+  public class Il2CppviperOSK.OSK_AccentAssetObj : ScriptableObject
+  public class Il2CppviperOSK.OSK_AccentConsole : MonoBehaviour
+  public class Il2CppviperOSK.OSK_AccentConsole+__c__DisplayClass15_0
+  public class Il2CppviperOSK.OSK_AccentConsole+_GenerateCoroutine_d__21
+  public class Il2CppviperOSK.OSK_Background : MonoBehaviour
+  public class Il2CppviperOSK.OSK_Cursor : MonoBehaviour
+  public class Il2CppviperOSK.OSK_Cursor+_BlinkCoroutine_d__14
+  private class Il2CppviperOSK.OSK_Cursor+MethodInfoStoreGeneric_FindComponentInParentOrSiblings_Public_T_0`1
+  public class Il2CppviperOSK.OSK_GamepadHelper : MonoBehaviour
+  public class Il2CppviperOSK.OSK_GlyphHandler
+  public class Il2CppviperOSK.OSK_GlyphHandler+__c
+  public class Il2CppviperOSK.OSK_GlyphHandler+__c__0`1
+  public class Il2CppviperOSK.OSK_GlyphHandler+__c__18`1
+  private class Il2CppviperOSK.OSK_GlyphHandler+MethodInfoStoreGeneric_BuildAssignments_Public_Static_List_1_ValueTuple_2_String_TEnum_OSK_LanguagePackage_0`1
+  private class Il2CppviperOSK.OSK_GlyphHandler+MethodInfoStoreGeneric_BuildLookup_Public_Static_Dictionary_2_String_TEnum_OSK_LanguagePackage_0`1
+  private class Il2CppviperOSK.OSK_GlyphHandler+MethodInfoStoreGeneric_GetGlyphEnumSlots_Private_Static_List_1_TEnum_0`1
+  public struct Il2CppviperOSK.OSK_GlyphHandler+Range
+  public enum Il2CppviperOSK.OSK_GlyphHandler+Script
+  public class Il2CppviperOSK.OSK_Key : MonoBehaviour
+  public enum Il2CppviperOSK.OSK_KEY_TYPES
+  public class Il2CppviperOSK.OSK_Key+_ClickCoroutine_d__41
+  public class Il2CppviperOSK.OSK_Key+_LongPressCheck_d__35
+  public class Il2CppviperOSK.OSK_Keyboard : MonoBehaviour
+  public class Il2CppviperOSK.OSK_Keyboard+__c
+  public class Il2CppviperOSK.OSK_Keyboard+__c__DisplayClass55_0
+  public class Il2CppviperOSK.OSK_Keyboard+__c__DisplayClass56_0
+  public class Il2CppviperOSK.OSK_Keyboard+__c__DisplayClass57_0
+  public class Il2CppviperOSK.OSK_Keyboard+__c__DisplayClass61_0
+  public class Il2CppviperOSK.OSK_Keyboard+_ReHighlightKey_d__68
+  public enum Il2CppviperOSK.OSK_Keyboard+KEYBOARD_WRAP
+  public enum Il2CppviperOSK.OSK_KeyCode
+  public class Il2CppviperOSK.OSK_Keymap
+  public class Il2CppviperOSK.OSK_Keymap+__c
+  public class Il2CppviperOSK.OSK_Keymap+__c__DisplayClass11_0
+  public class Il2CppviperOSK.OSK_KeySounds : MonoBehaviour
+  public class Il2CppviperOSK.OSK_KeyTypeMeta
+  public class Il2CppviperOSK.OSK_LanguagePackage : ScriptableObject
+  public class Il2CppviperOSK.OSK_LongPressPacket
+  public class Il2CppviperOSK.OSK_MiniKeyboard : MonoBehaviour
+  public class Il2CppviperOSK.OSK_MiniKeyboard+__c
+  public class Il2CppviperOSK.OSK_Receiver : MonoBehaviour
+  public class Il2CppviperOSK.OSK_Settings : MonoBehaviour
+  public class Il2CppviperOSK.OSK_SpecialKeys
+  public class Il2CppviperOSK.OSK_UI_Cursor : MonoBehaviour
+  public class Il2CppviperOSK.OSK_UI_Cursor+_BlinkCoroutine_d__14
+  private class Il2CppviperOSK.OSK_UI_Cursor+MethodInfoStoreGeneric_FindComponentInParentOrSiblings_Public_T_0`1
+  public class Il2CppviperOSK.OSK_UI_CustomReceiver : OSK_Receiver
+  public class Il2CppviperOSK.OSK_UI_InputReceiver : OSK_Receiver
+  public enum Il2CppviperOSK.OSK_UI_InputReceiver+OSK_RECEIVER
+  public class Il2CppviperOSK.OSK_UI_Key : MonoBehaviour
+  public class Il2CppviperOSK.OSK_UI_Key+_ClickCoroutine_d__43
+  public class Il2CppviperOSK.OSK_UI_Key+_LongPressCheck_d__37
+  public class Il2CppviperOSK.OSK_UI_Keyboard : OSK_Keyboard
+  public class Il2CppviperOSK.OSK_UI_Keyboard+__c
+  public class Il2CppviperOSK.OSK_UI_Keyboard+__c__DisplayClass12_0
+  public class Il2CppviperOSK.OSK_UI_Keyboard+__c__DisplayClass13_0
+  public class Il2CppviperOSK.OSK_UI_Keyboard+__c__DisplayClass16_0
+  public class Il2CppviperOSK.OSK_UI_Keyboard+_SelectKey_d__21
+  public enum Il2CppviperTools.AXIS_INPUT
+  public class Il2CppviperTools.viperInput : MonoBehaviour
+  public class Unity.Entities.CodeGeneratedRegistry.AssemblyTypeRegistry
+  public struct Unity.Entities.CodeGeneratedRegistry.AssemblyTypeRegistry+ConstantData0
+  public struct Unity.Entities.CodeGeneratedRegistry.AssemblyTypeRegistry+ConstantData1
+  public struct Unity.Entities.CodeGeneratedRegistry.AssemblyTypeRegistry+ConstantData2
+  public struct Unity.Entities.CodeGeneratedRegistry.AssemblyTypeRegistry+ConstantData3
+  public class UnityEngine.UI.ButtonExtended : Selectable
+  public class UnityEngine.UI.ButtonExtended+_OnFinishSubmit_d__25
+  public class UnityEngine.UI.ButtonExtended+ButtonClickedEvent : UnityEvent
+  public class UnityStandardAssets.Characters.FirstPerson.FirstPersonController : MonoBehaviour
+  public class UnityStandardAssets.Characters.FirstPerson.MouseLook
+  public class UnityStandardAssets.Characters.FirstPerson.RayLookAt
+  public class UnityStandardAssets.Characters.ThirdPerson.ThirdPersonCharacter : MonoBehaviour
+
+=== FILTERED: Menu, Button, Setting, Local, Panel, UI, Config, Save, Load, Option, Preference, Language, Input, Keybind, Resolution, Audio, Volume, Graphics, Quality ===
+
+Matching types: 133
+
+  public class Il2Cpp.ActionKeyHint+_DelayedUpdateUI_d__12 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: ActionKeyHint __4__this
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.AudioManager : UnityEngine.MonoBehaviour
+      prop: AudioManager instance
+      prop: AudioMixer masterMixer
+      prop: AudioSource musicAudioSource
+      prop: AudioClip calmMusic
+      prop: Single calmMusicDefaultVolume
+      prop: AudioClip iddleMusic
+      prop: Single iddleMusicDefaultVolume
+      prop: AudioClip fastMusic
+      prop: Single fastMusicDefaultVolume
+      prop: Int32 currentMusic
+      prop: AudioSource effectsAudioSource
+      prop: AudioSource delayedAudioSource
+      prop: AudioClip coinUse
+      prop: AudioClip AudioClipButtonHover
+      prop: AudioClip AudioClipButtonClick
+      prop: AudioClip audioClipObjectiveStart
+      prop: AudioClip audioClipObjectiveEnd
+      prop: AudioClip audioClipDeviceInserted
+      prop: AudioClip audioClipOpeningBox
+      prop: Il2CppReferenceArray`1 audioClipRJ45
+      ... and 5 more properties
+      method: Void Awake()
+      method: Void SetMusic(Int32 _clipUID)
+      method: Void PlayEffectAudioClip(AudioClip audioClip, Single volume, Single delayed)
+      method: Void SetMasterVolume(Single _volume)
+      method: Void SetEffectsVolume(Single _volume)
+      method: Void SetMusicVolume(Single _volume)
+      method: Void SetRacksVolume(Single _volume)
+      method: IEnumerator FadeOut(AudioSource audioSource, Single FadeTime)
+      method: IEnumerator FadeIn(AudioSource audioSource, Single FadeTime, Single finalVolume)
+      method: IEnumerator FadeOut_FadeIn(AudioSource audioSource, Single FadeTime, Single finalVolume, AudioClip newAudioClip)
+      method: Void PlayRandomRJ45Clip()
+      method: Void PlayRandomImpactClip(Single _volume)
+      method: Void PlayRackDoorOpen()
+
+  public class Il2Cpp.BalanceSheetSaveData : Il2CppSystem.Object
+      prop: List`1 history
+      prop: List`1 currentRecords
+      prop: Single totalMonthlySalary
+      prop: Single currentSalaryExpense
+
+  public class Il2Cpp.CableEndpointSaveData : Il2CppSystem.Object
+      prop: TypeOfLink type
+      prop: Vector3 position
+      prop: Int32 customerID
+      prop: String switchID
+      prop: String serverID
+
+  public class Il2Cpp.CableSaveData : Il2CppSystem.Object
+      prop: Int32 cableID
+      prop: CableEndpointSaveData startPoint
+      prop: CableEndpointSaveData endPoint
+      prop: List`1 waypoints
+      prop: List`1 midPointPositions
+      prop: Single maxSpeed
+      prop: Color cableColor
+
+  public class Il2Cpp.ChatController : UnityEngine.MonoBehaviour
+      prop: TMP_InputField ChatInputField
+      prop: TMP_Text ChatDisplayOutput
+      prop: Scrollbar ChatScrollbar
+      method: Void OnEnable()
+      method: Void OnDisable()
+      method: Void AddToChatOutput(String newText)
+
+  public class Il2Cpp.CustomerBase+_CheckIfAppRequirementsAreMet_d__35 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: CustomerBase __4__this
+      prop: WaitForSeconds _wait1s_5__2
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.CustomerBaseSaveData : Il2CppSystem.Object
+      prop: Int32 customerBaseID
+      prop: Int32 customerID
+      prop: Dictionary`2 subnetsPerApp
+      prop: Il2CppStructArray`1 appsSpeedRequirements
+      prop: Il2CppStructArray`1 appTypes
+      prop: Int32 difficulty
+      prop: Dictionary`2 appObjectiveIDs
+      prop: Il2CppStructArray`1 appsTimeBelowRequirements
+      prop: Il2CppStructArray`1 appReputationAwarded
+
+  public class Il2Cpp.CustomerRecordSaveData : Il2CppSystem.Object
+      prop: Int32 customerID
+      prop: String customerName
+      prop: Single revenue
+      prop: Single penalties
+
+  public class Il2Cpp.DropdownSample : UnityEngine.MonoBehaviour
+      prop: TextMeshProUGUI text
+      prop: TMP_Dropdown dropdownWithoutPlaceholder
+      prop: TMP_Dropdown dropdownWithPlaceholder
+      method: Void OnButtonClick()
+
+  public enum Il2Cpp.FCP_Persistence+SaveStrategy : System.Enum
+      field: Int32 value__
+      field: SaveStrategy SessionOnly
+      field: SaveStrategy File
+      field: SaveStrategy PlayerPrefs
+
+  public class Il2Cpp.FlexibleColorPicker+AdvancedSettings : Il2CppSystem.Object
+      prop: Boolean mainStatic
+      prop: PSettings r
+      prop: PSettings g
+      prop: PSettings b
+      prop: PSettings h
+      prop: PSettings s
+      prop: PSettings v
+      prop: PSettings a
+      method: PSettings Get(Int32 i)
+
+  public class Il2Cpp.FlexibleColorPicker+AdvancedSettings+PSettings : Il2CppSystem.Object
+      prop: Vector2 range
+      prop: Boolean overrideStatic
+
+  public class Il2Cpp.GamepadIcons : UnityEngine.ScriptableObject
+      prop: Sprite buttonSouth
+      prop: Sprite buttonNorth
+      prop: Sprite buttonEast
+      prop: Sprite buttonWest
+      prop: Sprite startButton
+      prop: Sprite selectButton
+      prop: Sprite leftTrigger
+      prop: Sprite rightTrigger
+      prop: Sprite leftShoulder
+      prop: Sprite rightShoulder
+      prop: Sprite dpad
+      prop: Sprite dpadUp
+      prop: Sprite dpadDown
+      prop: Sprite dpadLeft
+      prop: Sprite dpadRight
+      prop: Sprite leftStick
+      prop: Sprite rightStick
+      prop: Sprite leftStickPress
+      prop: Sprite rightStickPress
+      method: Sprite GetSprite(String controlPath)
+
+  public class Il2Cpp.GetValueFromPlayerPrefs : UnityEngine.MonoBehaviour
+      prop: String playerPrefString
+      method: Void Start()
+
+  public class Il2Cpp.GODMOD+_DelayedLoad_d__7 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: GODMOD __4__this
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.HRSystem : UnityEngine.MonoBehaviour
+      prop: GameObject confirmHireOverlay
+      prop: GameObject confirmFireOverlay
+      prop: ButtonExtended buttonReturn
+      prop: Il2CppReferenceArray`1 buttonsHireEmployees
+      prop: Il2CppReferenceArray`1 buttonsFireEmployees
+      prop: Transform employeeOneSpawnPoint
+      prop: Int32 eployeeOneRequiredReputation
+      prop: Transform employeeTwoSpawnPoint
+      prop: Int32 employeeTwoRequiredReputation
+      prop: Transform employeeThreeSpawnPoint
+      prop: Int32 employeeThreeRequiredReputation
+      prop: Int32 selectedEmployeeIndex
+      method: Void OnEnable()
+      method: Void ButtonHireEmployee(Int32 i)
+      method: Void ButtonCancelBuying()
+      method: Void ButtonConfirmHire()
+      method: Void ButtonFireEmployee(Int32 i)
+      method: Void ButtonConfirmFireEmployee()
+
+  public class Il2Cpp.InputController : Il2CppSystem.Object
+      prop: InputActionAsset _asset_k__BackingField
+      prop: InputActionMap m_Player
+      prop: List`1 m_PlayerActionsCallbackInterfaces
+      prop: InputAction m_Player_Move
+      prop: InputAction m_Player_Look
+      prop: InputAction m_Player_Interact
+      prop: InputAction m_Player_SecondAction
+      prop: InputAction m_Player_Jump
+      prop: InputAction m_Player_Sprint
+      prop: InputAction m_Player_CloseMenu
+      prop: InputAction m_Player_LookPosition
+      prop: InputAction m_Player_Drop
+      prop: InputAction m_Player_Crouch
+      prop: InputAction m_Player_Scroll
+      prop: InputAction m_Player_Zoom
+      prop: InputActionMap m_UI
+      prop: List`1 m_UIActionsCallbackInterfaces
+      prop: InputAction m_UI_Navigate
+      prop: InputAction m_UI_Submit
+      prop: InputAction m_UI_Cancel
+      ... and 29 more properties
+      method: Void Finalize()
+      method: Void Dispose()
+      method: Boolean Contains(InputAction action)
+      method: IEnumerator`1 GetEnumerator()
+      method: IEnumerator System_Collections_IEnumerable_GetEnumerator()
+      method: Void Enable()
+      method: Void Disable()
+      method: InputAction FindAction(String actionNameOrId, Boolean throwIfNotFound)
+      method: Int32 FindBinding(InputBinding bindingMask, InputAction& action)
+
+  public class Il2Cpp.InputController+IPlayerActions : Il2CppInterop.Runtime.InteropTypes.Il2CppObjectBase
+      method: Void OnMove(CallbackContext context)
+      method: Void OnLook(CallbackContext context)
+      method: Void OnInteract(CallbackContext context)
+      method: Void OnSecondAction(CallbackContext context)
+      method: Void OnJump(CallbackContext context)
+      method: Void OnSprint(CallbackContext context)
+      method: Void OnCloseMenu(CallbackContext context)
+      method: Void OnLookPosition(CallbackContext context)
+      method: Void OnDrop(CallbackContext context)
+      method: Void OnCrouch(CallbackContext context)
+      method: Void OnScroll(CallbackContext context)
+      method: Void OnZoom(CallbackContext context)
+
+  public class Il2Cpp.InputController+IUIActions : Il2CppInterop.Runtime.InteropTypes.Il2CppObjectBase
+      method: Void OnNavigate(CallbackContext context)
+      method: Void OnSubmit(CallbackContext context)
+      method: Void OnCancel(CallbackContext context)
+      method: Void OnPoint(CallbackContext context)
+      method: Void OnClick(CallbackContext context)
+      method: Void OnScrollWheel(CallbackContext context)
+      method: Void OnMiddleClick(CallbackContext context)
+      method: Void OnRightClick(CallbackContext context)
+      method: Void OnWaitForPressKey(CallbackContext context)
+      method: Void OnPause(CallbackContext context)
+      method: Void OnInventory(CallbackContext context)
+      method: Void OnMap(CallbackContext context)
+      method: Void OnTimeControl(CallbackContext context)
+      method: Void OnConsole(CallbackContext context)
+      method: Void OnConsoleSubmit(CallbackContext context)
+
+  public class Il2Cpp.InputController+PlayerActions : Il2CppSystem.ValueType
+      prop: InputController m_Wrapper
+      prop: InputAction Move
+      prop: InputAction Look
+      prop: InputAction Interact
+      prop: InputAction SecondAction
+      prop: InputAction Jump
+      prop: InputAction Sprint
+      prop: InputAction CloseMenu
+      prop: InputAction LookPosition
+      prop: InputAction Drop
+      prop: InputAction Crouch
+      prop: InputAction Scroll
+      prop: InputAction Zoom
+      prop: Boolean enabled
+      method: InputActionMap Get()
+      method: Void Enable()
+      method: Void Disable()
+      method: InputActionMap op_Implicit(PlayerActions set)
+      method: Void AddCallbacks(IPlayerActions instance)
+      method: Void UnregisterCallbacks(IPlayerActions instance)
+      method: Void RemoveCallbacks(IPlayerActions instance)
+      method: Void SetCallbacks(IPlayerActions instance)
+
+  public class Il2Cpp.InputController+UIActions : Il2CppSystem.ValueType
+      prop: InputController m_Wrapper
+      prop: InputAction Navigate
+      prop: InputAction Submit
+      prop: InputAction Cancel
+      prop: InputAction Point
+      prop: InputAction Click
+      prop: InputAction ScrollWheel
+      prop: InputAction MiddleClick
+      prop: InputAction RightClick
+      prop: InputAction WaitForPressKey
+      prop: InputAction Pause
+      prop: InputAction Inventory
+      prop: InputAction Map
+      prop: InputAction TimeControl
+      prop: InputAction Console
+      prop: InputAction ConsoleSubmit
+      prop: Boolean enabled
+      method: InputActionMap Get()
+      method: Void Enable()
+      method: Void Disable()
+      method: InputActionMap op_Implicit(UIActions set)
+      method: Void AddCallbacks(IUIActions instance)
+      method: Void UnregisterCallbacks(IUIActions instance)
+      method: Void RemoveCallbacks(IUIActions instance)
+      method: Void SetCallbacks(IUIActions instance)
+
+  public class Il2Cpp.InputManager : UnityEngine.MonoBehaviour
+      prop: InputController inputActions
+      prop: Action rebindComplete
+      prop: Action rebindCanceled
+      prop: Action`2 rebindStarted
+      prop: InputDevice device
+      prop: OnControlChange onControlChange
+      prop: Action`1 checkControlsAction
+      method: Void add_rebindComplete(Action value)
+      method: Void remove_rebindComplete(Action value)
+      method: Void add_rebindCanceled(Action value)
+      method: Void remove_rebindCanceled(Action value)
+      method: Void add_rebindStarted(Action`2 value)
+      method: Void remove_rebindStarted(Action`2 value)
+      method: Void Awake()
+      method: Void LoadAllBindingOverrides()
+      method: Void OnDestroy()
+      method: Void ConfinedCursorforUI()
+      method: Void LockedCursorForPlayerMovement()
+      method: Void StartRebind(String actionName, Int32 bindingIndex, TextMeshProUGUI statusText, Boolean excludeMouse)
+      method: Void DoRebind(InputAction actionToRebind, Int32 bindingIndex, TextMeshProUGUI statusText, Boolean allCompositeParts, Boolean excludeMouse)
+      method: String GetBindingName(String actionName, Int32 bindingIndex)
+      method: Void SaveBindingOverride(InputAction action)
+      method: Void LoadBindingOverride(String actionName)
+      method: Void ResetBinding(String actionName, Int32 bindingIndex)
+      method: Void ForceMousePositionToCenterOfGameWindow()
+      method: Void CheckCurrentControls(CallbackContext ctx)
+      method: Void _Awake_b__14_0(CallbackContext ctx)
+
+  public class Il2Cpp.LACPGroupSaveData : Il2CppSystem.Object
+      prop: Int32 groupId
+      prop: String deviceA
+      prop: String deviceB
+      prop: List`1 cableIds
+
+  public class Il2Cpp.LanguageObject : Il2CppSystem.Object
+      prop: Int32 uid
+      prop: Languages languageName
+      prop: String languageFile
+
+  public class Il2Cpp.LeanTweenUIElement : UnityEngine.MonoBehaviour
+      prop: LeanTweanType leanTweanType
+      prop: Single howFast
+      prop: Single howFar
+      prop: Single startingScale
+      prop: Boolean turnOnInput
+      prop: Boolean holdInteract
+      prop: Boolean isInteractPressed
+      prop: Boolean returnBack
+      prop: Single stayTime
+      prop: Single holdSkipButtonTimer
+      prop: Image skipButtonHoldProgress
+      prop: Action`1 waitForPressKeyAction
+      prop: Action`1 interactHoldperformed
+      prop: Action`1 interactHoldCanceled
+      method: Void Awake()
+      method: Void Update()
+      method: Void OnEnable()
+      method: Void OnDisable()
+      method: Void OnWaitForPressKey()
+      method: IEnumerator Disabling()
+      method: Void TweenHorizontal(Boolean leanout)
+      method: Void TweenVertical(Boolean leanout)
+      method: IEnumerator TweenScaleInOut()
+      method: IEnumerator KeepRotating()
+      method: Void OnDestroy()
+      method: Void _Awake_b__15_0(CallbackContext ctx)
+      method: Void _Awake_b__15_1(CallbackContext ctx)
+      method: Void _Awake_b__15_2(CallbackContext ctx)
+
+  public class Il2Cpp.LoadingScreen : UnityEngine.MonoBehaviour
+      prop: LoadingScreen instance
+      prop: Int32 sceneToLoad
+      prop: Int32 numberOfScenesInBuild
+      prop: Single distanceToLoadScene
+      prop: Single howOftenToCheckDisance
+      prop: Single progressOfLoading
+      prop: Boolean isNewGame
+      prop: GameIsLoaded onGameIsLoadedCallback
+      method: Void Awake()
+      method: IEnumerator Start()
+      method: Void LoadGameScenesVoid(PlayerData playerData, List`1 technicianData, Il2CppStructArray`1 loadedScenes, Il2CppStructArray`1 hiredTechnicians, List`1 repairJobQueue)
+      method: IEnumerator LoadPlayerAndNPCDataWithDelay(PlayerData playerData, List`1 technicianData, Il2CppStructArray`1 hiredTechnicians, List`1 repairJobQueue)
+      method: IEnumerator LoadGameLoadScene(Il2CppStructArray`1 loadedScenes)
+      method: Void SetDifficualty(Int32 i)
+      method: Void LoadLevel(Int32 sceneIndex)
+      method: Void UnLoadLevel(Int32 sceneIndex)
+      method: IEnumerator AsynchronousLoad(Int32 sceneIndex)
+      method: IEnumerator AsynchronousUnLoad(Int32 sceneIndex)
+      method: Boolean IsSceneLoaded(String name)
+
+  public class Il2Cpp.LoadingScreen+_AsynchronousLoad_d__17 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: LoadingScreen __4__this
+      prop: Int32 sceneIndex
+      prop: AsyncOperation _ao_5__2
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.LoadingScreen+_AsynchronousUnLoad_d__18 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: LoadingScreen __4__this
+      prop: Int32 sceneIndex
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.LoadingScreen+_LoadGameLoadScene_d__13 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: Il2CppStructArray`1 loadedScenes
+      prop: LoadingScreen __4__this
+      prop: Il2CppStructArray`1 __7__wrap1
+      prop: Int32 __7__wrap2
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.LoadingScreen+_LoadPlayerAndNPCDataWithDelay_d__12 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: PlayerData playerData
+      prop: Il2CppStructArray`1 hiredTechnicians
+      prop: List`1 repairJobQueue
+      prop: List`1 technicianData
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.LoadingScreen+GameIsLoaded : Il2CppSystem.MulticastDelegate
+      method: Void Invoke()
+      method: IAsyncResult BeginInvoke(AsyncCallback callback, Object object)
+      method: Void EndInvoke(IAsyncResult result)
+      method: GameIsLoaded op_Implicit(Action )
+      method: GameIsLoaded op_Addition(GameIsLoaded , GameIsLoaded )
+      method: GameIsLoaded op_Subtraction(GameIsLoaded , GameIsLoaded )
+
+  public class Il2Cpp.Localisation : UnityEngine.MonoBehaviour
+      prop: Localisation instance
+      prop: List`1 languages
+      prop: Dictionary`2 dictionary
+      prop: Int32 loadLanguageUID
+      prop: Languages currentlySelectedLanguage
+      prop: OnLanguageChange onLanguageChangedCallback
+      method: Void Awake()
+      method: Dictionary`2 LoadLocalisation(Int32 _uid)
+      method: Void ChangeLocalisation(Int32 _uid)
+      method: String ReturnTextByID(Int32 _uid)
+
+  public enum Il2Cpp.Localisation+Languages : System.Enum
+      field: Int32 value__
+      field: Languages English
+      field: Languages Czech
+      field: Languages French
+      field: Languages Italian
+      field: Languages German
+      field: Languages Spanish_Spain
+      field: Languages Arabic
+      field: Languages Dutch
+      field: Languages Japanese
+      field: Languages Korean
+      field: Languages Portuguese_Brazil
+      field: Languages Portuguese_Portugal
+      field: Languages Russian
+      field: Languages Simplified_Chinese
+      field: Languages Spanish_LatinAmerica
+      field: Languages Turkish
+      field: Languages Polish
+      field: Languages Thai
+      field: Languages Traditional_Chinese
+
+  public class Il2Cpp.Localisation+OnLanguageChange : Il2CppSystem.MulticastDelegate
+      method: Void Invoke()
+      method: IAsyncResult BeginInvoke(AsyncCallback callback, Object object)
+      method: Void EndInvoke(IAsyncResult result)
+      method: OnLanguageChange op_Implicit(Action )
+      method: OnLanguageChange op_Addition(OnLanguageChange , OnLanguageChange )
+      method: OnLanguageChange op_Subtraction(OnLanguageChange , OnLanguageChange )
+
+  public class Il2Cpp.LocalisedText : UnityEngine.MonoBehaviour
+      prop: Int32 localisation_uid
+      method: Void Start()
+      method: Void ChangeText()
+      method: Void SetText(Int32 _localisation_uid)
+      method: Void OnDestroy()
+
+  public class Il2Cpp.MainGameManager : UnityEngine.MonoBehaviour
+      prop: MainGameManager instance
+      prop: Int32 difficulty
+      prop: Camera playerCamera
+      prop: Boolean isGamePaused
+      prop: Boolean isPauseMenuDisallowed
+      prop: Boolean isPlayerCameraDisallowed
+      prop: Boolean isAllowedToSave
+      prop: Boolean loadingFirstTime
+      prop: String languageXMLPath
+      prop: SetIP setIP
+      prop: GameObject canvasCustomerChoice
+      prop: Il2CppReferenceArray`1 customerCards
+      prop: Il2CppReferenceArray`1 customerItems
+      prop: Il2CppReferenceArray`1 appTypesLogos
+      prop: Il2CppReferenceArray`1 customerBases
+      prop: CustomerBaseDoor customerBaseDoor
+      prop: Il2CppReferenceArray`1 chosenCustomerItems
+      prop: List`1 availableCustomerIndices
+      prop: List`1 availableSubnets
+      prop: Sprite appTypesColorSprite1
+      ... and 42 more properties
+      method: Void Awake()
+      method: Void Start()
+      method: Void ResetTrolleyPosition()
+      method: GameObject GetServerPrefab(Int32 serverType)
+      method: GameObject GetSwitchPrefab(Int32 switchType)
+      method: GameObject GetPatchPanelPrefab(Int32 switchType)
+      method: GameObject GetCableSpinnerPrefab(Int32 prefabID)
+      method: GameObject GetSfpPrefab(Int32 prefabID)
+      method: GameObject GetSfpBoxPrefab(Int32 prefabID)
+      method: CustomerItem GetCustomerItemByID(Int32 customerID)
+      method: Void ShuffleAvailableCustomers()
+      method: Void ShuffleAvailableSubnets()
+      method: Sprite GetAppLogo(Int32 customerID, Int32 appID)
+      method: Sprite GetCustomerLogo(Int32 customerID)
+      method: String GetFreeSubnet(Single appRequirements)
+      method: Boolean IsSubnetValid(String subnet)
+      method: Void ShowCustomerCardsCanvas(CustomerBaseDoor _door)
+      method: Void ButtonCustomerChosen(Int32 _cardID)
+      method: Void ButtonCancelCustomerChoice()
+      method: Void ShowBuyWallCanvas(Wall wall)
+      method: Void ButtonBuyWall()
+      method: Void ButtonCancelBuyWall()
+      method: Void ShowNetworkConfigCanvas(NetworkSwitch networkSwitch)
+      method: Void CloseNetworkConfigCanvas()
+      method: Void OpenAnyCanvas()
+      method: Void CloseAnyCanvas(Boolean isCustomerChoice)
+      method: Void RemoveUsedSubnet(String subnet)
+      method: Void ReturnSubnet(String subnet)
+      method: Void OnLoad()
+      method: Void OnDestroy()
+      ... and 13 more methods
+
+  public class Il2Cpp.MainGameManager+_AutoSaveCoroutine_d__92 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: MainGameManager __4__this
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.MainMenu : UnityEngine.MonoBehaviour
+      prop: GameObject continueButton
+      prop: GameObject continueEmpty
+      prop: GameObject middleBackground
+      prop: GameObject gameSaves
+      prop: GameObject settings
+      prop: Il2CppReferenceArray`1 loadSaveSlots
+      method: Void Start()
+      method: Void Continue()
+      method: Void NewGame()
+      method: Void QuitGame()
+      method: Void LoadGame()
+      method: Void HideMiddleMenu()
+      method: Void Load(TextMeshProUGUI _text)
+      method: Void Settings()
+
+  public class Il2Cpp.MainMenuCamera : UnityEngine.MonoBehaviour
+      prop: Transform currentmount
+      prop: Camera cam
+      prop: Single speedfactor
+      prop: Single zoomfactor
+      prop: Vector3 lastposition
+      method: Void Start()
+      method: Void Update()
+      method: Void setmount(Transform newmount)
+
+  public class Il2Cpp.ModConfig : Il2CppSystem.Object
+      prop: String itemName
+      prop: Int32 price
+      prop: Int32 xpToUnlock
+      prop: Int32 sizeInU
+      prop: Single mass
+      prop: Single modelScale
+      prop: Il2CppStructArray`1 colliderSize
+      prop: Il2CppStructArray`1 colliderCenter
+      prop: String modelFile
+      prop: String textureFile
+      prop: String iconFile
+      prop: ObjectInHand objectType
+
+  public class Il2Cpp.ModItemSaveData : Il2CppSystem.Object
+      prop: String modFolderName
+      prop: Vector3 position
+      prop: Quaternion rotation
+      prop: Il2CppStructArray`1 saveValue
+      prop: Il2CppStructArray`1 saveIntArray
+      prop: Il2CppStructArray`1 saveIntArray2
+
+  public class Il2Cpp.ModLoader : UnityEngine.MonoBehaviour
+      prop: ModLoader instance
+      prop: Transform modShopItemsParent
+      prop: GameObject modShopButtonPrefab
+      prop: Dictionary`2 modTemplates
+      prop: Dictionary`2 modTemplatesByFolder
+      prop: Int32 nextModID
+      method: Void Awake()
+      method: Void Start()
+      method: Void LoadAllMods()
+      method: Void LoadMod(String folderPath)
+      method: GameObject CreateModTemplate(ModConfig config, Mesh mesh, Material material, String folderName)
+      method: Void CreateShopButton(Int32 modID, ModConfig config, Sprite icon)
+      method: GameObject GetModPrefab(Int32 modID)
+      method: GameObject GetModPrefabByFolder(String folderName)
+      method: Texture2D LoadTexture(String path)
+      method: Void OnDestroy()
+
+  public class Il2Cpp.MonthlySnapshotSaveData : Il2CppSystem.Object
+      prop: Int32 month
+      prop: Int32 day
+      prop: List`1 records
+      prop: Single salaryExpense
+
+  public class Il2Cpp.MusicPlayer : Il2Cpp.Interact
+      prop: Outlinable outlineEffect
+      prop: AudioSource audioSource
+      prop: Boolean isTurnedOn
+      prop: Il2CppReferenceArray`1 audioClipsSongs
+      method: Void Awake()
+      method: Void InteractOnClick()
+      method: Void PlayRandomSong()
+      method: Void Update()
+      method: Void InteractOnHover(RaycastHit hit)
+      method: Void OnHoverOver()
+
+  public class Il2Cpp.NetworkMap : UnityEngine.MonoBehaviour
+      prop: NetworkMap instance
+      prop: Dictionary`2 devices
+      prop: Dictionary`2 customerBases
+      prop: Dictionary`2 servers
+      prop: Dictionary`2 switches
+      prop: Dictionary`2 brokenServers
+      prop: Dictionary`2 brokenSwitches
+      prop: Dictionary`2 lacpGroups
+      prop: Int32 nextLACPGroupId
+      prop: Dictionary`2 switchConnections
+      prop: Dictionary`2 cableConnections
+      prop: Dictionary`2 adjacencyList
+      method: Void Awake()
+      method: Void ClearMap()
+      method: Void RegisterCustomerBase(CustomerBase customerBase)
+      method: CustomerBase GetCustomerBase(Int32 customerId)
+      method: Void RegisterServer(Server server)
+      method: Void RegisterSwitch(NetworkSwitch networkSwitch)
+      method: Il2CppStructArray`1 GetNumberOfDevices()
+      method: Server GetServer(String serverId)
+      method: NetworkSwitch GetSwitchById(String switchId)
+      method: IEnumerable`1 GetAllServers()
+      method: IEnumerable`1 GetAllNetworkSwitches()
+      method: Void UpdateCustomerServerCountAndSpeed(Int32 customerId, Int32 serverCount, Single speed)
+      method: Void UpdateDeviceCustomerID(String deviceName, Int32 customerID)
+      method: Void AddDevice(String name, TypeOfLink type, Int32 customerID)
+      method: Void RemoveDevice(String name)
+      method: Void Connect(String from, String to)
+      method: Void Disconnect(String from, String to)
+      method: List`1 FindAllRoutes(String baseName, String serverName)
+      method: List`1 FindPhysicalPath(String start, String target)
+      method: Device GetDevice(String name)
+      method: List`1 GetAllDevices()
+      method: String GenerateDeviceName(TypeOfLink type, Vector3 position)
+      method: Void RegisterCableConnection(Int32 cableId, Vector3 startPos, Vector3 endPos, TypeOfLink startType, TypeOfLink endType, String startSwitchID, String endSwitchID, Int32 startCustomerID, Int32 endCustomerID, String startServerID, String endServerID)
+      method: Void AddSwitchConnection(String switchName, String deviceName)
+      method: Void RemoveCableConnection(Int32 cableId)
+      method: Void RemoveIsolatedDevices()
+      method: String PrintNetworkMap()
+      method: Boolean IsIpAddressDuplicate(String ip, Server serverToExclude)
+      method: Void AddBrokenServer(Server server)
+      method: Void AddBrokenSwitch(NetworkSwitch networkSwitch)
+      ... and 15 more methods
+
+  public class Il2Cpp.NetworkSaveData : Il2CppSystem.Object
+      prop: List`1 servers
+      prop: List`1 switches
+      prop: List`1 patchPanels
+      prop: List`1 cables
+      prop: List`1 customerBases
+      prop: List`1 sfpModules
+      prop: List`1 lacpGroups
+
+  public class Il2Cpp.NetworkSwitch : Il2Cpp.UsableObject
+      prop: GameObject canvas
+      prop: TextMeshProUGUI txtScreen
+      prop: Il2CppReferenceArray`1 cableLinkSwitchPorts
+      prop: String switchId
+      prop: Int32 switchType
+      prop: Boolean isOn
+      prop: String label
+      prop: Int32 timeToBrake
+      prop: Int32 eolTime
+      prop: Boolean isBroken
+      prop: Int32 existingWarningSigns
+      prop: Int32 existingErrorSigns
+      prop: Boolean isWarningCleared
+      prop: Renderer powerButton
+      prop: List`1 temporarilyDisconnectedCables
+      prop: Coroutine breakingRoutine
+      method: Void Awake()
+      method: Void Start()
+      method: Void PowerButton(Boolean forceState)
+      method: Void TurnOffCommonFunctions()
+      method: Void TurnOnCommonFunction()
+      method: Boolean IsAnyCableConnected()
+      method: Void InteractOnClick()
+      method: Void InteractOnHover(RaycastHit hit)
+      method: Void SwitchInsertedInRack(SwitchSaveData switchSaveData)
+      method: Void DisconnectCablesWhenSwitchIsOff()
+      method: Void HandleNewCableWhileOff(Int32 cableId)
+      method: List`1 GetConnectedDevices()
+      method: String GetSwitchId()
+      method: IEnumerator BrekingInProgress()
+      method: Void UpdateScreenUI()
+      method: Void ItIsBroken()
+      method: Void DisconnectCables()
+      method: Void ReconnectCables()
+      method: Boolean ValidateRackPosition()
+      method: Void ButtonShowNetworkSwitchConfig()
+      method: Void ClearWarningSign(Boolean isPreserved)
+      method: Void ClearErrorSign()
+      method: Void OnDestroy()
+      method: Void SetPowerLightMaterial(Material material)
+      method: Void RepairDevice()
+      method: Boolean _InteractOnClick_b__22_0(RackPosition r)
+      method: Boolean _ValidateRackPosition_b__34_0(RackPosition r)
+
+  public class Il2Cpp.NetworkSwitchConfiguration : UnityEngine.MonoBehaviour
+      prop: TMP_InputField inputField
+      prop: Transform parentObjectForPortText
+      prop: Il2CppReferenceArray`1 portInformation
+      prop: NetworkSwitch currentNetworkSwitch
+      prop: Il2CppReferenceArray`1 currentPorts
+      prop: HashSet`1 selectedPortIndices
+      method: Void Awake()
+      method: Void OpenConfig(NetworkSwitch networkSwitch)
+      method: Void RefreshPortDisplay()
+      method: String ResolveRemoteDevice(CableLink port)
+      method: Void ClickPort(Int32 i)
+      method: Void CreateLACP()
+      method: Void RemoveLACP()
+      method: Void OnEndEditingInputText(String s)
+      method: Void CloseConfig()
+      method: String NormalizeDeviceKey(String deviceName)
+      method: List`1 ResolveAllCableIds(CableLink port)
+
+  public class Il2Cpp.PacketSpawnerSystem : Il2CppSystem.ValueType
+      prop: EntityQuery spawnerQuery
+      prop: TypeHandle __TypeHandle
+      prop: EntityQuery __query_23355594_0
+      prop: EntityQuery __query_23355594_1
+      method: Void OnCreate(SystemState& state)
+      method: Void OnUpdate(SystemState& state)
+      method: Void SpawnPacket(EntityCommandBuffer ecb, PacketSpawnerComponent spawner, Int32 spawnerIndex, BlobArray`1& waypoints)
+      method: JobHandle __ScheduleViaJobChunkExtension_0(UpdatePacketsJob job, EntityQuery query, JobHandle dependency, SystemState& state, Boolean hasUserDefinedQuery)
+      method: Void __AssignQueries(SystemState& state)
+      method: Void OnCreateForCompiler(SystemState& state)
+      method: Void __codegen__OnCreate(IntPtr self, IntPtr state)
+      method: Void __codegen__OnUpdate(IntPtr self, IntPtr state)
+      method: Void __codegen__OnCreateForCompiler(IntPtr self, IntPtr state)
+      method: Void Method_Internal_Static_Void_IntPtr_IntPtr_PDM_0(IntPtr self, IntPtr state)
+      method: Void Method_Internal_Static_Void_IntPtr_IntPtr_PDM_1(IntPtr self, IntPtr state)
+
+  public class Il2Cpp.PatchPanel : Il2Cpp.UsableObject
+      prop: Il2CppReferenceArray`1 cableLinkPorts
+      prop: String patchPanelId
+      prop: Int32 patchPanelType
+      method: Void Awake()
+      method: CableLink GetPairedLink(CableLink link)
+      method: Boolean IsAnyCableConnected()
+      method: Void InteractOnClick()
+      method: Void InteractOnHover(RaycastHit hit)
+      method: Void InsertedInRack(PatchPanelSaveData saveData)
+      method: Boolean ValidateRackPosition()
+      method: Void OnDestroy()
+      method: Boolean _InteractOnClick_b__6_0(RackPosition r)
+      method: Boolean _ValidateRackPosition_b__9_0(RackPosition r)
+
+  public class Il2Cpp.PatchPanelSaveData : Il2CppSystem.Object
+      prop: String patchPanelID
+      prop: Vector3 position
+      prop: Quaternion rotation
+      prop: Int32 rackPositionUID
+      prop: Int32 patchPanelType
+
+  public class Il2Cpp.PauseMenu : UnityEngine.MonoBehaviour
+      prop: GameObject pauseMenuUI
+      prop: Player playerClass
+      prop: InputController inputctrl
+      prop: GameObject canvasOverlay
+      prop: GameObject loadSaveOverlay
+      prop: TextMeshProUGUI loadSaveOverlayTopText
+      prop: Il2CppReferenceArray`1 loadSaveSlots
+      prop: GameObject saveConfirmOverlay
+      prop: GameObject saveNameSetOverlay
+      prop: TMP_InputField saveNameInputField
+      prop: GameObject notAllowedSaveOverlay
+      prop: GameObject deleteSaveConfirmOverlay
+      prop: Canvas pauseMenuCanvas
+      prop: String saveToDelete
+      prop: GameObject resumeButton
+      prop: PauseMenu_TabGroup mainPauseMenuTabGroup
+      prop: PauseMenu_TabButton systemMenuTab
+      prop: PauseMenu_TabGroup systemPauseMenuTabGroup
+      prop: PauseMenu_TabButton subSystemMenuTab
+      prop: ButtonExtended firstLoadSaveSlot
+      ... and 8 more properties
+      method: Void Awake()
+      method: Void OnEnable()
+      method: Void OnDisable()
+      method: Void OnDestroy()
+      method: Void OnPause(Int32 openMenu)
+      method: Void Resume()
+      method: Void PopulateLoadSaveMenu(Boolean _savingGame)
+      method: Void LoadSaveOnButtonClick(TextMeshProUGUI _text)
+      method: Void NotAllowedToSaveOverlayOff()
+      method: Void SaveConfirm(Boolean yes)
+      method: Void ButtonSetNameOfSave()
+      method: Void Save(String saveName, String _stringNameOfSave)
+      method: Void DeleteSaveButtonClick(TextMeshProUGUI _text)
+      method: Void DeleteSaveConfirm(Boolean yes)
+      method: Void Load(String savename)
+      method: IEnumerator LoadWithOverlay(String savename)
+      method: Void Pause(Int32 openMenu)
+      method: Void MainMenu()
+      method: Void ExitGame()
+      method: Void CloseLoadSaveOverlay()
+      method: Void ProcessConsoleCommand(String input)
+      method: Void HandleAddCommand(Il2CppStringArray parts)
+      method: Void _Awake_b__30_0(CallbackContext ctx)
+      method: Void _Awake_b__30_1(CallbackContext ctx)
+      method: Void _Awake_b__30_2(CallbackContext ctx)
+
+  public class Il2Cpp.PauseMenu_TabButton : UnityEngine.MonoBehaviour
+      prop: PauseMenu_TabGroup tabGroup
+      prop: Image background
+      prop: Color tabIdle
+      prop: Color tabHover
+      prop: Color tabActive
+      method: Void UnityEngine_EventSystems_ISelectHandler_OnSelect(BaseEventData eventData)
+      method: Void UnityEngine_EventSystems_IPointerClickHandler_OnPointerClick(PointerEventData eventData)
+      method: Void UnityEngine_EventSystems_IPointerEnterHandler_OnPointerEnter(PointerEventData eventData)
+      method: Void UnityEngine_EventSystems_IPointerExitHandler_OnPointerExit(PointerEventData eventData)
+      method: Void Start()
+
+  public class Il2Cpp.PauseMenu_TabGroup : UnityEngine.MonoBehaviour
+      prop: List`1 tabButtons
+      prop: PauseMenu_TabButton selectedTab
+      prop: List`1 objectsToSwap
+      method: Void Subscribe(PauseMenu_TabButton tabbutton)
+      method: Void OnTabEnter(PauseMenu_TabButton tabbutton)
+      method: Void OnTabExit(PauseMenu_TabButton tabbutton)
+      method: Void OnTabSelected(PauseMenu_TabButton tabbutton)
+      method: Void ResetTabs()
+
+  public class Il2Cpp.PauseMenu+_LoadWithOverlay_d__45 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: PauseMenu __4__this
+      prop: String savename
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.PauseMenu+OnPauseMenuClose : Il2CppSystem.MulticastDelegate
+      method: Void Invoke()
+      method: IAsyncResult BeginInvoke(AsyncCallback callback, Object object)
+      method: Void EndInvoke(IAsyncResult result)
+      method: OnPauseMenuClose op_Implicit(Action )
+      method: OnPauseMenuClose op_Addition(OnPauseMenuClose , OnPauseMenuClose )
+      method: OnPauseMenuClose op_Subtraction(OnPauseMenuClose , OnPauseMenuClose )
+
+  public class Il2Cpp.PauseMenu+OnPauseMenuOpen : Il2CppSystem.MulticastDelegate
+      method: Void Invoke()
+      method: IAsyncResult BeginInvoke(AsyncCallback callback, Object object)
+      method: Void EndInvoke(IAsyncResult result)
+      method: OnPauseMenuOpen op_Implicit(Action )
+      method: OnPauseMenuOpen op_Addition(OnPauseMenuOpen , OnPauseMenuOpen )
+      method: OnPauseMenuOpen op_Subtraction(OnPauseMenuOpen , OnPauseMenuOpen )
+
+  public class Il2Cpp.PauseMenuVideoTutorial : UnityEngine.MonoBehaviour
+      method: Void OnDisable()
+
+  public class Il2Cpp.Player : UnityEngine.MonoBehaviour
+      prop: Single money
+      prop: Single reputation
+      prop: Single xp
+      prop: Single previousCoins
+      prop: Transform targetSpawn
+      prop: InputController inputctrl
+      prop: Vector3 respawnPos
+      method: Void Start()
+      method: Void CheckFallsThroughMap()
+      method: Void LoadPlayer(PlayerData data)
+      method: IEnumerator TurnOnCharacterControllerDelayed()
+      method: Boolean UpdateCoin(Single _coinChhangeAmount, Boolean withoutSound)
+      method: Void DropAllItems()
+      method: Void WarpPlayer(Vector3 _position, Quaternion _rotation)
+      method: Void UpdateReputation(Single amount)
+      method: Boolean UpdateXP(Single amount)
+
+  public class Il2Cpp.Player+_TurnOnCharacterControllerDelayed_d__10 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.PlayerData : Il2CppSystem.Object
+      prop: List`1 activeObjectives
+      prop: Single coins
+      prop: Single xp
+      prop: Single reputation
+      prop: Il2CppStructArray`1 position
+
+  public class Il2Cpp.PlayerHit : UnityEngine.MonoBehaviour
+      prop: Image blackOver
+      method: Void OnEnable()
+
+  public class Il2Cpp.PlayerManager : UnityEngine.MonoBehaviour
+      prop: PlayerManager instance
+      prop: Player playerClass
+      prop: CharacterController cc
+      prop: FirstPersonController fpc
+      prop: GameObject playerGO
+      prop: AudioSource audioSource
+      prop: Boolean enabledMouseMovement
+      prop: Boolean enabledPlayerMovement
+      prop: CinemachineCamera vcam
+      prop: Image imageWaitForAction
+      prop: Rope rope
+      prop: Transform moveItemPosition
+      prop: Boolean enabledRayLookInteract
+      prop: Boolean isGamePaused
+      prop: Boolean playerIsSitting
+      prop: ParticleSystem iopsGainParticleSystem
+      prop: ObjectInHand objectInHand
+      prop: GameObject objectInHandPositionGO
+      prop: Il2CppReferenceArray`1 objectInHandGO
+      prop: Int32 numberOfObjectsInHand
+      ... and 2 more properties
+      method: Void Awake()
+      method: Void Start()
+      method: Void ConfinedCursorforUI()
+      method: Void PlayerStopMovement()
+      method: Void LockedCursorForPlayerMovement()
+      method: Void DefaultActionEffect(Vector3 _position, Single _time)
+      method: IEnumerator WaitForActionToFinish(Vector3 _position, Single _time)
+      method: Void GainIOPSEffect()
+
+  public class Il2Cpp.RackAudioCuller : UnityEngine.MonoBehaviour
+      prop: RackAudioCuller instance
+      prop: Int32 maxActiveSources
+      prop: Single updateInterval
+      prop: Single maxDistance
+      prop: Single fadeSpeed
+      prop: List`1 registeredRacks
+      prop: List`1 sortBuffer
+      prop: Comparison`1 distCompare
+      prop: HashSet`1 activeSet
+      method: Void Awake()
+      method: Void Start()
+      method: Void Register(Rack rack)
+      method: Void Unregister(Rack rack)
+      method: IEnumerator CullLoop()
+      method: Void OnDestroy()
+
+  public class Il2Cpp.ReBindUI : UnityEngine.MonoBehaviour
+      prop: InputActionReference inputActionReference
+      prop: Boolean excludeMouse
+      prop: Int32 selectedBinding
+      prop: DisplayStringOptions displayStringOptions
+      prop: InputBinding inputBinding
+      prop: Int32 bindingIndex
+      prop: String actionName
+      prop: TextMeshProUGUI actionText
+      prop: ButtonExtended rebindButton
+      prop: TextMeshProUGUI rebindText
+      prop: ButtonExtended resetButton
+      prop: Boolean translateKeyTextToImage
+      prop: Image imageGamePadKey
+      prop: GamepadIcons iconsXbox
+      prop: GamepadIcons iconsPS4
+      method: Void Awake()
+      method: Void OnEnable()
+      method: Void OnDisable()
+      method: Void OnValidate()
+      method: Void GetBindingInfo()
+      method: Void UpdateUI()
+      method: Void DoRebind()
+      method: Void ResetBinding()
+      method: Void _OnEnable_b__16_0()
+      method: Void _OnEnable_b__16_1()
+
+  public class Il2Cpp.RebindUIv2 : UnityEngine.MonoBehaviour
+      prop: InputActionReference m_Action
+      prop: String m_BindingId
+      prop: DisplayStringOptions m_DisplayStringOptions
+      prop: TextMeshProUGUI m_ActionLabel
+      prop: TextMeshProUGUI m_BindingText
+      prop: GameObject m_RebindOverlay
+      prop: TextMeshProUGUI m_RebindText
+      prop: UpdateBindingUIEvent m_UpdateBindingUIEvent
+      prop: InteractiveRebindEvent m_RebindStartEvent
+      prop: InteractiveRebindEvent m_RebindStopEvent
+      prop: RebindingOperation m_RebindOperation
+      prop: List`1 s_RebindActionUIs
+      prop: InputActionReference actionReference
+      prop: String bindingId
+      prop: DisplayStringOptions displayStringOptions
+      prop: TextMeshProUGUI actionLabel
+      prop: TextMeshProUGUI bindingText
+      prop: TextMeshProUGUI rebindPrompt
+      prop: GameObject rebindOverlay
+      prop: UpdateBindingUIEvent updateBindingUIEvent
+      ... and 3 more properties
+      method: Boolean ResolveActionAndBinding(InputAction& action, Int32& bindingIndex)
+      method: Void UpdateBindingDisplay()
+      method: Void ResetToDefault()
+      method: Void StartInteractiveRebind()
+      method: Void PerformInteractiveRebind(InputAction action, Int32 bindingIndex, Boolean allCompositeParts)
+      method: Void OnEnable()
+      method: Void OnDisable()
+      method: Void OnActionChange(Object obj, InputActionChange change)
+      method: Void UpdateActionLabel()
+      method: Boolean _UpdateBindingDisplay_b__30_0(InputBinding x)
+
+  public class Il2Cpp.RebindUIv2+UpdateBindingUIEvent : UnityEngine.Events.UnityEvent`4[[Il2Cpp.RebindUIv2, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null],[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e],[System.String, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]
+
+  public class Il2Cpp.RepairJobSaveData : Il2CppSystem.ValueType
+      prop: String serverID
+      prop: String switchID
+
+  public class Il2Cpp.ReusableFunctions+_DisableGameObjectWithDelay_d__6 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: Single time
+      prop: GameObject go
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.ReusableFunctions+_ImageScrollingUI_d__3 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: Il2CppReferenceArray`1 _sprites
+      prop: Image _image
+      prop: Single _time_5__2
+      prop: Single _currentTime_5__3
+      prop: Int32 _currentImage_5__4
+      prop: Int32 _numberOfImages_5__5
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.ReusableFunctions+_NumberScrollingUI_d__2 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: TextMeshProUGUI _text
+      prop: Int32 _endNumber
+      prop: Int32 _i_5__2
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.SaveData : Il2CppSystem.Object
+      prop: SaveData _current
+      prop: PlayerData playerData
+      prop: List`1 technicianData
+      prop: Il2CppStructArray`1 loadedScenes
+      prop: Int32 version
+      prop: String nameOfSave
+      prop: NetworkSaveData networkData
+      prop: List`1 rackMountObjectData
+      prop: Il2CppStructArray`1 isWallOpened
+      prop: List`1 interactObjectData
+      prop: Int32 lastUsedRackPositionGlobalUID
+      prop: Single wallPrice
+      prop: Dictionary`2 shopItemUnlockStates
+      prop: Boolean isIPHintHidden
+      prop: Boolean saveComplete
+      prop: Il2CppStructArray`1 hiredTechnicians
+      prop: List`1 repairJobQueue
+      prop: List`1 assignedAppsLogos
+      prop: Vector3 trolleyPosition
+      prop: Quaternion trolleyRotation
+      ... and 3 more properties
+      method: String Validate()
+
+  public class Il2Cpp.SaveSystem : Il2CppSystem.Object
+      prop: List`1 listofsaves
+      prop: String saveDirPath
+      prop: OnSavingData onSavingData
+      prop: OnLoadingData onLoadingData
+      prop: OnLoadingDataLater onLoadingDataLater
+      prop: String loadSaveName
+      prop: Int32 version
+      prop: Int32 versionToIgnoreFrom
+      prop: Boolean isQuitting
+      method: Void SaveGame(String savename, String stringNameOfSave)
+      method: SaveData LoadGame(String savename)
+      method: Void DeleteSaveFile(String savename)
+      method: BinaryFormatter GetBinaryFormatter()
+      method: Void SaveGameData()
+      method: List`1 Listofsaves()
+      method: String NewestSave()
+      method: Void LoadGameData()
+      method: Void Load(String savename, Boolean isFromPauseMenu)
+      method: Void AutoSave()
+
+  public class Il2Cpp.SaveSystem+OnLoadingData : Il2CppSystem.MulticastDelegate
+      method: Void Invoke()
+      method: IAsyncResult BeginInvoke(AsyncCallback callback, Object object)
+      method: Void EndInvoke(IAsyncResult result)
+      method: OnLoadingData op_Implicit(Action )
+      method: OnLoadingData op_Addition(OnLoadingData , OnLoadingData )
+      method: OnLoadingData op_Subtraction(OnLoadingData , OnLoadingData )
+
+  public class Il2Cpp.SaveSystem+OnLoadingDataLater : Il2CppSystem.MulticastDelegate
+      method: Void Invoke()
+      method: IAsyncResult BeginInvoke(AsyncCallback callback, Object object)
+      method: Void EndInvoke(IAsyncResult result)
+      method: OnLoadingDataLater op_Implicit(Action )
+      method: OnLoadingDataLater op_Addition(OnLoadingDataLater , OnLoadingDataLater )
+      method: OnLoadingDataLater op_Subtraction(OnLoadingDataLater , OnLoadingDataLater )
+
+  public class Il2Cpp.Server : Il2Cpp.UsableObject
+      prop: GameObject canvas
+      prop: TextMeshProUGUI txtIP
+      prop: TextMeshProUGUI txtServerScreen
+      prop: Single maxProcessingSpeed
+      prop: Single currentProcessingSpeed
+      prop: Single previousProcessingSpeed
+      prop: List`1 activeLinks
+      prop: Il2CppReferenceArray`1 cablelinks
+      prop: String ServerID
+      prop: Int32 appID
+      prop: String IP
+      prop: Int32 serverType
+      prop: Int32 timeToBrake
+      prop: Int32 eolTime
+      prop: Boolean isBroken
+      prop: Int32 existingWarningSigns
+      prop: Int32 existingErrorSigns
+      prop: Boolean isWarningCleared
+      prop: Image customerLogo
+      prop: Image appLogo
+      ... and 4 more properties
+      method: Void Awake()
+      method: Void Start()
+      method: Void OnLoadingStarted()
+      method: Void OnLoadingComplete()
+      method: Void PowerButton(Boolean forceState)
+      method: Void TurnOffCommonFunctions()
+      method: Void TurnOnCommonFunction()
+      method: Boolean IsAnyCableConnected()
+      method: Void InteractOnClick()
+      method: Void InteractOnHover(RaycastHit hit)
+      method: Void ServerInsertedInRack(ServerSaveData serverSaveData)
+      method: Void RegisterLink(CableLink link)
+      method: Void UnregisterLink(CableLink link)
+      method: Void UpdateServerScreenUI()
+      method: Void ButtonClickChangeCustomer(Boolean forward)
+      method: Int32 GetNextCustomerID(Int32 currentCustomerID, Boolean forward)
+      method: Void ButtonClickChangeIP()
+      method: Void SetIP(String _ip)
+      method: Int32 GetCustomerID()
+      method: Void UpdateCustomer(Int32 newCustomerID)
+      method: Void UpdateAppID(Int32 _appID)
+      method: IEnumerator BrekingInProgress()
+      method: Void ItIsBroken()
+      method: Boolean ValidateRackPosition()
+      method: Void ClearWarningSign(Boolean isPreserved)
+      method: Void ClearErrorSign()
+      method: Void OnDestroy()
+      method: Void SetPowerLightMaterial(Material material)
+      method: Void RepairDevice()
+      method: Boolean _InteractOnClick_b__32_0(RackPosition r)
+      ... and 1 more methods
+
+  public class Il2Cpp.ServerSaveData : Il2CppSystem.Object
+      prop: String serverID
+      prop: Int32 customerID
+      prop: String ip
+      prop: Int32 serverType
+      prop: Vector3 position
+      prop: Quaternion rotation
+      prop: Int32 rackPositionUID
+      prop: Int32 prefabID
+      prop: Boolean isOn
+      prop: Boolean isBroken
+      prop: Int32 timeToBrake
+      prop: Int32 eolTime
+      prop: Boolean isWarningCleared
+
+  public class Il2Cpp.SettingsControls : UnityEngine.MonoBehaviour
+      prop: Slider sliderLookSensitivity
+      prop: TextMeshProUGUI textLookSensitivityValue
+      prop: Toggle toggleInvertY
+      prop: Boolean isMainMenu
+      method: Void Start()
+      method: Void LookSensitivity(Single fl)
+      method: Void InvertY()
+      method: Void LoadSettings()
+
+  public class Il2Cpp.SettingsGameplay : UnityEngine.MonoBehaviour
+      prop: TMP_Dropdown dropDownLanguages
+      prop: Toggle toggleAutoSave
+      prop: TMP_Dropdown dropDownAutoSaveInterval
+      prop: Boolean isMainMenu
+      method: Void Start()
+      method: Void OnLanguageDropDownChange(Int32 i)
+      method: Void SetAutoSaveInterval(Int32 i)
+      method: Void SetAutoSaveOnOff(Boolean isActive)
+      method: Void LoadSettings()
+
+  public class Il2Cpp.SettingsGraphics : UnityEngine.MonoBehaviour
+      prop: VolumeProfile volumeProfile
+      prop: Boolean isMainMenu
+      prop: TMP_Dropdown resolutionDropdown
+      prop: TMP_Dropdown refreshRateDropdown
+      prop: Toggle fullScreenToggle
+      prop: TMP_Dropdown limitfpsDropdown
+      prop: Il2CppStructArray`1 resolutions
+      prop: Int32 currentResolutionIndex
+      prop: TMP_Dropdown qualityDropDown
+      prop: TMP_Dropdown antiAliasingDropdown
+      prop: TMP_Dropdown upscalingModeDropdown
+      prop: GameObject upscalingModeObject
+      prop: Boolean forcedIndirectMultilierOne
+      prop: CinemachineCamera virtualCamera
+      prop: Slider sliderFieldOfView
+      prop: TextMeshProUGUI textFieldOfViewValue
+      prop: Slider sliderShadowDistance
+      prop: TextMeshProUGUI textShadowDistanceValue
+      prop: Slider sliderMotionBlur
+      prop: TextMeshProUGUI textMotionBlurValue
+      ... and 7 more properties
+      method: Void Start()
+      method: Void SetQuality(Int32 qualityIndex)
+      method: Void SetFullScreen(Boolean isFullScreen)
+      method: Void SetResDropDown(Int32 resolutionIndex)
+      method: Void SetResolution(Int32 width, Int32 height)
+      method: IEnumerator AvailableRefreshRatesAfterFrame()
+      method: Void AvailableRefreshRate()
+      method: Void SetRefreshRate(Int32 _refreshRate)
+      method: Void LimitFrameRate(Int32 _framerate)
+      method: Void LoadSettings()
+      method: Void ChangeDepthOfField(Single startFarFocus, Single endFarFocus)
+      method: Void ResetDepthOfField()
+      method: Void SetFieldOfView(Single fov)
+      method: Void SetShadowDistance(Single distance)
+      method: Void SetMotionBlur(Single motion)
+      method: Void SetExposure(Single exposure)
+      method: Void SetupAA()
+      method: Void SetAntiAliasing(Int32 index)
+      method: Void SetAAQuality(Int32 index)
+      method: Boolean IsDLSSSupported()
+
+  public class Il2Cpp.SettingsSingleton : UnityEngine.MonoBehaviour
+      prop: SettingsSingleton instance
+      prop: OnTurnOffPublic onTurnOffPublic
+      prop: SettingsGraphics settingsGraphics
+      method: Void Awake()
+      method: IEnumerator DisableOnAfterFirstSettingUp()
+
+  public class Il2Cpp.SettingsSingleton+_DisableOnAfterFirstSettingUp_d__5 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: SettingsSingleton __4__this
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.SettingsVolume : UnityEngine.MonoBehaviour
+      prop: Boolean isMainMenu
+      prop: Slider sliderMaster
+      prop: Slider sliderMusic
+      prop: Slider sliderMusicMainMenu
+      prop: Slider sliderEffects
+      prop: Slider sliderRacks
+      method: Void Start()
+      method: Void MasterVolume(Single volume)
+      method: Void MusicVolume(Single volume)
+      method: Void EffectVolume(Single volume)
+      method: Void RacksVolume(Single volume)
+      method: Void LoadSettings()
+
+  public class Il2Cpp.SFPSaveData : Il2CppSystem.Object
+      prop: Int32 prefabID
+      prop: Vector3 position
+      prop: Quaternion rotation
+      prop: Boolean isInserted
+      prop: Vector3 portPosition
+
+  public class Il2Cpp.StaticUIElements : UnityEngine.MonoBehaviour
+      prop: StaticUIElements instance
+      prop: GameObject canvasStatic
+      prop: GameObject imagePointer
+      prop: TextMeshProUGUI txtUnderPointer
+      prop: Image holdKeyIndicator
+      prop: Image nextToPointer
+      prop: Image blackOver
+      prop: GameObject loading
+      prop: Tooltip tooltip
+      prop: TextMeshProUGUI txtMessagesField
+      prop: GameObject errorSignPrefab
+      prop: GameObject warningSignPrefab
+      prop: Int32 nextErrorWarningUID
+      prop: List`1 initiatedErrorWarningSigns
+      prop: GameObject topLeft_coinsPrestige
+      prop: TextMeshProUGUI topLeft_coinTXT
+      prop: TextMeshProUGUI topLeft_MoneyPerSecond
+      prop: TextMeshProUGUI topLeft_ExpensesPerSecond
+      prop: TextMeshProUGUI topLeft_reputationTXT
+      prop: TextMeshProUGUI topLeft_xpTXT
+      ... and 26 more properties
+      method: Void Awake()
+      method: Void Start()
+      method: IEnumerator UpdateCoinsAndPrestige_TopLeft()
+      method: Void CalculateRates(Single& moneyPerSec, Single& xpPerSec, Single& expensesPerSec)
+      method: Void SetNotification(Int32 _localisationUID, Sprite _sprite, String _text)
+      method: Void ShowStaticCanvas(Boolean active)
+      method: GameObject CreateCustomKeyHint(InputAction action, Int32 textUID, Transform parent, Boolean isPermanent)
+      method: Void RemoveCustomKeyHint()
+      method: Void InstantiateParticleUpgrade(Transform _transform)
+      method: IEnumerator UpdateMessagesCoroutine()
+      method: Void UpdateMessageDisplay()
+      method: Void AddMeesageInField(String message)
+      method: Int32 InstantiateErrorWarningSign(Boolean isError, Vector3 objectPos)
+      method: Void DestroyErrorWarningSign(Int32 errorWarningUID)
+      method: Void ShowSpriteNextToPointer(Sprite _sprite)
+      method: Void ClearSpriteNextToPointer()
+      method: Void ShowTextUnderCursor(String text)
+      method: Void HideTextUnderCursor()
+      method: Void UpdateHoldProgress(Single value)
+      method: Void SetLoadingInfo(String s)
+      method: Void OnLoadingStarted()
+
+  public class Il2Cpp.SteamManager : UnityEngine.MonoBehaviour
+      prop: Boolean s_EverInitialized
+      prop: SteamManager s_instance
+      prop: Boolean m_bInitialized
+      prop: SteamAPIWarningMessageHook_t m_SteamAPIWarningMessageHook
+      prop: SteamManager Instance
+      prop: Boolean Initialized
+      method: Void SteamAPIDebugTextHook(Int32 nSeverity, StringBuilder pchDebugText)
+      method: Void InitOnPlayMode()
+      method: Void Awake()
+      method: Void OnEnable()
+      method: Void OnDestroy()
+      method: Void Update()
+
+  public class Il2Cpp.SteamStatsOnMainMenuTop : UnityEngine.MonoBehaviour
+      prop: TextMeshProUGUI m_TextMeshProUGUI
+      prop: CallResult`1 m_globalStatsResult
+      prop: Boolean m_globalStatsReady
+      prop: Double m_globalCableLength
+      method: Void Start()
+      method: IEnumerator WaitAndDisplay()
+      method: Void OnGlobalStatsReceived(GlobalStatsReceived_t result, Boolean ioFailure)
+      method: String FormatDistance(Double meters)
+
+  public class Il2Cpp.SwitchSaveData : Il2CppSystem.Object
+      prop: String switchID
+      prop: Int32 switchType
+      prop: Vector3 position
+      prop: Quaternion rotation
+      prop: Int32 rackPositionUID
+      prop: Boolean isOn
+      prop: String label
+      prop: Boolean isBroken
+      prop: Int32 timeToBrake
+      prop: Int32 eolTime
+      prop: Boolean isWarningCleared
+
+  public class Il2Cpp.Technician+_GettingNewServer_d__30 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: Technician __4__this
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.Technician+_ReplacingServer_d__31 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: Technician __4__this
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.Technician+_ThrowingOutServer_d__32 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: Technician __4__this
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.TechnicianManager : UnityEngine.MonoBehaviour
+      prop: TechnicianManager instance
+      prop: List`1 technicians
+      prop: Il2CppReferenceArray`1 transformIdle
+      prop: Transform transformContainer
+      prop: Transform transformDumpster
+      prop: Transform transformDeviceSpawnPosition
+      prop: Int32 lastAssignedIndex
+      prop: Il2CppStructArray`1 hiredTechnicians
+      prop: Queue`1 jobQueue
+      prop: Single DISPATCH_INTERVAL
+      prop: Single lastDispatchTime
+      prop: Queue`1 pendingDispatches
+      prop: Coroutine dispatchCoroutine
+      prop: Int32 QueuedJobCount
+      method: Void Awake()
+      method: Void AddTechnician(Technician technician)
+      method: Void SendTechnician(NetworkSwitch networkSwitch, Server server)
+      method: Void RequestNextJob(Technician technician)
+      method: Void EnqueueDispatch(RepairJob job)
+      method: IEnumerator ProcessDispatchQueue()
+      method: List`1 GetQueuedJobs()
+      method: List`1 GetActiveJobs()
+      method: Boolean IsDeviceAlreadyAssigned(NetworkSwitch networkSwitch, Server server)
+      method: Void RestoreJobQueue(List`1 savedJobs)
+      method: Void FireTechnician(Int32 technicianID)
+
+  public class Il2Cpp.TechnicianSaveData : Il2CppSystem.Object
+      prop: Il2CppStructArray`1 position
+      prop: Int32 technicianID
+
+  public class Il2Cpp.TimeController : UnityEngine.MonoBehaviour
+      prop: TimeController instance
+      prop: Single secondsInFullDay
+      prop: Single currentTimeOfDay
+      prop: Single timeMultiplier
+      prop: OnEndOfTheDay onEndOfTheDayCallback
+      prop: Int32 day
+      method: Void Awake()
+      method: Void Start()
+      method: Void Update()
+      method: Boolean TimeIsBetween(Single startHour, Single endHour)
+      method: Single CurrentTimeInHours()
+      method: Int32 HoursFromDate(Single _time, Int32 _day)
+      method: Void OnDisable()
+
+  public class Il2Cpp.Tooltip : UnityEngine.MonoBehaviour
+      prop: RectTransform rectTransform
+      prop: TextMeshProUGUI text
+      prop: Boolean doNotShowTooltip
+      prop: Canvas canvasToScaleTo
+      prop: Vector3 offset
+      prop: Vector2 defaultPivotOverlay
+      prop: Vector2 defaultPivotWorld
+      prop: Single widthOfBackground
+      method: Void ShowTooltipOverlayCanvas(String tooltipText, Vector3 _position, Int32 differentXOffset)
+      method: Void ShowTooltipWorldCanvas(String _text, RectTransform _transform, Camera cam)
+      method: Void HideTooltip()
+
+  public class Il2Cpp.ToolTipInteract : UnityEngine.MonoBehaviour
+      prop: Image image
+      prop: TextMeshProUGUI textMesh
+      prop: Sprite defaultSprite
+      method: Void ShowTooltipForInteract(String _text, Sprite _sprite)
+      method: Void HideTooltipForInteract()
+
+  public class Il2Cpp.ToolTipOnUIText : UnityEngine.MonoBehaviour
+      prop: Int32 tooltipLocalisationUID
+      prop: Int32 differentXOffset
+      prop: Boolean isInPauseMenu
+      method: Void OnPointerEnter(PointerEventData eventData)
+      method: Void OnPointerExit(PointerEventData eventData)
+      method: Void OnDisable()
+      method: Void OnDestroy()
+      method: Void OnSelect()
+      method: Void OnDeselect()
+      method: Void ToolTip()
+
+  public class Il2Cpp.TrolleyLoadingBay : Il2Cpp.Interact
+      prop: Transform temporaryTransformToStoreInCorrectSpot
+      prop: Il2CppReferenceArray`1 positionsOnTrolley
+      prop: Il2CppStructArray`1 usedPositions
+      prop: Outlinable outlineEffect
+      prop: Il2CppStructArray`1 additionalPositions
+      prop: Il2CppStructArray`1 additionalRotations
+      prop: CarController carController
+      method: Void Awake()
+      method: Void Start()
+      method: Void InteractOnClick()
+      method: IEnumerator ParentTheObjectWithDelay(UsableObject uo)
+      method: Void FreeTrolleySlot(Int32 startIdx, Int32 sizeInU)
+      method: Void InteractOnHover(RaycastHit hit)
+      method: Void OnHoverOver()
+
+  public class Il2Cpp.UI_Section : UnityEngine.MonoBehaviour
+      prop: RectTransform rect
+      prop: GameObject section
+      prop: Boolean isOpened
+      method: Void OpenCloseSection()
+
+  public class Il2Cpp.UI_SelectedBorder : UnityEngine.MonoBehaviour
+      prop: RectTransform rect
+      prop: Vector2 previousPos
+      method: Void Awake()
+      method: Void Update()
+      method: Void OnDisable()
+
+  public class Il2Cpp.UIExtension : Il2CppSystem.Object
+      method: Il2CppStructArray`1 GetCorners(RectTransform rectTransform)
+      method: Single MaxY(RectTransform rectTransform)
+      method: Single MinY(RectTransform rectTransform)
+      method: Single MaxX(RectTransform rectTransform)
+      method: Single MinX(RectTransform rectTransform)
+
+  public class Il2Cpp.UsableObject+_MakeInteractableAgain_d__48 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: UsableObject __4__this
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.UserReport+SystemInfoData : Il2CppSystem.Object
+      prop: String operatingSystem
+      prop: String deviceModel
+      prop: String deviceName
+      prop: String processorType
+      prop: Int32 systemMemorySize
+      prop: String graphicsDeviceName
+      prop: Int32 graphicsMemorySize
+      prop: String unityVersion
+      prop: String productName
+      prop: String version
+      prop: String buildGUID
+      prop: Int32 targetFrameRate
+      prop: String platform
+
+  public class Il2Cpp.WaypointInitializationSystem : Unity.Entities.SystemBase
+      prop: WaypointInitializationSystem _Instance_k__BackingField
+      prop: CablePositions cablePositions
+      prop: Boolean isLoading
+      prop: Boolean needsToEvaluateRoutes
+      prop: Dictionary`2 lastFinalCableSpeeds
+      prop: Dictionary`2 cables
+      prop: TypeHandle __TypeHandle
+      prop: EntityQuery __query_1822386707_0
+      prop: EntityQuery __query_1822386707_1
+      prop: EntityQuery __query_1822386707_2
+      prop: EntityQuery __query_1822386707_3
+      prop: WaypointInitializationSystem Instance
+      method: Single GetCableCurrentSpeed(Int32 cableId)
+      method: List`1 GetAllCables()
+      method: Nullable`1 GetCableInfo(Int32 cableId)
+      method: Void LoadNetworkState(NetworkSaveData networkData, List`1 allRackPositions, Int32 saveVersion)
+      method: IEnumerator LoadNetworkStateCoroutine(NetworkSaveData networkData, List`1 allRackPositions, Int32 saveVersion)
+      method: Void ClearNetworkState()
+      method: Void OnCreate()
+      method: Void OnUpdate()
+      method: Void CreateCableWithSpawners(Int32 cableId, List`1 positions)
+      method: Void CreateSpawnersForCable(CableInfo& cableInfo)
+      method: Void CreateSpawnersForCable(CableInfo& cableInfo, PacketSpawnerComponent prefabComponent)
+      method: Entity CreateSpawner(List`1 waypoints, Vector3 spawnerPos, Int32 cableId, Int32 customerID, PacketSpawnerComponent prefabComponent, Boolean isForward)
+      method: Void UpdateServerCustomerID(String serverID, Int32 customerID)
+      method: Void EvaluateAllRoutes()
+      method: Void ActivateSpawnersForCable(CableInfo cable, Single finalSpeed, HashSet`1 customersOnCable, HashSet`1 directions)
+      method: String MapDirectionToSibling(CableInfo primary, CableInfo sibling, String direction)
+      method: Void UpdateAllUI(Dictionary`2 customerInfo, List`1 allRoutes, Dictionary`2 cableLoad, Dictionary`2 cablePairLookup)
+      method: Boolean IsCableConnecting(CableInfo cable, String from, String to)
+      method: Nullable`1 FindCableConnecting(Int32 cableId)
+      method: Nullable`1 FindCableForDevice(String deviceName)
+      method: Single GetServerProcessingSpeed(String serverName)
+      method: Void ActivateSpawnerOnCable(Entity spawnerEntity, Single speed, Int32 customerId)
+      method: Dictionary`2 GetCustomerRoutes()
+      method: Void ResetAllSpawners()
+      method: Nullable`1 FindCableConnecting(String from, String to)
+      method: String GetDeviceName(CableEndpoint endpoint)
+      method: Void RegisterCableInNetworkMap(CableInfo cableInfo)
+      method: Void OnCableRemoved(Int32 cableId)
+      method: Void SafelyDisposeSpawner(Entity spawnerEntity, Int32 cableId, String direction)
+      method: Boolean DoesCableServeMultipleCustomers(Int32 cableId)
+      ... and 6 more methods
+
+  public class Il2Cpp.WaypointInitializationSystem+___LoadNetworkStateCoroutine_592A83D2_d__46 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: WaypointInitializationSystem __4__this
+      prop: NetworkSaveData networkData
+      prop: Int32 saveVersion
+      prop: List`1 allRackPositions
+      prop: PacketSpawnerComponent _prefabComponent_5__2
+      prop: List`1 _networkSwitches_5__3
+      prop: Il2CppReferenceArray`1 _allCableLinks_5__4
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.WaypointInitializationSystem+_LoadNetworkStateCoroutine_d__12 : Il2CppSystem.Object
+      prop: Int32 __1__state
+      prop: Object __2__current
+      prop: WaypointInitializationSystem __4__this
+      prop: NetworkSaveData networkData
+      prop: Int32 saveVersion
+      prop: List`1 allRackPositions
+      prop: PacketSpawnerComponent _prefabComponent_5__2
+      prop: List`1 _networkSwitches_5__3
+      prop: Il2CppReferenceArray`1 _allCableLinks_5__4
+      prop: Object System.Collections.Generic.IEnumerator<System.Object>.Current
+      prop: Object System.Collections.IEnumerator.Current
+      method: Void System_IDisposable_Dispose()
+      method: Boolean MoveNext()
+      method: Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      method: Void System_Collections_IEnumerator_Reset()
+      method: Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.WaypointInitializationSystem+CustomerNetworkInfo : Il2CppSystem.ValueType
+      prop: HashSet`1 Bases
+      prop: HashSet`1 Servers
+
+  public class Il2Cpp.WorldObjectButton : Il2Cpp.Interact
+      prop: Outlinable outlineEffect
+      prop: UnityEvent onClick
+      method: Void Awake()
+      method: Void InteractOnClick()
+      method: Void InteractOnHover(RaycastHit hit)
+      method: Void OnHoverOver()
+
+  public class Il2CppPolyAndCode.UI.HorizontalRecyclingSystem : Il2CppPolyAndCode.UI.RecyclingSystem
+      prop: Int32 _rows
+      prop: Single _cellWidth
+      prop: Single _cellHeight
+      prop: List`1 _cellPool
+      prop: List`1 _cachedCells
+      prop: Bounds _recyclableViewBounds
+      prop: Il2CppStructArray`1 _corners
+      prop: Boolean _recycling
+      prop: Int32 currentItemCount
+      prop: Int32 leftMostCellIndex
+      prop: Int32 rightMostCellIndex
+      prop: Int32 _leftMostCellRow
+      prop: Int32 _RightMostCellRow
+      prop: Vector2 zeroVector
+      method: IEnumerator InitCoroutine(Action onInitialized)
+      method: Void SetRecyclingBounds()
+      method: Void CreateCellPool()
+      method: Vector2 OnValueChangedListener(Vector2 direction)
+      method: Vector2 RecycleLeftToRight()
+      method: Vector2 RecycleRightToleft()
+      method: Void SetLeftAnchor(RectTransform rectTransform)
+      method: Void OnDrawGizmos()
+
+  public class Il2CppPolyAndCode.UI.RecyclingSystem : Il2CppSystem.Object
+      prop: IRecyclableScrollRectDataSource DataSource
+      prop: RectTransform Viewport
+      prop: RectTransform Content
+      prop: RectTransform PrototypeCell
+      prop: Boolean IsGrid
+      prop: Single MinPoolCoverage
+      prop: Int32 MinPoolSize
+      prop: Single RecyclingThreshold
+      method: IEnumerator InitCoroutine(Action onInitialized)
+      method: Vector2 OnValueChangedListener(Vector2 direction)
+
+  public class Il2CppPolyAndCode.UI.VerticalRecyclingSystem : Il2CppPolyAndCode.UI.RecyclingSystem
+      prop: Int32 _coloumns
+      prop: Single _cellWidth
+      prop: Single _cellHeight
+      prop: List`1 _cellPool
+      prop: List`1 _cachedCells
+      prop: Bounds _recyclableViewBounds
+      prop: Il2CppStructArray`1 _corners
+      prop: Boolean _recycling
+      prop: Int32 currentItemCount
+      prop: Int32 topMostCellIndex
+      prop: Int32 bottomMostCellIndex
+      prop: Int32 _topMostCellColoumn
+      prop: Int32 _bottomMostCellColoumn
+      prop: Vector2 zeroVector
+      method: IEnumerator InitCoroutine(Action onInitialized)
+      method: Void SetRecyclingBounds()
+      method: Void CreateCellPool()
+      method: Vector2 OnValueChangedListener(Vector2 direction)
+      method: Vector2 RecycleTopToBottom()
+      method: Vector2 RecycleBottomToTop()
+      method: Void SetTopAnchor(RectTransform rectTransform)
+      method: Void SetTopLeftAnchor(RectTransform rectTransform)
+      method: Void OnDrawGizmos()
+
+  public class Il2CppPolyStang.CarController : UnityEngine.MonoBehaviour
+      prop: Single maxAcceleration
+      prop: Single brakeAcceleration
+      prop: Single torqueMultiplier
+      prop: Single noInputDeacceleration
+      prop: Single turnSensitivity
+      prop: Single maxSteerAngle
+      prop: Single frontMaxSpeed
+      prop: Single rearMaxSpeed
+      prop: Single empiricalCoefficient
+      prop: TypeOfSpeedLimit typeOfSpeedLimit
+      prop: Single frontSpeedReducer
+      prop: Single rearSpeedReducer
+      prop: Single minPitch
+      prop: Single maxPitch
+      prop: Single pitchMultiplier
+      prop: AudioSource carAudioSource
+      prop: Single minImpactVelocity
+      prop: Single impactSoundCooldown
+      prop: Single lastImpactTime
+      prop: Vector3 _centerOfMass
+      ... and 9 more properties
+      method: Void Start()
+      method: Void FixedUpdate()
+      method: Void Move()
+      method: Void Steer()
+      method: Void BrakeAndDeacceleration()
+      method: Void TakeTheWheel()
+      method: Void LeaveTheTrolley()
+      method: Void StopCar()
+      method: Void ResetTrolleyPosition()
+      method: IEnumerator ResetingTrollerPosition()
+      method: Void HandleAudio()
+      method: Void TurnOffCollidersInTrolley()
+      method: IEnumerator DisableTheTriggerColliderAfterDealy()
+      method: Void TurnBackOnCollidersInTRolley()
+      method: Void OnCollisionEnter(Collision collision)
+      method: Void OnDestroy()
+      method: Void _Start_b__32_0(CallbackContext ctx)
+      method: Void _Start_b__32_1(CallbackContext ctx)
+
+  public class Il2CppTMPro.Examples.Benchmark01_UGUI : UnityEngine.MonoBehaviour
+      prop: Int32 BenchmarkType
+      prop: Canvas canvas
+      prop: TMP_FontAsset TMProFont
+      prop: Font TextMeshFont
+      prop: TextMeshProUGUI m_textMeshPro
+      prop: Text m_textMesh
+      prop: String label01
+      prop: String label02
+      prop: Material m_material01
+      prop: Material m_material02
+      method: IEnumerator Start()
+
+  public class Il2CppTMPro.Examples.CameraController : UnityEngine.MonoBehaviour
+      prop: Transform cameraTransform
+      prop: Transform dummyTarget
+      prop: Transform CameraTarget
+      prop: Single FollowDistance
+      prop: Single MaxFollowDistance
+      prop: Single MinFollowDistance
+      prop: Single ElevationAngle
+      prop: Single MaxElevationAngle
+      prop: Single MinElevationAngle
+      prop: Single OrbitalAngle
+      prop: CameraModes CameraMode
+      prop: Boolean MovementSmoothing
+      prop: Boolean RotationSmoothing
+      prop: Boolean previousSmoothing
+      prop: Single MovementSmoothingValue
+      prop: Single RotationSmoothingValue
+      prop: Single MoveSensitivity
+      prop: Vector3 currentVelocity
+      prop: Vector3 desiredPosition
+      prop: Single mouseX
+      ... and 5 more properties
+      method: Void Awake()
+      method: Void Start()
+      method: Void LateUpdate()
+      method: Void GetPlayerInput()
+
+  public class Il2CppTMPro.Examples.TMP_UiFrameRateCounter : UnityEngine.MonoBehaviour
+      prop: Single UpdateInterval
+      prop: Single m_LastInterval
+      prop: Int32 m_Frames
+      prop: FpsCounterAnchorPositions AnchorPosition
+      prop: String htmlColorTag
+      prop: String fpsLabel
+      prop: TextMeshProUGUI m_TextMeshPro
+      prop: RectTransform m_frameCounter_transform
+      prop: FpsCounterAnchorPositions last_AnchorPosition
+      method: Void Awake()
+      method: Void Start()
+      method: Void Update()
+      method: Void Set_FrameCounter_Position(FpsCounterAnchorPositions anchor_position)
+
+  public class Il2CppTMPro.TMP_TextEventHandler : UnityEngine.MonoBehaviour
+      prop: CharacterSelectionEvent m_OnCharacterSelection
+      prop: SpriteSelectionEvent m_OnSpriteSelection
+      prop: WordSelectionEvent m_OnWordSelection
+      prop: LineSelectionEvent m_OnLineSelection
+      prop: LinkSelectionEvent m_OnLinkSelection
+      prop: TMP_Text m_TextComponent
+      prop: Camera m_Camera
+      prop: Canvas m_Canvas
+      prop: Int32 m_selectedLink
+      prop: Int32 m_lastCharIndex
+      prop: Int32 m_lastWordIndex
+      prop: Int32 m_lastLineIndex
+      prop: CharacterSelectionEvent onCharacterSelection
+      prop: SpriteSelectionEvent onSpriteSelection
+      prop: WordSelectionEvent onWordSelection
+      prop: LineSelectionEvent onLineSelection
+      prop: LinkSelectionEvent onLinkSelection
+      method: Void Awake()
+      method: Void LateUpdate()
+      method: Void OnPointerEnter(PointerEventData eventData)
+      method: Void OnPointerExit(PointerEventData eventData)
+      method: Void SendOnCharacterSelection(Char character, Int32 characterIndex)
+      method: Void SendOnSpriteSelection(Char character, Int32 characterIndex)
+      method: Void SendOnWordSelection(String word, Int32 charIndex, Int32 length)
+      method: Void SendOnLineSelection(String line, Int32 charIndex, Int32 length)
+      method: Void SendOnLinkSelection(String linkID, String linkText, Int32 linkIndex)
+
+  public class Il2CppviperOSK.OSK_GamepadHelper : UnityEngine.MonoBehaviour
+      prop: OSK_Keyboard keyboard
+      prop: OSK_Receiver receiver
+      prop: GameObject selectionMarker
+      prop: Int32 gamepadNum
+      prop: Vector2 joy
+      prop: Boolean allowRepeatButton
+      prop: Boolean invertY
+      prop: OSK_Key selectedKey
+      prop: Single inputReactiveness
+      prop: Single t
+      prop: Single tBtn
+      prop: Boolean aBtnPressed
+      prop: Boolean bBtnPressed
+      prop: Boolean active
+      prop: Boolean connected
+      prop: UnityEvent onActivate
+      prop: UnityEvent onDeactivate
+      method: Void GamepadPrep()
+      method: OSK_Key GetSelectedKey()
+      method: Void SetSelectedKey(OSK_Key k)
+      method: Void SetSelectedKey(String k)
+      method: Void Activate()
+      method: Void DeActivate()
+      method: Void Start()
+      method: Vector2 JoystickInput()
+      method: Boolean JoystickButtonA()
+      method: Boolean JoystickButtonB()
+      method: Void FixedUpdate()
+      method: Void Update()
+
+  public class Il2CppviperOSK.OSK_GlyphHandler : Il2CppSystem.Object
+      method: List`1 BuildAssignments(OSK_LanguagePackage profile)
+      method: Dictionary`2 BuildLookup(OSK_LanguagePackage profile)
+      method: Script ResolvePrimaryScript(CultureInfo culture)
+      method: IReadOnlyList`1 GetRangesForScript(Script script)
+      method: List`1 ToIntRanges(List`1 hexRanges)
+      method: Boolean TryParseHex(String hex, Int32& value)
+      method: List`1 MergeRanges(IReadOnlyList`1 a, List`1 b)
+      method: List`1 ExcludeRanges(List`1 source, List`1 excludes)
+      method: List`1 EnumerateLetterGlyphs(List`1 ranges, Boolean includeUppercase, Boolean includeLowercase, Boolean collapseCase, Boolean preferLowercase, Nullable`1 scriptForSpecials)
+      method: String Canonicalize(String s, Nullable`1 script)
+      method: Boolean IsValidCodePoint(Int32 cp)
+      method: Boolean IsSurrogate(Int32 cp)
+      method: Boolean IsLetter(UnicodeCategory c)
+      method: Boolean IsUppercase(UnicodeCategory c)
+      method: Boolean IsLowercase(UnicodeCategory c)
+      method: Int32 ToCodePoint(String s)
+      method: List`1 GetGlyphEnumSlots()
+      method: Boolean TryParseGlyphSuffix(String name, Int32& n)
+
+  private class Il2CppviperOSK.OSK_GlyphHandler+MethodInfoStoreGeneric_BuildAssignments_Public_Static_List_1_ValueTuple_2_String_TEnum_OSK_LanguagePackage_0`1 : System.Object
+
+  private class Il2CppviperOSK.OSK_GlyphHandler+MethodInfoStoreGeneric_BuildLookup_Public_Static_Dictionary_2_String_TEnum_OSK_LanguagePackage_0`1 : System.Object
+
+  public class Il2CppviperOSK.OSK_LanguagePackage : UnityEngine.ScriptableObject
+      prop: String keyboardLayout
+      prop: String altKeyboardLayout
+      prop: OSK_AccentAssetObj accentPackage
+      prop: List`1 cultures
+      prop: Boolean collapseCase
+      prop: Boolean preferLowercase
+      prop: Boolean unifyGreekFinalSigma
+      prop: Boolean includeUppercase
+      prop: Boolean includeLowercase
+      prop: List`1 extraIncludeRanges
+      prop: List`1 excludeRanges
+
+  public class Il2CppviperOSK.OSK_Settings : UnityEngine.MonoBehaviour
+      prop: OSK_Settings _instance_k__BackingField
+      prop: Boolean hasAccentedConsole
+      prop: Single longPressDelay
+      prop: UnityEvent`1 longPressAction
+      prop: String physicalKeyboardLayout
+      prop: Dictionary`2 physicalKeyboardMap
+      prop: Boolean remapPhysicalKeyboard
+      prop: OSK_Settings instance
+      method: Void SetLongPressAction(UnityAction`1 action)
+      method: Void Awake()
+
+  public class Il2CppviperOSK.OSK_UI_Cursor : UnityEngine.MonoBehaviour
+      prop: Boolean blink
+      prop: Single bps
+      prop: Vector3 startingCursorPos
+      prop: Vector3 cursorPos
+      prop: OSK_Receiver input
+      prop: TMP_Text textComponent
+      prop: TMP_TextInfo textInfo
+      prop: TMP_CharacterInfo charInfo
+      prop: Image cursorImg
+      prop: Color cursorImgColor
+      method: T FindComponentInParentOrSiblings()
+      method: Void Awake()
+      method: Void Start()
+      method: Void Cursor()
+      method: IEnumerator BlinkCoroutine()
+      method: Void Show(Boolean show)
+      method: Void OnEnable()
+      method: Void OnDisable()
+      method: Void Update()
+
+  public class Il2CppviperOSK.OSK_UI_CustomReceiver : Il2CppviperOSK.OSK_Receiver
+      prop: UnityEvent onSelect
+      prop: UnityEvent onSelectClick
+      method: Void Awake()
+      method: Void OnPointerDown(PointerEventData eventData)
+      method: Void OnPointerUp(PointerEventData eventData)
+      method: Void OnSelect(BaseEventData eventData)
+      method: Void UnityEngine_EventSystems_ISubmitHandler_OnSubmit(BaseEventData eventData)
+      method: Int32 Selection(Vector3 hitpoint, Boolean charhit)
+      method: Void Deselect()
+      method: Void SelectionHighlight(Color32 c, Boolean all)
+      method: Void Update()
+
+  public class Il2CppviperOSK.OSK_UI_InputReceiver : Il2CppviperOSK.OSK_Receiver
+      prop: InputField inputReceiver
+      prop: TMP_InputField inputTMPReceiver
+      prop: OSK_RECEIVER receiver
+      prop: UnityEvent onSelectClick
+      method: Void Awake()
+      method: Void Start()
+      method: Void TMPInputFieldReActivate()
+      method: Int32 SelectionEnd()
+      method: Void Submit()
+      method: Void AddText(String newchar)
+      method: String Text()
+      method: String ParsedText()
+      method: Void ToggleCharMask(Boolean on_off_charmask)
+      method: Void OnFocus()
+      method: Void OnFocusLost()
+      method: Void NewLine()
+      method: Void Backspace()
+      method: Void Del()
+      method: Void ClearText()
+      method: Void UnityEngine_EventSystems_IPointerClickHandler_OnPointerClick(PointerEventData eventData)
+      method: Void OnDrag(PointerEventData eventData)
+      method: Void UnityEngine_EventSystems_ISubmitHandler_OnSubmit(BaseEventData eventData)
+
+  public class Il2CppviperOSK.OSK_UI_Key : UnityEngine.MonoBehaviour
+      prop: OSK_KeyCode key
+      prop: UnityEvent`2 callBack
+      prop: Action`2 altAction
+      prop: OSK_KEY_TYPES keyType
+      prop: OSK_Receiver tmpOutput
+      prop: TextMeshProUGUI keyName
+      prop: Selectable bk
+      prop: Boolean isPressed
+      prop: Boolean isLongPress
+      prop: Coroutine longPressCoroutine
+      prop: Single lastPressed
+      prop: Single x_size
+      prop: Color bk_baseColor
+      prop: Vector2Int layoutLoc
+      prop: Int32 timesPressed
+      prop: String keyPressType
+      method: OSK_KeyCode GetKeyCode()
+      method: Object GetObject()
+      method: GameObject GetGameObject()
+      method: String GetKeyName()
+      method: Single LastPressed()
+      method: OSK_KEY_TYPES KeyType()
+      method: Transform GetKeyTransform()
+      method: Void AssignSpecialAction(Action`2 action)
+      method: Void Assign(OSK_KeyCode newKey, OSK_KEY_TYPES ktype, String name)
+      method: Void SetLayoutLocation(Int32 x, Int32 y)
+      method: Vector2Int GetLayoutLocation()
+      method: Void KeyFont(TMP_FontAsset keyfont)
+      method: Void SetColors(Color bk_color, Color label_color)
+      method: Void SetBkColor(Color bk_color, Boolean reset_base_color)
+      method: Void BackScale(Vector3 scale)
+      method: Single getYSize()
+      method: Single getXSize()
+      method: Void OnPointerDown(PointerEventData eventData)
+      method: Void OnPointerUp(PointerEventData eventData)
+      method: Void OnPressed()
+      method: Void OnDepressed()
+      method: IEnumerator LongPressCheck()
+      method: Void JoystickPressDown(OSK_Receiver inputfield)
+      method: Void JoystickPressUp(OSK_Receiver inputfield)
+      method: Void OnKeyPress(String keyDevice, OSK_Receiver inputfield)
+      method: Void OnKeyDepress(String keyDevice, OSK_Receiver inputfield)
+      method: Void Click(String keyDevice, OSK_Receiver inputfield)
+      method: IEnumerator ClickCoroutine()
+      method: Void ShiftUp()
+      method: Void ShiftDown()
+      ... and 5 more methods
+
+  public class Il2CppviperOSK.OSK_UI_Keyboard : Il2CppviperOSK.OSK_Keyboard
+      prop: List`1 keyLayout
+      prop: OSK_UI_Key currentSelUIKey
+      prop: OSK_UI_Key nextKey
+      prop: Transform keyboardAssets
+      method: Vector3 SpanTopLeft()
+      method: Vector3 SpanBottomRight()
+      method: Vector3 KeyScreenSize()
+      method: Void ShowHideKeyboard(Boolean show)
+      method: Void SetInteractable(Boolean isInteractable)
+      method: Boolean HasKey(OSK_KeyCode k)
+      method: Void Reset()
+      method: Void ResizeKeyToFit(Vector2 scrSize)
+      method: Void Generate()
+      method: Void Traverse()
+      method: Void GamepadWrapNavigation()
+      method: Void RemapPhysicalKeyboard()
+      method: Void KeyCallBase(OSK_KeyCode k, OSK_Receiver receiver)
+      method: Void KeyCall(OSK_KeyCode k, OSK_Receiver receiver)
+      method: Void ButtonA()
+      method: OSK_UI_Key SelectedKey()
+      method: Void SetSelectedKey(OSK_KeyCode k)
+      method: IEnumerator SelectKey(OSK_UI_Key selKey)
+      method: Void SetSelectedKey(String c)
+      method: Void SetSelectedKey(OSK_UI_Key k)
+      method: Void DpadMove(Vector2 dir)
+      method: Void Awake()
+      method: Void Start()
+      method: Void PrepAssetGroup()
+      method: Void OnGUI()
+      method: Void Update()
+      method: Void FixedUpdate()
+
+  public enum Il2CppviperTools.AXIS_INPUT : System.Enum
+      field: Int32 value__
+      field: AXIS_INPUT DPAD_X
+      field: AXIS_INPUT DPAD_Y
+      field: AXIS_INPUT LEFTSTICK_X
+      field: AXIS_INPUT LEFTSTICK_Y
+      field: AXIS_INPUT RIGHTSTICK_X
+      field: AXIS_INPUT RIGHTSTICK_Y
+
+  public class Il2CppviperTools.viperInput : UnityEngine.MonoBehaviour
+      method: Void Start()
+      method: Boolean IsLetterAZ(KeyCode k)
+      method: Void RegisterKeyStrokeCallback(Action`1 action, Boolean enable)
+      method: Key ConvertKeyCodeToKey(KeyCode k)
+      method: Boolean KeyDown(KeyCode k)
+      method: Boolean KeyUp(KeyCode k)
+      method: Boolean KeyPress(KeyCode k)
+      method: Boolean PointerDown(Int32 mouseBtn)
+      method: Boolean PointerUp(Int32 mouseBtn)
+      method: Boolean Fire1()
+      method: Boolean AButtonDown()
+      method: Boolean AButtonUp()
+      method: Boolean BButtonDown()
+      method: Boolean BButtonUp()
+      method: Boolean AnyPhysicalKey()
+      method: String GetPhysicalKey()
+      method: String ConvertToLegacyAxis(AXIS_INPUT axis)
+      method: Il2CppStringArray GetControllerNames()
+      method: Single GetAllAxis()
+      method: Single GetAxis(AXIS_INPUT axis)
+      method: Vector2 GetPlayerJoystickInput(Int32 p)
+      method: Boolean GetPlayerAButton(Int32 p)
+      method: Boolean GetPlayerBButton(Int32 p)
+      method: Int32 NumControllers()
+      method: Void ResetAllAxis()
+      method: Vector2 GetPointerPos()
+
+  public class UnityEngine.UI.ButtonExtended : UnityEngine.UI.Selectable
+      prop: ButtonClickedEvent m_OnClick
+      prop: AudioSource audioSource
+      prop: Vector3 scaleUpOnSelect
+      prop: Vector3 previousScale
+      prop: Boolean isDoubleClickableOnly
+      prop: Boolean isSelectedOnEnable
+      prop: Boolean doSubmitOnSelect
+      prop: Boolean selectOnPointerEnter
+      prop: Int32 tooltipLocalisationUID
+      prop: Int32 tooltipDifferentXOffset
+      prop: UnityEvent functionToBeCalledOnSelect
+      prop: UnityEvent functionToBeCalledOnDeselect
+      prop: ButtonClickedEvent onClick
+      method: Void OnEnable()
+      method: Void Start()
+      method: Void OnPointerEnter(PointerEventData eventData)
+      method: Void OnPointerExit(PointerEventData eventData)
+      method: Void OnSelect(BaseEventData eventData)
+      method: Void OnDeselect(BaseEventData eventData)
+      method: Void Press()
+      method: Void OnPointerClick(PointerEventData eventData)
+      method: Void OnSubmit(BaseEventData eventData)
+      method: IEnumerator OnFinishSubmit()
+
+  public class UnityEngine.UI.ButtonExtended+ButtonClickedEvent : UnityEngine.Events.UnityEvent
+
+  public class UnityStandardAssets.Characters.FirstPerson.FirstPersonController : UnityEngine.MonoBehaviour
+      prop: Vector2 move
+      prop: Boolean m_IsWalking
+      prop: Boolean m_IsSitting
+      prop: Boolean m_isCrouching
+      prop: Single m_WalkSpeed
+      prop: Single m_RunSpeed
+      prop: Single m_CrouchSpeed
+      prop: Single m_CrouchingMultiplyer
+      prop: Single m_RunstepLenghten
+      prop: Single m_JumpSpeed
+      prop: Single m_AnimationSmoother
+      prop: Single m_StickToGroundForce
+      prop: Single m_GravityMultiplier
+      prop: Single m_StepInterval
+      prop: Single m_ClimbSpeed
+      prop: Single m_Acceleration
+      prop: Single m_Deceleration
+      prop: Single m_StickDeadzone
+      prop: Single zoomedFov
+      prop: Single fovChangeSpeed
+      ... and 38 more properties
+      method: Void Start()
+      method: Void Update()
+      method: Void HandleZoom()
+      method: Void UpdateCameraPosition(Single speed)
+      method: Void PlayLandingSound()
+      method: AudioClip PlayRandomAudioClip(Il2CppReferenceArray`1 audioClips, Single volume)
+      method: Void ProgressStepCycle(Single speed)
+      method: Void RotateView()
+      method: Void OnControllerColliderHit(ControllerColliderHit hit)
+      method: MouseLook GetMouseLook()
+      method: Void GetInput(Single& speed)
+      method: Void Crouch()
+      method: Void StopCrouching()
+      method: Void ResetCameraPosition()
+      method: Void UpdateNormalFov(Single fov)
+      method: Void OnDestroy()
+      method: Void _Start_b__57_0(CallbackContext ctx)
+      method: Void _Start_b__57_1(CallbackContext ctx)
+      method: Void _Start_b__57_2(CallbackContext ctx)
+      method: Void _Start_b__57_3(CallbackContext ctx)
+      method: Void _Start_b__57_4(CallbackContext ctx)
+      method: Void _Start_b__57_5(CallbackContext ctx)
+      method: Void _Start_b__57_6(CallbackContext ctx)
+      method: Void _Start_b__57_7(CallbackContext ctx)
+

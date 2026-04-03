@@ -186,6 +186,8 @@ public static class GameHooks
         catch { return 0; }
     }
 
+    private static int _eolSwitchDiagCounter = 0;
+
     public static uint GetEolSwitchCount()
     {
         try
@@ -206,10 +208,32 @@ public static class GameHooks
                     var sw = dict[key];
                     if (sw == null) continue;
                     if (sw.isBroken) continue;
-                    if (sw.existingWarningSigns > 0) count++;
+                    // Check both warning signs AND eolTime countdown (like servers)
+                    bool isEol = sw.existingWarningSigns > 0;
+                    if (!isEol)
+                    {
+                        try { isEol = sw.eolTime <= 0; } catch { }
+                    }
+                    if (isEol) count++;
                 }
                 catch { }
             }
+
+            // Periodic diagnostic dump when EOL switches exist (every ~30s = 6 scans)
+            if (count > 0)
+            {
+                _eolSwitchDiagCounter++;
+                if (_eolSwitchDiagCounter >= 6)
+                {
+                    _eolSwitchDiagCounter = 0;
+                    DumpSwitchDiagnostics();
+                }
+            }
+            else
+            {
+                _eolSwitchDiagCounter = 0;
+            }
+
             return count;
         }
         catch { return 0; }
@@ -389,7 +413,13 @@ public static class GameHooks
                     try { sw = dict[key]; } catch { continue; }
                     if (sw == null) continue;
                     if (sw.isBroken) continue;
-                    if (sw.existingWarningSigns <= 0) continue; // no EOL warning
+                    // Check both warning signs AND eolTime countdown (like servers)
+                    bool isEol = sw.existingWarningSigns > 0;
+                    if (!isEol)
+                    {
+                        try { isEol = sw.eolTime <= 0; } catch { }
+                    }
+                    if (!isEol) continue; // not EOL
 
                     if (tm.IsDeviceAlreadyAssigned(sw, null)) continue;
 
@@ -401,5 +431,89 @@ public static class GameHooks
             return 0;
         }
         catch { return 0; }
+    }
+
+    /// <summary>
+    /// Logs detailed per-switch diagnostics to CrashLog so we can identify
+    /// which switch is missing from EOL detection.
+    /// </summary>
+    public static void DumpSwitchDiagnostics()
+    {
+        try
+        {
+            var nm = NetworkMap.instance;
+            var tm = TechnicianManager.instance;
+            if (nm == null) { MelonLoader.MelonLogger.Msg("[SwitchDiag] NetworkMap is null"); return; }
+
+            var dict = nm.switches;
+            if (dict == null) { MelonLoader.MelonLogger.Msg("[SwitchDiag] switches dict is null"); return; }
+
+            var keys = new System.Collections.Generic.List<string>();
+            foreach (var kvp in dict) keys.Add(kvp.Key);
+
+            MelonLoader.MelonLogger.Msg($"[SwitchDiag] --- {keys.Count} switch(es) in nm.switches ---");
+
+            foreach (var key in keys)
+            {
+                try
+                {
+                    var sw = dict[key];
+                    if (sw == null) { MelonLoader.MelonLogger.Msg($"[SwitchDiag]   key={key} => null"); continue; }
+
+                    bool broken = false;
+                    try { broken = sw.isBroken; } catch { }
+
+                    int warningSigns = -999;
+                    try { warningSigns = sw.existingWarningSigns; } catch { }
+
+                    float eolTime = float.NaN;
+                    try { eolTime = sw.eolTime; } catch { }
+
+                    bool assigned = false;
+                    try { if (tm != null) assigned = tm.IsDeviceAlreadyAssigned(sw, null); } catch { }
+
+                    MelonLoader.MelonLogger.Msg(
+                        $"[SwitchDiag]   key={key} broken={broken} warningSigns={warningSigns} eolTime={eolTime:F1} assigned={assigned}"
+                    );
+                }
+                catch (Exception ex)
+                {
+                    MelonLoader.MelonLogger.Msg($"[SwitchDiag]   key={key} => exception: {ex.Message}");
+                }
+            }
+
+            // Also check brokenSwitches dict
+            var brokenDict = nm.brokenSwitches;
+            int brokenCount = 0;
+            if (brokenDict != null)
+            {
+                var brokenKeys = new System.Collections.Generic.List<string>();
+                foreach (var kvp in brokenDict) brokenKeys.Add(kvp.Key);
+                brokenCount = brokenKeys.Count;
+
+                foreach (var key in brokenKeys)
+                {
+                    try
+                    {
+                        var sw = brokenDict[key];
+                        float eolTime = float.NaN;
+                        try { eolTime = sw.eolTime; } catch { }
+                        int warningSigns = -999;
+                        try { warningSigns = sw.existingWarningSigns; } catch { }
+
+                        MelonLoader.MelonLogger.Msg(
+                            $"[SwitchDiag]   BROKEN key={key} warningSigns={warningSigns} eolTime={eolTime:F1}"
+                        );
+                    }
+                    catch { }
+                }
+            }
+
+            MelonLoader.MelonLogger.Msg($"[SwitchDiag] --- total: {keys.Count} normal + {brokenCount} broken ---");
+        }
+        catch (Exception ex)
+        {
+            MelonLoader.MelonLogger.Msg($"[SwitchDiag] exception: {ex.Message}");
+        }
     }
 }

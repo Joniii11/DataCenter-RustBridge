@@ -16,12 +16,14 @@
   </PropertyGroup>
 
   <!--
-    MelonLoader references - these paths assume MelonLoader is installed in the game directory.
-    Adjust GameDir if your game is installed elsewhere.
+    MelonLoader + Il2Cpp assemblies live under the game folder.
+    Override if your install path differs:
+      dotnet build -c Release -p:DataCenterGameRoot="C:\Program Files (x86)\Steam\steamapps\common\Data Center"
+    Or set DataCenterGameRoot in Directory.Build.props.
   -->
   <PropertyGroup>
-    <GameDir>C:\Program Files (x86)\Steam\steamapps\common\Data Center</GameDir>
-    <MelonLoaderDir>$(GameDir)\MelonLoader</MelonLoaderDir>
+    <DataCenterGameRoot Condition="'$(DataCenterGameRoot)' == ''">C:\Program Files (x86)\Steam\steamapps\common\Data Center</DataCenterGameRoot>
+    <MelonLoaderDir>$(DataCenterGameRoot)\MelonLoader</MelonLoaderDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -82,6 +84,48 @@
     <!-- TextMeshPro (needed for TextMeshProUGUI text component access) -->
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\Unity.TextMeshPro.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- AI Module (needed for NavMeshAgent removal on remote player models) -->
+    <Reference Include="UnityEngine.AIModule">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.AIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- UI Module (needed for Canvas, RenderMode on nametags) -->
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.UIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Input Legacy Module (needed for Input.GetKeyDown, KeyCode) -->
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Unity Input System (new Input System package, needed for Keyboard.current) -->
+    <Reference Include="Unity.InputSystem">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\Unity.InputSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Text Rendering Module (needed for FontStyle, TextAnchor in IMGUI styles) -->
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- IMGUI Module (needed for GUI/GUILayout in multiplayer panel) -->
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Unity Physics Module (needed for Collider/Rigidbody if used) -->
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.PhysicsModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
 

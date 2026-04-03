@@ -55,9 +55,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-pub const API_VERSION: u32 = 5;
+pub const API_VERSION: u32 = 7;
 
-// ── Internal helpers for proc macros ────────────────────────────────────────
 //
 // Each Rust mod is compiled as a separate `cdylib`, so these statics are
 // per-DLL — no conflicts between mods.
@@ -271,6 +270,25 @@ pub struct GameAPI {
     pub set_game_paused: extern "C" fn(u32),
     pub get_difficulty: extern "C" fn() -> i32,
     pub trigger_save: extern "C" fn() -> i32,
+
+    pub steam_get_my_id: extern "C" fn() -> u64,
+    pub steam_get_friend_name: extern "C" fn(steam_id: u64) -> *const c_char,
+    pub steam_create_lobby: extern "C" fn(lobby_type: u32, max_players: u32) -> i32,
+    pub steam_join_lobby: extern "C" fn(lobby_id: u64) -> i32,
+    pub steam_leave_lobby: extern "C" fn(),
+    pub steam_get_lobby_id: extern "C" fn() -> u64,
+    pub steam_get_lobby_owner: extern "C" fn() -> u64,
+    pub steam_get_lobby_member_count: extern "C" fn() -> u32,
+    pub steam_get_lobby_member_by_index: extern "C" fn(index: u32) -> u64,
+    pub steam_set_lobby_data: extern "C" fn(key: *const c_char, value: *const c_char) -> i32,
+    pub steam_get_lobby_data: extern "C" fn(key: *const c_char) -> *const c_char,
+    pub steam_send_p2p: extern "C" fn(target: u64, data: *const u8, len: u32, reliable: u32) -> i32,
+    pub steam_is_p2p_available: extern "C" fn(out_size: *mut u32) -> u32,
+    pub steam_read_p2p: extern "C" fn(buf: *mut u8, buf_len: u32, out_sender: *mut u64) -> u32,
+    pub steam_accept_p2p: extern "C" fn(remote: u64),
+    pub steam_poll_event: extern "C" fn(out_type: *mut u32, out_data: *mut u64) -> u32,
+    pub get_player_position:
+        extern "C" fn(out_x: *mut f32, out_y: *mut f32, out_z: *mut f32, out_ry: *mut f32),
 }
 
 unsafe impl Send for GameAPI {}
@@ -661,6 +679,175 @@ impl Api {
             return None;
         }
         Some((self.raw.trigger_save)())
+    }
+
+    // v7 — Steam / Multiplayer
+
+    pub fn steam_get_my_id(&self) -> Option<u64> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        let id = (self.raw.steam_get_my_id)();
+        if id == 0 {
+            None
+        } else {
+            Some(id)
+        }
+    }
+
+    pub fn steam_get_friend_name(&self, steam_id: u64) -> Option<String> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        let ptr = (self.raw.steam_get_friend_name)(steam_id);
+        if ptr.is_null() {
+            return None;
+        }
+        unsafe { CStr::from_ptr(ptr).to_str().ok().map(|s| s.to_string()) }
+    }
+
+    pub fn steam_create_lobby(&self, lobby_type: u32, max_players: u32) -> Option<i32> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        Some((self.raw.steam_create_lobby)(lobby_type, max_players))
+    }
+
+    pub fn steam_join_lobby(&self, lobby_id: u64) -> Option<i32> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        Some((self.raw.steam_join_lobby)(lobby_id))
+    }
+
+    pub fn steam_leave_lobby(&self) {
+        if self.raw.api_version < 7 {
+            return;
+        }
+        (self.raw.steam_leave_lobby)()
+    }
+
+    pub fn steam_get_lobby_id(&self) -> Option<u64> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        let id = (self.raw.steam_get_lobby_id)();
+        if id == 0 {
+            None
+        } else {
+            Some(id)
+        }
+    }
+
+    pub fn steam_get_lobby_owner(&self) -> Option<u64> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        let id = (self.raw.steam_get_lobby_owner)();
+        if id == 0 {
+            None
+        } else {
+            Some(id)
+        }
+    }
+
+    pub fn steam_get_lobby_member_count(&self) -> Option<u32> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        Some((self.raw.steam_get_lobby_member_count)())
+    }
+
+    pub fn steam_get_lobby_member_by_index(&self, index: u32) -> Option<u64> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        let id = (self.raw.steam_get_lobby_member_by_index)(index);
+        if id == 0 {
+            None
+        } else {
+            Some(id)
+        }
+    }
+
+    pub fn steam_set_lobby_data(&self, key: &str, value: &str) -> Option<i32> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        let key_c = CString::new(key).ok()?;
+        let val_c = CString::new(value).ok()?;
+        Some((self.raw.steam_set_lobby_data)(
+            key_c.as_ptr(),
+            val_c.as_ptr(),
+        ))
+    }
+
+    pub fn steam_get_lobby_data(&self, key: &str) -> Option<String> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        let key_c = CString::new(key).ok()?;
+        let ptr = (self.raw.steam_get_lobby_data)(key_c.as_ptr());
+        if ptr.is_null() {
+            return None;
+        }
+        unsafe { CStr::from_ptr(ptr).to_str().ok().map(|s| s.to_string()) }
+    }
+
+    pub fn steam_send_p2p(&self, target: u64, data: &[u8], reliable: u32) -> Option<i32> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        Some((self.raw.steam_send_p2p)(
+            target,
+            data.as_ptr(),
+            data.len() as u32,
+            reliable,
+        ))
+    }
+
+    pub fn steam_is_p2p_available(&self, out_size: &mut u32) -> Option<u32> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        Some((self.raw.steam_is_p2p_available)(out_size as *mut u32))
+    }
+
+    pub fn steam_read_p2p(&self, buf: &mut [u8], out_sender: &mut u64) -> Option<u32> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        Some((self.raw.steam_read_p2p)(
+            buf.as_mut_ptr(),
+            buf.len() as u32,
+            out_sender as *mut u64,
+        ))
+    }
+
+    pub fn steam_accept_p2p(&self, remote: u64) {
+        if self.raw.api_version < 7 {
+            return;
+        }
+        (self.raw.steam_accept_p2p)(remote)
+    }
+
+    pub fn steam_poll_event(&self, out_type: &mut u32, out_data: &mut u64) -> Option<u32> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        Some((self.raw.steam_poll_event)(
+            out_type as *mut u32,
+            out_data as *mut u64,
+        ))
+    }
+
+    pub fn get_player_position(&self) -> Option<(f32, f32, f32, f32)> {
+        if self.raw.api_version < 7 {
+            return None;
+        }
+        let (mut x, mut y, mut z, mut ry) = (0f32, 0f32, 0f32, 0f32);
+        (self.raw.get_player_position)(&mut x, &mut y, &mut z, &mut ry);
+        Some((x, y, z, ry))
     }
 }
 

@@ -17,6 +17,9 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
+# MP relay server
+crates/dc_relay
+
 # Project specific
 /tools/dump/
 /tools/TypeDumper

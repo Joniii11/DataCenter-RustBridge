@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Il2Cpp;
 using MelonLoader;
@@ -67,12 +68,31 @@ public struct GameAPITable
     public IntPtr SetGamePaused;
     public IntPtr GetDifficulty;
     public IntPtr TriggerSave;
+
+    // v7 — Steam / Multiplayer
+    public IntPtr SteamGetMyId;
+    public IntPtr SteamGetFriendName;
+    public IntPtr SteamCreateLobby;
+    public IntPtr SteamJoinLobby;
+    public IntPtr SteamLeaveLobby;
+    public IntPtr SteamGetLobbyId;
+    public IntPtr SteamGetLobbyOwner;
+    public IntPtr SteamGetLobbyMemberCount;
+    public IntPtr SteamGetLobbyMemberByIndex;
+    public IntPtr SteamSetLobbyData;
+    public IntPtr SteamGetLobbyData;
+    public IntPtr SteamSendP2P;
+    public IntPtr SteamIsP2PAvailable;
+    public IntPtr SteamReadP2P;
+    public IntPtr SteamAcceptP2P;
+    public IntPtr SteamPollEvent;
+    public IntPtr GetPlayerPosition;
 }
 
 // manages the api table, delegates stored as fields to prevent GC
 public class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 5;
+    public const uint API_VERSION = 7;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -86,6 +106,54 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetUIntDelegate(uint value);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr GetStringDelegate();
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int GetIntDelegate();
+
+    // v7 delegate types
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate ulong GetULongDelegate();
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr GetStringFromU64Delegate(ulong steamId);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int CreateLobbyDelegate(uint lobbyType, uint maxPlayers);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int JoinLobbyDelegate(ulong lobbyId);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void VoidDelegate();
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate ulong GetLobbyMemberDelegate(uint index);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int SetLobbyDataDelegate(IntPtr key, IntPtr value);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate IntPtr GetLobbyDataDelegate(IntPtr key);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int SendP2PDelegate(ulong target, IntPtr data, uint len, uint reliable);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint IsP2PAvailableDelegate(IntPtr outSize);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint ReadP2PDelegate(IntPtr buf, uint bufLen, IntPtr outSender);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void AcceptP2PDelegate(ulong remote);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint PollEventDelegate(IntPtr outType, IntPtr outData);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void GetPlayerPositionDelegate(IntPtr outX, IntPtr outY, IntPtr outZ, IntPtr outRy);
+
+    // Steam native API imports (old ISteamNetworking — NAT traversal, works for any game)
+    [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr SteamAPI_SteamNetworking_v006();
+
+    [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr SteamAPI_SteamUser_v023();
+
+    [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr SteamAPI_SteamFriends_v018();
+
+    [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
+    private static extern ulong SteamAPI_ISteamUser_GetSteamID(IntPtr self);
+
+    [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
+    private static extern IntPtr SteamAPI_ISteamFriends_GetFriendPersonaName(IntPtr self, ulong steamId);
+
+    [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool SteamAPI_ISteamNetworking_SendP2PPacket(IntPtr self, ulong steamIDRemote, IntPtr pubData, uint cubData, int eP2PSendType, int nChannel);
+
+    [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool SteamAPI_ISteamNetworking_IsP2PPacketAvailable(IntPtr self, out uint pcubMsgSize, int nChannel);
+
+    [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool SteamAPI_ISteamNetworking_ReadP2PPacket(IntPtr self, IntPtr pubDest, uint cubDest, out uint pcubMsgSize, out ulong psteamIDRemote, int nChannel);
+
+    [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private static extern bool SteamAPI_ISteamNetworking_AcceptP2PSessionWithUser(IntPtr instancePtr, ulong steamIDRemote);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int RegisterCustomEmployeeDelegate(IntPtr employeeId, IntPtr name, IntPtr description, float salary, float requiredReputation, uint confirmDialogs);
@@ -125,9 +193,34 @@ public class GameAPIManager : IDisposable
     private readonly GetUIntDelegate _isGamePaused2;
     private readonly SetGamePausedDelegate _setGamePaused;
     private readonly GetIntDelegate _getDifficulty, _triggerSave;
+    // v7
+    private readonly GetULongDelegate _steamGetMyId;
+    private readonly GetStringFromU64Delegate _steamGetFriendName;
+    private readonly CreateLobbyDelegate _steamCreateLobby;
+    private readonly JoinLobbyDelegate _steamJoinLobby;
+    private readonly VoidDelegate _steamLeaveLobby;
+    private readonly GetULongDelegate _steamGetLobbyId;
+    private readonly GetULongDelegate _steamGetLobbyOwner;
+    private readonly GetUIntDelegate _steamGetLobbyMemberCount;
+    private readonly GetLobbyMemberDelegate _steamGetLobbyMemberByIndex;
+    private readonly SetLobbyDataDelegate _steamSetLobbyData;
+    private readonly GetLobbyDataDelegate _steamGetLobbyData;
+    private readonly SendP2PDelegate _steamSendP2P;
+    private readonly IsP2PAvailableDelegate _steamIsP2PAvailable;
+    private readonly ReadP2PDelegate _steamReadP2P;
+    private readonly AcceptP2PDelegate _steamAcceptP2P;
+    private readonly PollEventDelegate _steamPollEvent;
+    private readonly GetPlayerPositionDelegate _getPlayerPosition;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
+    private IntPtr _friendNamePtr = IntPtr.Zero;
+    private IntPtr _lobbyDataPtr = IntPtr.Zero;
+
+    // Steam interface cache
+    private IntPtr _steamNetworking = IntPtr.Zero;
+    private IntPtr _steamUser = IntPtr.Zero;
+    private IntPtr _steamFriends = IntPtr.Zero;
 
     public GameAPIManager(MelonLogger.Instance logger)
     {
@@ -185,6 +278,25 @@ public class GameAPIManager : IDisposable
         _getDifficulty = GetDifficultyImpl;
         _triggerSave = TriggerSaveImpl;
 
+        // v7
+        _steamGetMyId = SteamGetMyIdImpl;
+        _steamGetFriendName = SteamGetFriendNameImpl;
+        _steamCreateLobby = SteamCreateLobbyImpl;
+        _steamJoinLobby = SteamJoinLobbyImpl;
+        _steamLeaveLobby = SteamLeaveLobbyImpl;
+        _steamGetLobbyId = SteamGetLobbyIdImpl;
+        _steamGetLobbyOwner = SteamGetLobbyOwnerImpl;
+        _steamGetLobbyMemberCount = SteamGetLobbyMemberCountImpl;
+        _steamGetLobbyMemberByIndex = SteamGetLobbyMemberByIndexImpl;
+        _steamSetLobbyData = SteamSetLobbyDataImpl;
+        _steamGetLobbyData = SteamGetLobbyDataImpl;
+        _steamSendP2P = SteamSendP2PImpl;
+        _steamIsP2PAvailable = SteamIsP2PAvailableImpl;
+        _steamReadP2P = SteamReadP2PImpl;
+        _steamAcceptP2P = SteamAcceptP2PImpl;
+        _steamPollEvent = SteamPollEventImpl;
+        _getPlayerPosition = GetPlayerPositionImpl;
+
         _table = new GameAPITable
         {
             ApiVersion = API_VERSION,
@@ -236,6 +348,24 @@ public class GameAPIManager : IDisposable
             SetGamePaused = Marshal.GetFunctionPointerForDelegate(_setGamePaused),
             GetDifficulty = Marshal.GetFunctionPointerForDelegate(_getDifficulty),
             TriggerSave = Marshal.GetFunctionPointerForDelegate(_triggerSave),
+            // v7
+            SteamGetMyId = Marshal.GetFunctionPointerForDelegate(_steamGetMyId),
+            SteamGetFriendName = Marshal.GetFunctionPointerForDelegate(_steamGetFriendName),
+            SteamCreateLobby = Marshal.GetFunctionPointerForDelegate(_steamCreateLobby),
+            SteamJoinLobby = Marshal.GetFunctionPointerForDelegate(_steamJoinLobby),
+            SteamLeaveLobby = Marshal.GetFunctionPointerForDelegate(_steamLeaveLobby),
+            SteamGetLobbyId = Marshal.GetFunctionPointerForDelegate(_steamGetLobbyId),
+            SteamGetLobbyOwner = Marshal.GetFunctionPointerForDelegate(_steamGetLobbyOwner),
+            SteamGetLobbyMemberCount = Marshal.GetFunctionPointerForDelegate(_steamGetLobbyMemberCount),
+            SteamGetLobbyMemberByIndex = Marshal.GetFunctionPointerForDelegate(_steamGetLobbyMemberByIndex),
+            SteamSetLobbyData = Marshal.GetFunctionPointerForDelegate(_steamSetLobbyData),
+            SteamGetLobbyData = Marshal.GetFunctionPointerForDelegate(_steamGetLobbyData),
+            SteamSendP2P = Marshal.GetFunctionPointerForDelegate(_steamSendP2P),
+            SteamIsP2PAvailable = Marshal.GetFunctionPointerForDelegate(_steamIsP2PAvailable),
+            SteamReadP2P = Marshal.GetFunctionPointerForDelegate(_steamReadP2P),
+            SteamAcceptP2P = Marshal.GetFunctionPointerForDelegate(_steamAcceptP2P),
+            SteamPollEvent = Marshal.GetFunctionPointerForDelegate(_steamPollEvent),
+            GetPlayerPosition = Marshal.GetFunctionPointerForDelegate(_getPlayerPosition),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -486,9 +616,169 @@ public class GameAPIManager : IDisposable
         catch (Exception ex) { CrashLog.LogException("TriggerSave", ex); return 0; }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    //  v7 — Steam / Multiplayer (old ISteamNetworking P2P — NAT traversal)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    private IntPtr GetSteamNetworking()
+    {
+        if (_steamNetworking == IntPtr.Zero)
+            _steamNetworking = SteamAPI_SteamNetworking_v006();
+        return _steamNetworking;
+    }
+
+    private IntPtr GetSteamUser()
+    {
+        if (_steamUser == IntPtr.Zero)
+            _steamUser = SteamAPI_SteamUser_v023();
+        return _steamUser;
+    }
+
+    private IntPtr GetSteamFriends()
+    {
+        if (_steamFriends == IntPtr.Zero)
+            _steamFriends = SteamAPI_SteamFriends_v018();
+        return _steamFriends;
+    }
+
+    private ulong SteamGetMyIdImpl()
+    {
+        try
+        {
+            var user = GetSteamUser();
+            if (user == IntPtr.Zero) return 0;
+            return SteamAPI_ISteamUser_GetSteamID(user);
+        }
+        catch (Exception ex) { CrashLog.LogException("SteamGetMyId", ex); return 0; }
+    }
+
+    private IntPtr SteamGetFriendNameImpl(ulong steamId)
+    {
+        try
+        {
+            var friends = GetSteamFriends();
+            if (friends == IntPtr.Zero) return IntPtr.Zero;
+            return SteamAPI_ISteamFriends_GetFriendPersonaName(friends, steamId);
+        }
+        catch (Exception ex) { CrashLog.LogException("SteamGetFriendName", ex); return IntPtr.Zero; }
+    }
+
+    // Lobby stubs (Phase 1b — not yet implemented)
+    private int SteamCreateLobbyImpl(uint lobbyType, uint maxPlayers) { return 0; }
+    private int SteamJoinLobbyImpl(ulong lobbyId) { return 0; }
+    private void SteamLeaveLobbyImpl() { }
+    private ulong SteamGetLobbyIdImpl() { return 0; }
+    private ulong SteamGetLobbyOwnerImpl() { return 0; }
+    private uint SteamGetLobbyMemberCountImpl() { return 0; }
+    private ulong SteamGetLobbyMemberByIndexImpl(uint index) { return 0; }
+    private int SteamSetLobbyDataImpl(IntPtr key, IntPtr value) { return 0; }
+    private IntPtr SteamGetLobbyDataImpl(IntPtr key) { return IntPtr.Zero; }
+
+    // ── P2P via old ISteamNetworking (NAT traversal, works for any Steam game) ──
+
+    private int SteamSendP2PImpl(ulong target, IntPtr data, uint len, uint reliable)
+    {
+        try
+        {
+            var networking = GetSteamNetworking();
+            if (networking == IntPtr.Zero)
+            {
+                CrashLog.Log("[Steam] SendP2P: ISteamNetworking not available");
+                return 0;
+            }
+
+            // k_EP2PSendUnreliable=0, k_EP2PSendReliable=2
+            int sendType = reliable != 0 ? 2 : 0;
+            bool ok = SteamAPI_ISteamNetworking_SendP2PPacket(networking, target, data, len, sendType, 0);
+            if (!ok)
+                CrashLog.Log($"[Steam] SendP2PPacket failed: target={target}, len={len}, reliable={reliable}");
+            return ok ? 1 : 0;
+        }
+        catch (Exception ex) { CrashLog.LogException("SteamSendP2P", ex); return 0; }
+    }
+
+    private uint SteamIsP2PAvailableImpl(IntPtr outSize)
+    {
+        try
+        {
+            var networking = GetSteamNetworking();
+            if (networking == IntPtr.Zero) return 0;
+
+            bool available = SteamAPI_ISteamNetworking_IsP2PPacketAvailable(networking, out uint msgSize, 0);
+            if (available && msgSize > 0)
+            {
+                if (outSize != IntPtr.Zero)
+                    Marshal.WriteInt32(outSize, (int)msgSize);
+                return 1;
+            }
+            return 0;
+        }
+        catch (Exception ex) { CrashLog.LogException("SteamIsP2PAvailable", ex); return 0; }
+    }
+
+    private uint SteamReadP2PImpl(IntPtr buf, uint bufLen, IntPtr outSender)
+    {
+        try
+        {
+            var networking = GetSteamNetworking();
+            if (networking == IntPtr.Zero) return 0;
+
+            bool ok = SteamAPI_ISteamNetworking_ReadP2PPacket(
+                networking, buf, bufLen, out uint bytesRead, out ulong sender, 0);
+
+            if (ok && bytesRead > 0)
+            {
+                if (outSender != IntPtr.Zero)
+                    Marshal.WriteInt64(outSender, (long)sender);
+                return bytesRead;
+            }
+            return 0;
+        }
+        catch (Exception ex) { CrashLog.LogException("SteamReadP2P", ex); return 0; }
+    }
+
+    private void SteamAcceptP2PImpl(ulong remote)
+    {
+        try
+        {
+            var networking = GetSteamNetworking();
+            if (networking == IntPtr.Zero) return;
+
+            bool ok = SteamAPI_ISteamNetworking_AcceptP2PSessionWithUser(networking, remote);
+            CrashLog.Log($"[Steam] AcceptP2PSessionWithUser({remote}): {ok}");
+        }
+        catch (Exception ex) { CrashLog.LogException("SteamAcceptP2P", ex); }
+    }
+
+    private uint SteamPollEventImpl(IntPtr outType, IntPtr outData)
+    {
+        // TODO: implement event queue for lobby callbacks
+        return 0;
+    }
+
+    private void GetPlayerPositionImpl(IntPtr outX, IntPtr outY, IntPtr outZ, IntPtr outRy)
+    {
+        try
+        {
+            var pm = PlayerManager.instance;
+            if (pm == null || pm.playerGO == null) return;
+
+            var pos = pm.playerGO.transform.position;
+            var rot = pm.playerGO.transform.eulerAngles;
+
+            if (outX != IntPtr.Zero) Marshal.Copy(new float[] { pos.x }, 0, outX, 1);
+            if (outY != IntPtr.Zero) Marshal.Copy(new float[] { pos.y }, 0, outY, 1);
+            if (outZ != IntPtr.Zero) Marshal.Copy(new float[] { pos.z }, 0, outZ, 1);
+            if (outRy != IntPtr.Zero) Marshal.Copy(new float[] { rot.y }, 0, outRy, 1);
+        }
+        catch (Exception ex) { CrashLog.LogException("GetPlayerPosition", ex); }
+    }
+
     public void Dispose()
     {
         if (_tablePtr != IntPtr.Zero) { Marshal.FreeHGlobal(_tablePtr); _tablePtr = IntPtr.Zero; }
         if (_currentScenePtr != IntPtr.Zero) { Marshal.FreeHGlobal(_currentScenePtr); _currentScenePtr = IntPtr.Zero; }
+        if (_friendNamePtr != IntPtr.Zero) { Marshal.FreeHGlobal(_friendNamePtr); _friendNamePtr = IntPtr.Zero; }
+        if (_lobbyDataPtr != IntPtr.Zero) { Marshal.FreeHGlobal(_lobbyDataPtr); _lobbyDataPtr = IntPtr.Zero; }
     }
 }

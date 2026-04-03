@@ -1,0 +1,15 @@
+[package]
+name = "dc_multiplayer"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+dc_api = { path = "../dc_api" }
+dc_relay_proto = { path = "../dc_relay_proto" }
+bincode = "2"
+tungstenite = { version = "0.21", features = ["native-tls"] }

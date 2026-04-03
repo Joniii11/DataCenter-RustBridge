@@ -3,7 +3,10 @@ members = [
     "crates/dc_api",
     "crates/dc_api_macros",
     "crates/dc_example_mod",
+    "crates/dc_multiplayer",
     "crates/dc_netwatch",
+    "crates/dc_relay_proto",
+    "crates/dc_relay",
 ]
 resolver = "2"
 

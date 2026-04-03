@@ -1,0 +1,9 @@
+[package]
+name = "dc_relay_proto"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+bincode = "2"
