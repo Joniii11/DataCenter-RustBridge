@@ -153,10 +153,6 @@ public class MultiplayerBridge
     private string _roomCode = "";  // room code for joining
     private string _displayRoomCode = "";  // room code received after hosting
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Fields: UI
-    // ═══════════════════════════════════════════════════════════════════════
-
     private bool _showPanel;
     private UnityEngine.EventSystems.EventSystem _mpDisabledEventSystem;
     private int _mpReenableCountdown;
@@ -185,10 +181,6 @@ public class MultiplayerBridge
     {
         _logger = logger;
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  DLL Detection & Initialization
-    // ═══════════════════════════════════════════════════════════════════════
 
     public bool TryInitialize()
     {
@@ -274,10 +266,6 @@ public class MultiplayerBridge
 
         return true;
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  OnUpdate  (called every frame from Core.OnUpdate)
-    // ═══════════════════════════════════════════════════════════════════════
 
     public void OnUpdate(float dt)
     {

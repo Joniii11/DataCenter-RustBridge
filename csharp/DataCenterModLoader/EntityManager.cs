@@ -558,7 +558,6 @@ public static class EntityManager
         catch { }
     }
 
-    /// <summary>Called once per frame from Core.cs to process UMA ready</summary>
     public static void Update()
     {
         try
@@ -573,7 +572,7 @@ public static class EntityManager
                     if (playerY > 3.5f)
                     {
                         CrashLog.Log($"[EntityManager] Roof safety net triggered — player Y={playerY:F2}, warping to origin.");
-                        pm.playerClass.WarpPlayer(Vector3.zero, pm.playerGO.transform.rotation);
+                        pm.playerClass.WarpPlayer(new Vector3(0f, 1f, 0f), pm.playerGO.transform.rotation);
                     }
                 }
             }
@@ -699,20 +698,12 @@ public static class EntityManager
             {
                 try
                 {
-                    bool farEnough = false;
-                    var pm = PlayerManager.instance;
-                    if (pm != null && pm.playerGO != null)
-                    {
-                        var lp = pm.playerGO.transform.position;
-                        var ep = entity.GO.transform.position;
-                        float dx = ep.x - lp.x;
-                        float dz = ep.z - lp.z;
-                        farEnough = (dx * dx + dz * dz) >= 2.25f; // >= 1.5m
-                    }
-                    else
-                    {
-                        farEnough = true; // no local player ref, safe to add
-                    }
+                    var ep = entity.GO.transform.position;
+
+                    // Don't add collider until entity has moved away from default spawn (0,1,0)
+                    float dx = ep.x;
+                    float dz = ep.z;
+                    bool farEnough = (dx * dx + dz * dz) >= 4.0f; // >= 2m from origin
 
                     if (farEnough)
                     {

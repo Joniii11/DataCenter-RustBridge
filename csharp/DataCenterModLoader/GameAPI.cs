@@ -1076,32 +1076,10 @@ public class GameAPIManager : IDisposable
     {
         try
         {
-            var pm = PlayerManager.instance;
-            if (pm == null || pm.playerClass == null) return;
-
-            var player = pm.playerClass;
-
-            if (player.targetSpawn != null)
-            {
-                var pos = player.targetSpawn.position;
-                if (outX != IntPtr.Zero) Marshal.Copy(new float[] { pos.x }, 0, outX, 1);
-                if (outY != IntPtr.Zero) Marshal.Copy(new float[] { pos.y }, 0, outY, 1);
-                if (outZ != IntPtr.Zero) Marshal.Copy(new float[] { pos.z }, 0, outZ, 1);
-                CrashLog.Log($"[GameAPI] Default spawn from targetSpawn: ({pos.x:F1},{pos.y:F1},{pos.z:F1})");
-                return;
-            }
-
-            var rp = player.respawnPos;
-            if (rp.x != 0f || rp.y != 0f || rp.z != 0f)
-            {
-                if (outX != IntPtr.Zero) Marshal.Copy(new float[] { rp.x }, 0, outX, 1);
-                if (outY != IntPtr.Zero) Marshal.Copy(new float[] { rp.y }, 0, outY, 1);
-                if (outZ != IntPtr.Zero) Marshal.Copy(new float[] { rp.z }, 0, outZ, 1);
-                CrashLog.Log($"[GameAPI] Default spawn from respawnPos: ({rp.x:F1},{rp.y:F1},{rp.z:F1})");
-                return;
-            }
-
-            CrashLog.Log("[GameAPI] No default spawn position available");
+            if (outX != IntPtr.Zero) Marshal.Copy(new float[] { 0f }, 0, outX, 1);
+            if (outY != IntPtr.Zero) Marshal.Copy(new float[] { 1f }, 0, outY, 1);
+            if (outZ != IntPtr.Zero) Marshal.Copy(new float[] { 0f }, 0, outZ, 1);
+            CrashLog.Log("[GameAPI] Default spawn: (0, 1, 0)");
         }
         catch (Exception ex) { CrashLog.LogException("GetDefaultSpawnPosition", ex); }
     }
