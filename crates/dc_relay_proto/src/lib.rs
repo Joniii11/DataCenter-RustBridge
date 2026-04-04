@@ -5,36 +5,44 @@ use bincode::{Decode, Encode};
 /// Packets exchanged between relay clients and the relay server.
 #[derive(Encode, Decode, Debug, Clone)]
 pub enum RelayPacket {
-    /// Create a new room. Server responds with RoomCreated.
-    CreateRoom { steam_id: u64 },
-    /// Join an existing room by code. Server responds with JoinOk, RoomNotFound, or RoomFull.
-    JoinRoom { room_code: String, steam_id: u64 },
-    /// Leave the current room gracefully.
+    CreateRoom {
+        steam_id: u64,
+    },
+    JoinRoom {
+        room_code: String,
+        steam_id: u64,
+    },
     LeaveRoom,
-    /// Game data to broadcast to all other players in the room.
-    GameData { payload: Vec<u8> },
-    /// Keep-alive ping from client.
+    GameData {
+        payload: Vec<u8>,
+    },
+    // TODO
+    GameDataCheck {
+        checksum: u32,
+    },
     Heartbeat,
 
-    /// Room created successfully. Contains the room code to share.
-    RoomCreated { room_code: String },
-    /// Successfully joined a room.
-    JoinOk { host_steam_id: u64 },
-    /// The requested room code does not exist.
+    RoomCreated {
+        room_code: String,
+    },
+    JoinOk {
+        host_steam_id: u64,
+    },
     RoomNotFound,
-    /// The room is full.
     RoomFull,
-    /// A new peer joined the room.
-    PeerJoined { steam_id: u64 },
-    /// A peer left the room.
-    PeerLeft { steam_id: u64 },
-    /// Game data from another player in the room.
+    PeerJoined {
+        steam_id: u64,
+    },
+    PeerLeft {
+        steam_id: u64,
+    },
     PeerData {
         sender_steam_id: u64,
         payload: Vec<u8>,
     },
-    /// Generic server error.
-    ServerError { message: String },
+    ServerError {
+        message: String,
+    },
 }
 
 pub const MAX_PACKET_SIZE: usize = 8192;

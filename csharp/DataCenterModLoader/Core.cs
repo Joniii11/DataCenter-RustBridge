@@ -159,6 +159,7 @@ public class Core : MelonMod
             _mpBridge?.OnUpdate(Time.deltaTime);
             ModConfigSystem.OnUpdate(Time.deltaTime);
             CustomEmployeeManager.ReregisterSalariesIfNeeded();
+            EntityManager.Update();
         }
         catch (Exception ex)
         {
@@ -199,6 +200,7 @@ public class Core : MelonMod
         {
             LoggerInstance.Msg("Shutting down modloader...");
             CrashLog.Log("step: OnApplicationQuit starting");
+            EntityManager.DestroyAll();
             _mpBridge?.Shutdown();
             ModConfigSystem.Shutdown();
             _ffiBridge?.Shutdown();

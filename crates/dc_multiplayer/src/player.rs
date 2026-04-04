@@ -1,7 +1,19 @@
 use std::collections::HashMap;
 use std::time::Instant;
 
-/// Data shared with C# for rendering remote players
+/// Lerp between two angles in degrees
+fn lerp_angle(a: f32, b: f32, t: f32) -> f32 {
+    let mut delta = (b - a) % 360.0;
+    if delta > 180.0 {
+        delta -= 360.0;
+    }
+    if delta < -180.0 {
+        delta += 360.0;
+    }
+    a + delta * t
+}
+
+/// sahred data between here and c#
 #[repr(C)]
 #[derive(Clone)]
 pub struct RemotePlayerData {
@@ -45,6 +57,15 @@ pub struct RemotePlayer {
     pub z: f32,
     pub rot_y: f32,
     pub last_update: Instant,
+
+    pub entity_id: Option<u32>,
+
+    pub prev_x: f32,
+    pub prev_y: f32,
+    pub prev_z: f32,
+    pub prev_rot_y: f32,
+
+    pub network_update_time: Instant,
 }
 
 impl RemotePlayer {
@@ -57,15 +78,43 @@ impl RemotePlayer {
             z: 0.0,
             rot_y: 0.0,
             last_update: Instant::now(),
+            entity_id: None,
+            prev_x: 0.0,
+            prev_y: 0.0,
+            prev_z: 0.0,
+            prev_rot_y: 0.0,
+            network_update_time: Instant::now(),
         }
     }
 
     pub fn update_position(&mut self, x: f32, y: f32, z: f32, rot_y: f32) {
+        self.prev_x = self.x;
+        self.prev_y = self.y;
+        self.prev_z = self.z;
+        self.prev_rot_y = self.rot_y;
         self.x = x;
         self.y = y;
         self.z = z;
         self.rot_y = rot_y;
+        self.network_update_time = Instant::now();
         self.last_update = Instant::now();
+    }
+
+    /// Compute interpolated position between prev and current target
+    pub fn interpolated_position(&self) -> (f32, f32, f32, f32) {
+        let elapsed = self.network_update_time.elapsed().as_secs_f32();
+        let t = (elapsed / 0.05).clamp(0.0, 1.5);
+        let ix = self.prev_x + (self.x - self.prev_x) * t;
+        let iy = self.prev_y + (self.y - self.prev_y) * t;
+        let iz = self.prev_z + (self.z - self.prev_z) * t;
+        let t_rot = t.min(1.0);
+        let irot = lerp_angle(self.prev_rot_y, self.rot_y, t_rot);
+        (ix, iy, iz, irot)
+    }
+
+    /// Returns true if this player has a valid position but no entity spawned yet
+    pub fn needs_spawn(&self) -> bool {
+        self.entity_id.is_none() && (self.x != 0.0 || self.y != 0.0 || self.z != 0.0)
     }
 
     pub fn is_stale(&self) -> bool {
@@ -104,6 +153,7 @@ impl PlayerTracker {
             .insert(steam_id, RemotePlayer::new(steam_id, name));
     }
 
+    #[allow(dead_code)]
     pub fn remove_player(&mut self, steam_id: u64) {
         self.players.remove(&steam_id);
     }
@@ -118,7 +168,8 @@ impl PlayerTracker {
         self.players.contains_key(&steam_id)
     }
 
-    /// Remove players that haven't sent data in a while
+    /// Remove players that are stale
+    #[allow(dead_code)]
     pub fn cleanup_stale(&mut self) -> Vec<u64> {
         let stale: Vec<u64> = self
             .players
@@ -136,7 +187,7 @@ impl PlayerTracker {
         self.players.len()
     }
 
-    /// Fill a C-compatible buffer with player data for rendering
+    /// Fill buffer
     pub fn fill_ffi_buffer(&self, buf: &mut [RemotePlayerData]) -> usize {
         let count = self.players.len().min(buf.len());
         for (i, player) in self.players.values().enumerate() {
@@ -146,5 +197,43 @@ impl PlayerTracker {
             buf[i] = player.to_ffi();
         }
         count
+    }
+
+    /// Set the entity ID for a player after spawning
+    pub fn set_entity_id(&mut self, steam_id: u64, entity_id: u32) {
+        if let Some(player) = self.players.get_mut(&steam_id) {
+            player.entity_id = Some(entity_id);
+        }
+    }
+
+    /// Remove a player and return their entity ID
+    pub fn remove_player_with_entity(&mut self, steam_id: u64) -> Option<u32> {
+        self.players.remove(&steam_id).and_then(|p| p.entity_id)
+    }
+
+    /// Iterate mutably over all players
+    pub fn for_each_player_mut<F: FnMut(&mut RemotePlayer)>(&mut self, mut f: F) {
+        for player in self.players.values_mut() {
+            f(player);
+        }
+    }
+
+    /// Get all entity IDs
+    pub fn get_all_entity_ids(&self) -> Vec<u32> {
+        self.players.values().filter_map(|p| p.entity_id).collect()
+    }
+
+    /// Cleanup stale players
+    pub fn cleanup_stale_with_entities(&mut self) -> Vec<(u64, Option<u32>)> {
+        let stale: Vec<(u64, Option<u32>)> = self
+            .players
+            .iter()
+            .filter(|(_, p)| p.is_stale())
+            .map(|(id, p)| (*id, p.entity_id))
+            .collect();
+        for (id, _) in &stale {
+            self.players.remove(id);
+        }
+        stale
     }
 }

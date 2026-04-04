@@ -55,16 +55,11 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-pub const API_VERSION: u32 = 8;
-
-//
-// Each Rust mod is compiled as a separate `cdylib`, so these statics are
-// per-DLL — no conflicts between mods.
+pub const API_VERSION: u32 = 9;
 
 static __MOD_API: OnceLock<Api> = OnceLock::new();
 static __CRASH_LOG_NAME: OnceLock<String> = OnceLock::new();
 
-/// Store the API reference (called by generated `mod_init`).
 #[doc(hidden)]
 pub fn __internal_set_mod_api(api: Api) {
     let _ = __MOD_API.set(api);
@@ -238,12 +233,10 @@ pub struct GameAPI {
 
     pub get_satisfied_customer_count: extern "C" fn() -> u32,
 
-    // v3
     pub set_netwatch_enabled: extern "C" fn(u32), // 1 = enable, 0 = disable
     pub is_netwatch_enabled: extern "C" fn() -> u32, // 1 = enabled, 0 = disabled
     pub get_netwatch_stats: extern "C" fn() -> u32, // total dispatches count
 
-    // v4 — device & technician management primitives
     pub get_broken_server_count: extern "C" fn() -> u32,
     pub get_broken_switch_count: extern "C" fn() -> u32,
     pub get_eol_server_count: extern "C" fn() -> u32,
@@ -261,7 +254,6 @@ pub struct GameAPI {
     pub fire_custom_employee: extern "C" fn(*const c_char) -> i32,
     pub register_salary: extern "C" fn(i32) -> i32,
 
-    // v5 — Game state & UI
     pub show_notification: extern "C" fn(*const c_char) -> i32,
     pub get_money_per_second: extern "C" fn() -> f32,
     pub get_expenses_per_second: extern "C" fn() -> f32,
@@ -290,7 +282,6 @@ pub struct GameAPI {
     pub get_player_position:
         extern "C" fn(out_x: *mut f32, out_y: *mut f32, out_z: *mut f32, out_ry: *mut f32),
 
-    // v8 — Mod Configuration
     pub config_register_bool: extern "C" fn(
         mod_id: *const c_char,
         key: *const c_char,
@@ -319,6 +310,21 @@ pub struct GameAPI {
     pub config_get_bool: extern "C" fn(mod_id: *const c_char, key: *const c_char) -> u32,
     pub config_get_int: extern "C" fn(mod_id: *const c_char, key: *const c_char) -> i32,
     pub config_get_float: extern "C" fn(mod_id: *const c_char, key: *const c_char) -> f32,
+
+    pub spawn_character: extern "C" fn(
+        prefab_idx: u32,
+        x: f32,
+        y: f32,
+        z: f32,
+        rot_y: f32,
+        name: *const c_char,
+    ) -> u32,
+    pub destroy_entity: extern "C" fn(entity_id: u32),
+    pub set_entity_position: extern "C" fn(entity_id: u32, x: f32, y: f32, z: f32, rot_y: f32),
+    pub is_entity_ready: extern "C" fn(entity_id: u32) -> u32,
+    pub set_entity_animation: extern "C" fn(entity_id: u32, speed: f32, is_walking: u32),
+    pub get_prefab_count: extern "C" fn() -> u32,
+    pub set_entity_name: extern "C" fn(entity_id: u32, name: *const c_char),
 }
 
 unsafe impl Send for GameAPI {}
@@ -1005,6 +1011,75 @@ impl Api {
             c_mod_id.as_ptr(),
             c_key.as_ptr(),
         ))
+    }
+
+    /// Spawn a UMA character at the given world position
+    pub fn spawn_character(
+        &self,
+        prefab_idx: u32,
+        x: f32,
+        y: f32,
+        z: f32,
+        rot_y: f32,
+        name: &str,
+    ) -> Option<u32> {
+        if self.version() < 9 {
+            return None;
+        }
+        let c_name = CString::new(name).ok()?;
+        let id = (self.raw.spawn_character)(prefab_idx, x, y, z, rot_y, c_name.as_ptr());
+        if id == 0 {
+            None
+        } else {
+            Some(id)
+        }
+    }
+
+    /// Destroy entity by id
+    pub fn destroy_entity(&self, entity_id: u32) {
+        if self.version() >= 9 {
+            (self.raw.destroy_entity)(entity_id);
+        }
+    }
+
+    //FIXME correct rotation it's kind of broken
+    /// Update entity pos and rot
+    pub fn set_entity_position(&self, entity_id: u32, x: f32, y: f32, z: f32, rot_y: f32) {
+        if self.version() >= 9 {
+            (self.raw.set_entity_position)(entity_id, x, y, z, rot_y);
+        }
+    }
+
+    /// Check if UMA mesh has finished generating
+    pub fn is_entity_ready(&self, entity_id: u32) -> Option<bool> {
+        if self.version() < 9 {
+            return None;
+        }
+        Some((self.raw.is_entity_ready)(entity_id) != 0)
+    }
+
+    /// Drive the entitys animation with a speed value and walking flag
+    pub fn set_entity_animation(&self, entity_id: u32, speed: f32, is_walking: bool) {
+        if self.version() >= 9 {
+            (self.raw.set_entity_animation)(entity_id, speed, if is_walking { 1 } else { 0 });
+        }
+    }
+
+    /// Get the number of available character prefabs
+    pub fn get_prefab_count(&self) -> Option<u32> {
+        if self.version() < 9 {
+            return None;
+        }
+        Some((self.raw.get_prefab_count)())
+    }
+
+    /// Update the nametag text for an entity
+    pub fn set_entity_name(&self, entity_id: u32, name: &str) {
+        if self.version() >= 9 {
+            if let Ok(c) = CString::new(name) {
+                (self.raw.set_entity_name)(entity_id, c.as_ptr());
+            }
+        }
     }
 }
 

@@ -17,7 +17,7 @@ namespace DataCenterModLoader;
 
 /// <summary>
 /// Manages the multiplayer bridge between C# (MelonLoader) and the Rust DLL (dc_multiplayer.dll).
-/// Handles relay-based networking, remote player rendering, UI panel, and main menu button injection.
+/// Handles relay-based networking, UI panel, and main menu button injection.
 /// </summary>
 using UnityEngine.SceneManagement;
 
@@ -32,9 +32,6 @@ public class MultiplayerBridge
     // ═══════════════════════════════════════════════════════════════════════
     //  FFI Delegates (dc_multiplayer.dll exports)
     // ═══════════════════════════════════════════════════════════════════════
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate uint MpGetRemotePlayersDelegate(IntPtr buf, uint maxCount);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate uint MpIsConnectedDelegate();
@@ -93,46 +90,13 @@ public class MultiplayerBridge
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate uint MpIsSaveUpToDateDelegate();
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Structs & Inner Types
-    // ═══════════════════════════════════════════════════════════════════════
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint MpGetJoinStateDelegate();
 
-    // Must match crates/dc_multiplayer RemotePlayerData #[repr(C)] (align 8, ~96 bytes with tail padding).
-    [StructLayout(LayoutKind.Sequential, Pack = 8)]
-    private struct RemotePlayerData
-    {
-        public ulong SteamId;
-        public float X, Y, Z, RotY;
-        [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
-        public byte[] Name;
-        public byte Connected;
-    }
-
-    private class RemotePlayerGO
-    {
-        public GameObject GO;
-        public ulong SteamId;
-        public Vector3 TargetPos;
-        public float TargetRotY;
-        public Animator Animator;
-        public Vector3 LastPos;
-        public int SpeedParamHash;
-        public int WalkingParamHash;
-        public bool HasSpeedParam;
-        public bool HasWalkingParam;
-        public bool AnimParamsLogged;
-        public UnityEngine.AI.NavMeshAgent NavAgent;
-        public bool WaitingForUMA;
-        public float UMAWaitStart;
-
-        public Vector3 PrevTargetPos;
-        public float PrevTargetRotY;
-        public float LastNetworkUpdate;
-        const float NetworkInterval = 0.05f;
-    }
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void MpSetJoinStateDelegate(uint state);
 
     private readonly MelonLogger.Instance _logger;
-    private MpGetRemotePlayersDelegate _getRemotePlayers;
     private MpIsConnectedDelegate _isConnected;
     private MpIsRelayActiveDelegate _isRelayActive;
     private MpGetPlayerCountDelegate _getPlayerCount;
@@ -152,30 +116,21 @@ public class MultiplayerBridge
     private MpGetSaveTransferProgressDelegate _getSaveTransferProgress;
     private MpGetSaveTransferTotalBytesDelegate _getSaveTransferTotalBytes;
     private MpIsSaveUpToDateDelegate _isSaveUpToDate;
-    private readonly Dictionary<ulong, RemotePlayerGO> _remotePlayers = new();
-    private bool _gameTextRefLogged = false;
-    private float _refCanvasScale = 0f;
-    private float _refFontSize = 0f;
+    private MpGetJoinStateDelegate _getJoinState;
+    private MpSetJoinStateDelegate _setJoinState;
     private bool _initialized = false;
     private float _initTimer = 0f;
     private bool _isHosting = false;
     private bool _isConnectedState = false;
     private string _discoveredSavePath = null;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Client Join State Machine
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private enum ClientJoinState
-    {
-        Idle,               // Not joining / hosting
-        WaitingForSave,     // Connected as client, waiting for save from host
-        SaveReceived,       // Got save bytes from Rust, need to process them
-        WaitingForGameScene,// Save written to disk, waiting for game scene (we're in menu)
-        Loaded              // Save loaded, playing in host's world
-    }
-
-    private ClientJoinState _joinState = ClientJoinState.Idle;
+    // Join state constants (must match Rust dc_multiplayer JOIN_* constants)
+    private const uint JOIN_IDLE = 0;
+    private const uint JOIN_WAITING_FOR_SAVE = 1;
+    private const uint JOIN_SAVE_READY = 2;
+    private const uint JOIN_SAVE_UP_TO_DATE = 3;
+    private const uint JOIN_LOADING_SCENE = 4;
+    private const uint JOIN_LOADED = 5;
     private string _currentSceneName = "";
     private byte[] _pendingSaveBytes = null;
     private string _pendingSaveName = null;     // save name (without extension) written to disk
@@ -224,15 +179,7 @@ public class MultiplayerBridge
     private const float KEY_REPEAT_DELAY = 0.4f;
     private const float KEY_REPEAT_RATE = 0.05f;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Constants
-    // ═══════════════════════════════════════════════════════════════════════
 
-    private const int MAX_REMOTE_PLAYERS = 4;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Constructor
-    // ═══════════════════════════════════════════════════════════════════════
 
     public MultiplayerBridge(MelonLogger.Instance logger)
     {
@@ -253,7 +200,6 @@ public class MultiplayerBridge
             handle = GetModuleHandle("dc_multiplayer");
         if (handle == IntPtr.Zero) return false;
 
-        var getPlayersPtr = GetProcAddress(handle, "mp_get_remote_players");
         var isConnectedPtr = GetProcAddress(handle, "mp_is_connected");
         var isRelayActivePtr = GetProcAddress(handle, "mp_is_relay_active");
         var playerCountPtr = GetProcAddress(handle, "mp_get_player_count");
@@ -269,9 +215,8 @@ public class MultiplayerBridge
         var getSaveDataPtr = GetProcAddress(handle, "mp_get_save_data");
         var saveLoadCompletePtr = GetProcAddress(handle, "mp_save_load_complete");
 
-        if (getPlayersPtr == IntPtr.Zero || isConnectedPtr == IntPtr.Zero) return false;
+        if (isConnectedPtr == IntPtr.Zero) return false;
 
-        _getRemotePlayers = Marshal.GetDelegateForFunctionPointer<MpGetRemotePlayersDelegate>(getPlayersPtr);
         _isConnected = Marshal.GetDelegateForFunctionPointer<MpIsConnectedDelegate>(isConnectedPtr);
         _isRelayActive = isRelayActivePtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpIsRelayActiveDelegate>(isRelayActivePtr) : null;
         _getPlayerCount = playerCountPtr != IntPtr.Zero ? Marshal.GetDelegateForFunctionPointer<MpGetPlayerCountDelegate>(playerCountPtr) : null;
@@ -311,6 +256,16 @@ public class MultiplayerBridge
         var isSaveUpToDatePtr = GetProcAddress(handle, "mp_is_save_up_to_date");
         _isSaveUpToDate = isSaveUpToDatePtr != IntPtr.Zero
             ? Marshal.GetDelegateForFunctionPointer<MpIsSaveUpToDateDelegate>(isSaveUpToDatePtr)
+            : null;
+
+        var getJoinStatePtr = GetProcAddress(handle, "mp_get_join_state");
+        _getJoinState = getJoinStatePtr != IntPtr.Zero
+            ? Marshal.GetDelegateForFunctionPointer<MpGetJoinStateDelegate>(getJoinStatePtr)
+            : null;
+
+        var setJoinStatePtr = GetProcAddress(handle, "mp_set_join_state");
+        _setJoinState = setJoinStatePtr != IntPtr.Zero
+            ? Marshal.GetDelegateForFunctionPointer<MpSetJoinStateDelegate>(setJoinStatePtr)
             : null;
 
         _initialized = true;
@@ -490,25 +445,21 @@ public class MultiplayerBridge
 
             if (!_isHosting)
             {
-                switch (_joinState)
+                uint joinState = GetJoinState();
+                switch (joinState)
                 {
-                    case ClientJoinState.WaitingForSave:
-                        if (_skipSaveOnReconnect)
-                        {
-                            if (_hasPendingSave != null && _hasPendingSave() != 0)
-                            {
-                                CrashLog.Log("[MP Join] Discarding save data (already loaded on reconnect)");
-                                if (_saveLoadComplete != null) _saveLoadComplete();
-                            }
-                            if (_isConnectedState)
-                            {
-                                CrashLog.Log("[MP Join] Reconnect complete — state → Loaded");
-                                _joinState = ClientJoinState.Loaded;
-                                _skipSaveOnReconnect = false;
-                            }
-                            break;
-                        }
-                        if (_isSaveUpToDate != null && _isSaveUpToDate() != 0)
+                    case JOIN_WAITING_FOR_SAVE:
+                        // Rust automatically transitions to SaveReady or SaveUpToDate.
+                        // Nothing to do here — just wait.
+                        break;
+
+                    case JOIN_SAVE_READY:
+                        CrashLog.Log("[MP Join] Save data ready from Rust — fetching and processing");
+                        try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Received save from host, loading..."); } catch { }
+                        FetchAndProcessSave();
+                        break;
+
+                    case JOIN_SAVE_UP_TO_DATE:
                         {
                             CrashLog.Log("[MP Join] Save is up to date — no download needed!");
                             try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Save is up to date!"); } catch { }
@@ -526,30 +477,19 @@ public class MultiplayerBridge
                                 }
                                 else
                                 {
-                                    CrashLog.Log("[MP Join] In-game with up-to-date save — transitioning to Loaded");
-                                    _joinState = ClientJoinState.Loaded;
-                                    _logger.Msg("[MP Join] Save up to date, already in-game!");
+                                    CrashLog.Log("[MP Join] Ingame with up-to-date save transitioning to Loaded");
+                                    SetJoinState(JOIN_LOADED);
+                                    _logger.Msg("[MP Join] Save up to date, already ingame!");
                                 }
                             }
                             else
                             {
-                                CrashLog.Log("[MP Join] Save up to date but couldn't find local file — falling back to download");
+                                CrashLog.Log("[MP Join] Save up to date but couldn't find local file staying in state");
                             }
                             break;
                         }
-                        if (_hasPendingSave != null && _hasPendingSave() != 0)
-                        {
-                            CrashLog.Log("[MP Join] Save data ready from Rust — transitioning to SaveReceived");
-                            _joinState = ClientJoinState.SaveReceived;
-                            try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Received save from host, loading..."); } catch { }
-                        }
-                        break;
 
-                    case ClientJoinState.SaveReceived:
-                        FetchAndProcessSave();
-                        break;
-
-                    case ClientJoinState.WaitingForGameScene:
+                    case JOIN_LOADING_SCENE:
                         if (_deferredLoadDelay > 0f)
                         {
                             _deferredLoadDelay -= dt;
@@ -559,7 +499,7 @@ public class MultiplayerBridge
                             if (_gameHandledSaveLoad)
                             {
                                 CrashLog.Log("[MP Join] Game scene loaded via MainMenu.Continue() — transitioning to Loaded");
-                                _joinState = ClientJoinState.Loaded;
+                                SetJoinState(JOIN_LOADED);
                                 _gameHandledSaveLoad = false;
                                 _pendingSaveBytes = null;
                                 _pendingSaveName = null;
@@ -574,7 +514,7 @@ public class MultiplayerBridge
                         }
                         break;
 
-                    case ClientJoinState.Loaded:
+                    case JOIN_LOADED:
                         if (_hasPendingSave != null && _hasPendingSave() != 0)
                         {
                             CrashLog.Log("[MP Join] Discarding late save data (already loaded)");
@@ -588,13 +528,13 @@ public class MultiplayerBridge
                         }
                         break;
 
-                    case ClientJoinState.Idle:
+                    case JOIN_IDLE:
                     default:
                         break;
                 }
             }
 
-            UpdateRemotePlayers();
+
         }
         catch (Exception ex)
         {
@@ -602,14 +542,22 @@ public class MultiplayerBridge
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Scene Management
-    // ═══════════════════════════════════════════════════════════════════════
+
+    private uint GetJoinState()
+    {
+        if (_getJoinState != null) return _getJoinState();
+        return JOIN_IDLE;
+    }
+
+    private void SetJoinState(uint state)
+    {
+        if (_setJoinState != null) _setJoinState(state);
+    }
 
     public void OnSceneLoaded(string sceneName)
     {
         _currentSceneName = sceneName ?? "";
-        CrashLog.Log($"[MP Join] OnSceneLoaded: \"{_currentSceneName}\" (joinState={_joinState})");
+        CrashLog.Log($"[MP Join] OnSceneLoaded: \"{_currentSceneName}\" (joinState={GetJoinState()})");
 
         if (sceneName == "MainMenu")
         {
@@ -618,29 +566,23 @@ public class MultiplayerBridge
         }
         else
         {
-            // Clean up menu button reference on scene change
             _menuButton = null;
 
-            // If we were waiting for the game scene after writing the save, now is the time to load it
-            if (_joinState == ClientJoinState.WaitingForGameScene)
+            if (GetJoinState() == JOIN_LOADING_SCENE)
             {
                 if (_gameHandledSaveLoad)
                 {
                     CrashLog.Log($"[MP Join] Game scene \"{sceneName}\" loaded (via Continue) — waiting for initialization");
-                    _deferredLoadDelay = 2.0f; // longer delay — game is handling the full load
+                    _deferredLoadDelay = 2.0f;
                 }
                 else if (_pendingSaveName != null)
                 {
                     CrashLog.Log($"[MP Join] Game scene \"{sceneName}\" loaded — will attempt save load after short delay");
-                    _deferredLoadDelay = 1.0f; // delay so the scene can finish initializing + callbacks register
+                    _deferredLoadDelay = 1.0f;
                 }
             }
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Keybinds
-    // ═══════════════════════════════════════════════════════════════════════
 
     private void HandleKeybinds()
     {
@@ -858,9 +800,10 @@ public class MultiplayerBridge
         CrashLog.Log($"[MP Bridge] DoConnect: room={code}");
 
         // Prevent joining when already busy
-        if (_joinState != ClientJoinState.Idle && _joinState != ClientJoinState.Loaded)
+        uint currentJoinState = GetJoinState();
+        if (currentJoinState != JOIN_IDLE && currentJoinState != JOIN_LOADED)
         {
-            CrashLog.Log($"[MP Bridge] DoConnect: blocked — already in state {_joinState}");
+            CrashLog.Log($"[MP Bridge] DoConnect: blocked already in state {currentJoinState}");
             _logger.Msg("[MP Bridge] Already joining, please wait...");
             try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Already joining, please wait..."); } catch { }
             return;
@@ -911,7 +854,7 @@ public class MultiplayerBridge
 
             if (result == 1)
             {
-                _joinState = ClientJoinState.WaitingForSave;
+                SetJoinState(JOIN_WAITING_FOR_SAVE);
                 _logger.Msg($"[MP Bridge] Joining room {code}...");
                 CrashLog.Log($"[MP Join] State → WaitingForSave");
                 try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField($"Multiplayer: Joining room {code}..."); } catch { }
@@ -1394,7 +1337,7 @@ public class MultiplayerBridge
                 // The save we overwrote in WriteSaveToDisk is the newest save,
                 // so Continue() will load it through the normal game path.
                 _gameHandledSaveLoad = true;
-                _joinState = ClientJoinState.WaitingForGameScene;
+                SetJoinState(JOIN_LOADING_SCENE);
                 _pendingSaveBytes = null; // free memory
 
                 try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Loading host's game..."); } catch { }
@@ -1474,7 +1417,7 @@ public class MultiplayerBridge
             if (gameSceneIndex >= 0)
             {
                 CrashLog.Log($"[MP Join] Loading game scene: [{gameSceneIndex}] \"{gameSceneName}\"");
-                _joinState = ClientJoinState.WaitingForGameScene;
+                SetJoinState(JOIN_LOADING_SCENE);
                 _pendingSaveBytes = null;
                 try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Loading host's game..."); } catch { }
                 SceneManager.LoadScene(gameSceneIndex);
@@ -1483,7 +1426,7 @@ public class MultiplayerBridge
             else
             {
                 CrashLog.Log("[MP Join] Could not identify game scene — trying build index 1");
-                _joinState = ClientJoinState.WaitingForGameScene;
+                SetJoinState(JOIN_LOADING_SCENE);
                 _pendingSaveBytes = null;
                 try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Loading host's game..."); } catch { }
                 SceneManager.LoadScene(1);
@@ -1494,7 +1437,7 @@ public class MultiplayerBridge
         {
             CrashLog.Log($"[MP Join] Scene enumeration failed: {ex.GetType().Name}: {ex.Message}");
             CrashLog.Log("[MP Join] Falling back to SceneManager.LoadScene(1)");
-            _joinState = ClientJoinState.WaitingForGameScene;
+            SetJoinState(JOIN_LOADING_SCENE);
             _pendingSaveBytes = null;
             try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Loading host's game..."); } catch { }
             try { SceneManager.LoadScene(1); }
@@ -1611,7 +1554,7 @@ public class MultiplayerBridge
 
         if (loaded)
         {
-            _joinState = ClientJoinState.Loaded;
+            SetJoinState(JOIN_LOADED);
             _pendingSaveBytes = null; // free memory
             _logger.Msg("[MP Join] Save loaded from host!");
             try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Save loaded from host!"); } catch { }
@@ -1673,7 +1616,7 @@ public class MultiplayerBridge
 
             if (result == 1)
             {
-                _joinState = ClientJoinState.WaitingForSave; // will be handled by skip logic
+                SetJoinState(JOIN_WAITING_FOR_SAVE);
                 try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Reconnecting..."); } catch { }
             }
             else
@@ -1693,7 +1636,7 @@ public class MultiplayerBridge
     /// </summary>
     private void ResetJoinState()
     {
-        _joinState = ClientJoinState.Idle;
+        SetJoinState(JOIN_IDLE);
         _pendingSaveBytes = null;
         _pendingSaveName = null;
         _pendingSaveFullPath = null;
@@ -2041,7 +1984,8 @@ public class MultiplayerBridge
     public void DrawGUI()
     {
         // Show join progress overlay even when panel is hidden
-        if (_joinState != ClientJoinState.Idle && _joinState != ClientJoinState.Loaded)
+        uint drawJoinState = GetJoinState();
+        if (drawJoinState != JOIN_IDLE && drawJoinState != JOIN_LOADED)
         {
             DrawJoinOverlay();
         }
@@ -2228,14 +2172,15 @@ public class MultiplayerBridge
         }
         y += 38f;
 
-        bool joinBlocked = !_initialized || (_joinState != ClientJoinState.Idle && _joinState != ClientJoinState.Loaded);
+        uint guiJoinState = GetJoinState();
+        bool joinBlocked = !_initialized || (guiJoinState != JOIN_IDLE && guiJoinState != JOIN_LOADED);
         if (joinBlocked) GUI.enabled = false;
         string joinLabel;
         if (!_initialized)
             joinLabel = "JOIN GAME  (waiting...)";
-        else if (_joinState == ClientJoinState.WaitingForSave)
+        else if (guiJoinState == JOIN_WAITING_FOR_SAVE)
             joinLabel = "JOINING...  (receiving save)";
-        else if (_joinState == ClientJoinState.SaveReceived || _joinState == ClientJoinState.WaitingForGameScene)
+        else if (guiJoinState == JOIN_SAVE_READY || guiJoinState == JOIN_LOADING_SCENE)
             joinLabel = "JOINING...  (loading game)";
         else
             joinLabel = "JOIN GAME";
@@ -2292,7 +2237,8 @@ public class MultiplayerBridge
         float progress = _getSaveTransferProgress != null ? _getSaveTransferProgress() : -1f;
         uint totalBytes = _getSaveTransferTotalBytes != null ? _getSaveTransferTotalBytes() : 0;
 
-        if (_joinState == ClientJoinState.WaitingForSave)
+        uint overlayJoinState = GetJoinState();
+        if (overlayJoinState == JOIN_WAITING_FOR_SAVE)
         {
             if (progress >= 0f && totalBytes >= 1_000_000)
             {
@@ -2308,7 +2254,7 @@ public class MultiplayerBridge
                 text = "Connecting...";
             }
         }
-        else if (_joinState == ClientJoinState.SaveReceived)
+        else if (overlayJoinState == JOIN_SAVE_READY)
         {
             text = "Processing save...";
         }
@@ -2486,570 +2432,12 @@ public class MultiplayerBridge
         return tex;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Remote Player Rendering
-    // ═══════════════════════════════════════════════════════════════════════
 
-    private void InspectGameWorldText()
+
+    private static void CleanupAll()
     {
-        if (_gameTextRefLogged) return;
-        _gameTextRefLogged = true;
 
-        try
-        {
-            // Inspect Server canvas (the small screen on each server in racks)
-            var servers = Resources.FindObjectsOfTypeAll<Server>();
-            if (servers != null && servers.Count > 0)
-            {
-                foreach (var srv in servers)
-                {
-                    if (srv == null || srv.canvas == null) continue;
-                    var canvasComp = srv.canvas.GetComponent<Canvas>();
-                    if (canvasComp == null) continue;
-
-                    var ct = srv.canvas.transform;
-                    var cRect = srv.canvas.GetComponent<RectTransform>();
-                    CrashLog.Log($"[MP TextRef] Server canvas: renderMode={canvasComp.renderMode} localScale=({ct.localScale.x}, {ct.localScale.y}, {ct.localScale.z})");
-                    if (cRect != null)
-                        CrashLog.Log($"[MP TextRef] Server canvas rect: sizeDelta=({cRect.sizeDelta.x}, {cRect.sizeDelta.y})");
-
-                    // Log the lossyScale (world scale) for absolute reference
-                    CrashLog.Log($"[MP TextRef] Server canvas lossyScale=({ct.lossyScale.x}, {ct.lossyScale.y}, {ct.lossyScale.z})");
-
-                    // Cache the scale for our nametag reference
-                    if (_refCanvasScale == 0f)
-                        _refCanvasScale = ct.lossyScale.x;
-
-                    if (srv.txtServerScreen != null)
-                    {
-                        CrashLog.Log($"[MP TextRef] Server txtServerScreen: fontSize={srv.txtServerScreen.fontSize} text=\"{srv.txtServerScreen.text}\"");
-                        var tRect = srv.txtServerScreen.GetComponent<RectTransform>();
-                        if (tRect != null)
-                            CrashLog.Log($"[MP TextRef] Server txtServerScreen rect: sizeDelta=({tRect.sizeDelta.x}, {tRect.sizeDelta.y})");
-                        if (_refFontSize == 0f)
-                            _refFontSize = srv.txtServerScreen.fontSize;
-                    }
-                    if (srv.txtIP != null)
-                    {
-                        CrashLog.Log($"[MP TextRef] Server txtIP: fontSize={srv.txtIP.fontSize}");
-                    }
-
-                    // One server is enough
-                    break;
-                }
-            }
-            else
-            {
-                CrashLog.Log("[MP TextRef] No Server objects found in scene");
-            }
-
-            // Also inspect NetworkSwitch canvas
-            var switches = Resources.FindObjectsOfTypeAll<NetworkSwitch>();
-            if (switches != null && switches.Count > 0)
-            {
-                foreach (var sw in switches)
-                {
-                    if (sw == null || sw.canvas == null) continue;
-                    var canvasComp = sw.canvas.GetComponent<Canvas>();
-                    if (canvasComp == null) continue;
-
-                    var ct = sw.canvas.transform;
-                    CrashLog.Log($"[MP TextRef] Switch canvas: renderMode={canvasComp.renderMode} localScale=({ct.localScale.x}, {ct.localScale.y}, {ct.localScale.z}) lossyScale=({ct.lossyScale.x}, {ct.lossyScale.y}, {ct.lossyScale.z})");
-
-                    if (sw.txtScreen != null)
-                    {
-                        CrashLog.Log($"[MP TextRef] Switch txtScreen: fontSize={sw.txtScreen.fontSize}");
-                        var tRect = sw.txtScreen.GetComponent<RectTransform>();
-                        if (tRect != null)
-                            CrashLog.Log($"[MP TextRef] Switch txtScreen rect: sizeDelta=({tRect.sizeDelta.x}, {tRect.sizeDelta.y})");
-                    }
-                    break;
-                }
-            }
-
-            CrashLog.Log($"[MP TextRef] Cached reference: canvasScale={_refCanvasScale} fontSize={_refFontSize}");
-        }
-        catch (Exception ex)
-        {
-            CrashLog.Log($"[MP TextRef] Inspection failed: {ex.Message}");
-        }
-    }
-
-    private void UpdateRemotePlayers()
-    {
-        // Inspect game text on first call to get reference sizes
-        InspectGameWorldText();
-
-        int structSize = Marshal.SizeOf<RemotePlayerData>();
-        IntPtr buf = Marshal.AllocHGlobal(structSize * MAX_REMOTE_PLAYERS);
-
-        try
-        {
-            uint count = _getRemotePlayers(buf, MAX_REMOTE_PLAYERS);
-
-            var activeIds = new HashSet<ulong>();
-
-            for (int i = 0; i < count; i++)
-            {
-                var data = Marshal.PtrToStructure<RemotePlayerData>(IntPtr.Add(buf, i * structSize));
-                if (data.SteamId == 0 || data.Connected == 0) continue;
-
-                activeIds.Add(data.SteamId);
-
-                // Skip spawn if position is still 0,0,0 (no position update received yet)
-                bool hasValidPos = data.X != 0f || data.Y != 0f || data.Z != 0f;
-
-                if (!_remotePlayers.TryGetValue(data.SteamId, out var remote))
-                {
-                    if (!hasValidPos) continue; // wait for first real position
-
-                    remote = SpawnRemotePlayer(data);
-                    if (remote != null)
-                        _remotePlayers[data.SteamId] = remote;
-                }
-
-                if (remote == null) continue;
-
-                // Check if Unity destroyed our GO (Technician.Start self-destruct etc.)
-                if (remote.GO == null)
-                {
-                    if (!remote.AnimParamsLogged)
-                    {
-                        CrashLog.Log($"[MP Render] GO for {data.SteamId} was destroyed by Unity! Re-spawning via UMA.");
-                        remote.AnimParamsLogged = true; // reuse flag to avoid log spam
-                    }
-                    _remotePlayers.Remove(data.SteamId);
-                    // Re-spawn as a fresh UMA character (falls back to capsule only if no prefabs)
-                    if (hasValidPos)
-                    {
-                        var respawned = SpawnRemotePlayer(data);
-                        if (respawned != null)
-                            _remotePlayers[data.SteamId] = respawned;
-                    }
-                    continue;
-                }
-
-                // ── UMA deferred mesh generation: check if mesh has appeared ──
-                if (remote.WaitingForUMA)
-                {
-                    var umaData = remote.GO.GetComponentInChildren<UMAData>(true);
-                    bool meshReady = false;
-                    int umaRendererCount = 0;
-
-                    // ONLY trust isOfficiallyCreated — the prefab may have empty
-                    // SkinnedMeshRenderer components that haven't been populated by
-                    // UMA yet.  Do NOT use GetComponentsInChildren<SkinnedMeshRenderer>
-                    // as a fallback — that caused a false-positive on frame 1 which
-                    // stripped all UMA scripts before DCA.Start() could fire.
-                    if (umaData != null && umaData.isOfficiallyCreated)
-                    {
-                        try
-                        {
-                            var rends = umaData.GetRenderers();
-                            if (rends != null)
-                            {
-                                for (int r = 0; r < rends.Length; r++)
-                                {
-                                    var smr = rends[r];
-                                    if (smr != null && smr.sharedMesh != null)
-                                    {
-                                        umaRendererCount++;
-                                    }
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            CrashLog.Log($"[MP Render] UMAData.GetRenderers() error: {ex.Message}");
-                        }
-                        meshReady = umaRendererCount > 0;
-                    }
-
-                    if (meshReady)
-                    {
-                        // Mesh generated! Disable remaining UMA scripts now.
-                        CrashLog.Log($"[MP Render] UMA mesh ready for {data.SteamId} {umaRendererCount} renderer(s)");
-                        foreach (var mb in remote.GO.GetComponentsInChildren<MonoBehaviour>(true))
-                        {
-                            if (mb == null) continue;
-                            string typeName = mb.GetIl2CppType().Name;
-                            if (typeName == "Animator" || typeName.Contains("Renderer")) continue;
-                            try { mb.enabled = false; } catch { }
-                        }
-                        remote.WaitingForUMA = false;
-
-                        // Now set up animator if we don't have one yet
-                        if (remote.Animator == null)
-                        {
-                            remote.Animator = remote.GO.GetComponentInChildren<Animator>();
-                            if (remote.Animator != null)
-                            {
-                                remote.Animator.applyRootMotion = false;
-                                try
-                                {
-                                    foreach (var param in remote.Animator.parameters)
-                                    {
-                                        string lower = param.name.ToLower();
-                                        if (!remote.HasSpeedParam && param.type == AnimatorControllerParameterType.Float &&
-                                            (lower.Contains("speed") || lower.Contains("velocity") || lower.Contains("move") || lower.Contains("forward")))
-                                        {
-                                            remote.SpeedParamHash = param.nameHash;
-                                            remote.HasSpeedParam = true;
-                                        }
-                                        if (!remote.HasWalkingParam && param.type == AnimatorControllerParameterType.Bool &&
-                                            (lower.Contains("walk") || lower.Contains("moving") || lower.Contains("run")))
-                                        {
-                                            remote.WalkingParamHash = param.nameHash;
-                                            remote.HasWalkingParam = true;
-                                        }
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    CrashLog.Log($"[MP Render] Late animator param error: {ex.Message}");
-                                }
-                            }
-                        }
-                    }
-
-
-                    if (!meshReady && Time.time - remote.UMAWaitStart > 15f)
-                    {
-                        // UMA didn't generate a mesh in 15 seconds why tho?
-                        CrashLog.Log($"[MP Render] UMA timeout for {data.SteamId} retrying");
-                        UnityEngine.Object.Destroy(remote.GO);
-                        _remotePlayers.Remove(data.SteamId);
-                        var retry = SpawnRemotePlayer(data);
-                        if (retry != null)
-                            _remotePlayers[data.SteamId] = retry;
-                        continue;
-                    }
-                }
-
-                var newTarget = new Vector3(data.X, data.Y, data.Z);
-                float newRotY = data.RotY;
-
-                if (Vector3.Distance(newTarget, remote.TargetPos) > 0.001f ||
-                    Mathf.Abs(newRotY - remote.TargetRotY) > 0.1f)
-                {
-                    remote.PrevTargetPos = remote.TargetPos;
-                    remote.PrevTargetRotY = remote.TargetRotY;
-                    remote.TargetPos = newTarget;
-                    remote.TargetRotY = newRotY;
-                    remote.LastNetworkUpdate = Time.time;
-                }
-
-                float elapsed = Time.time - remote.LastNetworkUpdate;
-                float t = Mathf.Clamp(elapsed / 0.05f, 0f, 1.5f);
-                Vector3 interpolated = Vector3.Lerp(remote.PrevTargetPos, remote.TargetPos, t);
-                float interpolatedRotY = Mathf.LerpAngle(remote.PrevTargetRotY, remote.TargetRotY, Mathf.Min(t, 1f));
-
-                Vector3 currentPos = remote.GO.transform.position;
-
-                if (remote.NavAgent != null && remote.NavAgent.isOnNavMesh)
-                {
-                    float dist = Vector3.Distance(currentPos, interpolated);
-                    if (dist > 5f)
-                        remote.NavAgent.Warp(interpolated);
-                    else if (dist > 0.002f)
-                        remote.NavAgent.Move(interpolated - currentPos);
-                    remote.GO.transform.position = remote.NavAgent.nextPosition;
-                }
-                else
-                {
-                    remote.GO.transform.position = interpolated;
-                }
-
-                var euler = remote.GO.transform.eulerAngles;
-                euler.y = Mathf.LerpAngle(euler.y, interpolatedRotY, Time.deltaTime * 15f);
-                remote.GO.transform.eulerAngles = euler;
-
-                // Drive animator from movement speed
-                if (remote.Animator != null)
-                {
-                    try
-                    {
-                        float dist = Vector3.Distance(remote.GO.transform.position, remote.LastPos);
-                        float speed = dist / Mathf.Max(Time.deltaTime, 0.001f);
-                        bool isMoving = speed > 0.05f;
-
-                        if (remote.HasSpeedParam)
-                            remote.Animator.SetFloat(remote.SpeedParamHash, speed);
-                        if (remote.HasWalkingParam)
-                            remote.Animator.SetBool(remote.WalkingParamHash, isMoving);
-                    }
-                    catch { }
-                }
-                remote.LastPos = remote.GO.transform.position;
-            }
-
-            // Destroy players no longer in the list
-            var toRemove = new List<ulong>();
-            foreach (var kvp in _remotePlayers)
-            {
-                if (!activeIds.Contains(kvp.Key))
-                    toRemove.Add(kvp.Key);
-            }
-            foreach (var id in toRemove)
-            {
-                if (_remotePlayers.TryGetValue(id, out var old) && old.GO != null)
-                    UnityEngine.Object.Destroy(old.GO);
-                _remotePlayers.Remove(id);
-            }
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(buf);
-        }
-    }
-
-    private RemotePlayerGO SpawnRemotePlayer(RemotePlayerData data)
-    {
-        string playerName = GetPlayerName(data);
-
-        try
-        {
-            GameObject go = null;
-
-            var mgr = MainGameManager.instance;
-            if (mgr != null && mgr.techniciansPrefabs != null && mgr.techniciansPrefabs.Length > 0)
-            {
-                int prefabIdx = (int)(data.SteamId % (ulong)mgr.techniciansPrefabs.Length);
-                var prefab = mgr.techniciansPrefabs[prefabIdx];
-                go = UnityEngine.Object.Instantiate(prefab);
-            }
-            else
-            {
-                return SpawnCapsuleFallback(data);
-            }
-
-            // Deactivate so Technician.Start() doesn't fire
-            go.SetActive(false);
-            go.name = $"RemotePlayer_{data.SteamId}";
-
-            var spawnPos = new Vector3(data.X, data.Y, data.Z);
-            go.transform.position = spawnPos;
-
-            // NavMeshAgent: we drive via Move() each frame, agent constrains to NavMesh
-            UnityEngine.AI.NavMeshAgent nav = null;
-            var navCheck = go.GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (navCheck != null)
-            {
-                nav = navCheck;
-                nav.updatePosition = false;
-                nav.updateRotation = false;
-                nav.updateUpAxis = false;
-                nav.isStopped = true;
-                nav.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
-                nav.autoTraverseOffMeshLink = false;
-                nav.autoBraking = false;
-            }
-
-            // Keep UMA/Animator/Renderer alive disable gameplay scripts
-            foreach (var mb in go.GetComponentsInChildren<MonoBehaviour>(true))
-            {
-                if (mb == null) continue;
-                string typeName = mb.GetIl2CppType().Name;
-                if (typeName.Contains("UMA") || typeName.Contains("DynamicCharacter") ||
-                    typeName.Contains("Avatar") || typeName.Contains("Generator") ||
-                    typeName == "Animator" || typeName.Contains("Renderer"))
-                    continue;
-                try { mb.enabled = false; } catch { }
-            }
-
-            foreach (var col in go.GetComponentsInChildren<Collider>(true))
-                try { UnityEngine.Object.Destroy(col); } catch { }
-            foreach (var rb in go.GetComponentsInChildren<Rigidbody>(true))
-                try { UnityEngine.Object.Destroy(rb); } catch { }
-
-            // Disable nav before activation so it doesn't auto-snap to the roof
-            if (nav != null) nav.enabled = false;
-            go.SetActive(true);
-
-            if (nav != null)
-            {
-                nav.enabled = true;
-                nav.Warp(spawnPos);
-            }
-
-            var avatar = go.GetComponentInChildren<DynamicCharacterAvatar>(true);
-            if (avatar == null)
-                CrashLog.Log("[MP Render] WARNING: No DynamicCharacterAvatar on prefab!");
-
-            AddNameTag(go, playerName);
-
-            Animator animator = go.GetComponentInChildren<Animator>();
-            if (animator != null)
-                animator.applyRootMotion = false;
-
-            CrashLog.Log($"[MP Render] Spawned {playerName} ({data.SteamId}) at ({data.X:F1}, {data.Y:F1}, {data.Z:F1}) navMesh={nav?.isOnNavMesh} animator={animator != null}");
-            _logger.Msg($"[MP Bridge] Spawned remote player: {playerName} ({data.SteamId})");
-
-            var spawnTarget = new Vector3(data.X, data.Y, data.Z);
-            return new RemotePlayerGO
-            {
-                GO = go,
-                NavAgent = nav,
-                SteamId = data.SteamId,
-                TargetPos = spawnTarget,
-                TargetRotY = data.RotY,
-                PrevTargetPos = spawnTarget,
-                PrevTargetRotY = data.RotY,
-                LastNetworkUpdate = Time.time,
-                Animator = animator,
-                LastPos = spawnTarget,
-                SpeedParamHash = 0,
-                WalkingParamHash = 0,
-                HasSpeedParam = false,
-                HasWalkingParam = false,
-                AnimParamsLogged = false,
-                WaitingForUMA = true,
-                UMAWaitStart = Time.time,
-            };
-        }
-        catch (Exception ex)
-        {
-            CrashLog.LogException("SpawnRemotePlayer", ex);
-            return SpawnCapsuleFallback(data);
-        }
-    }
-
-    private RemotePlayerGO SpawnCapsuleFallback(RemotePlayerData data)
-    {
-        var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        go.transform.position = new Vector3(data.X, data.Y, data.Z);
-        go.name = $"RemotePlayer_{data.SteamId}";
-
-        // Strip collider on capsule too
-        var col = go.GetComponent<Collider>();
-        if (col != null) UnityEngine.Object.Destroy(col);
-
-        string playerName = GetPlayerName(data);
-        AddNameTag(go, playerName);
-
-        return new RemotePlayerGO
-        {
-            GO = go,
-            SteamId = data.SteamId,
-            TargetPos = new Vector3(data.X, data.Y, data.Z),
-            TargetRotY = data.RotY,
-            LastPos = new Vector3(data.X, data.Y, data.Z),
-        };
-    }
-
-    private string GetPlayerName(RemotePlayerData data)
-    {
-        if (data.Name != null && data.Name.Length > 0)
-        {
-            int len = Array.IndexOf(data.Name, (byte)0);
-            if (len < 0) len = data.Name.Length;
-            if (len > 0) return System.Text.Encoding.UTF8.GetString(data.Name, 0, len);
-        }
-        return $"Player_{data.SteamId % 10000}";
-    }
-
-    private void AddNameTag(GameObject parent, string name)
-    {
-        // World-space canvas above the player's head
-        // Game reference: Server canvas uses scale=0.01, rect=(38,11), fontSize=0.9
-        // We match that pattern exactly — scale 0.01, small rect, tiny fontSize
-        try
-        {
-            // Log parent scale so we can diagnose if the prefab has non-unit scale
-            var parentScale = parent.transform.lossyScale;
-
-            // Match the game's server canvas pattern:
-            //   Server: scale=0.01, rect=(38,11), fontSize=0.9-2.0
-            //   We want "a bit bigger than server labels"
-            float scale = 0.01f;    // same as game server canvases
-            float fontSize = 5f;    // bigger than server labels for readability
-            float rectW = 70f;      // wide enough for longer player names
-            float rectH = 10f;      // snug fit for text
-
-            // If parent has non-unit scale, compensate so nametag stays consistent
-            if (parentScale.x > 0.001f)
-            {
-                float compensate = 1f / parentScale.x;
-                scale *= compensate;
-            }
-
-            // Don't parent to the player GO — parent scale inheritance causes
-            // unpredictable sizing. Instead, we'll use a root-level GO and
-            // update its position in the billboard component.
-            var canvasGO = new GameObject($"NameTag_{parent.name}");
-            // Place at world position above the player
-            canvasGO.transform.position = parent.transform.position + new Vector3(0, 1.75f, 0);
-
-            var canvas = canvasGO.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.WorldSpace;
-
-            // Set the canvas RectTransform to a small defined size
-            var canvasRect = canvasGO.GetComponent<RectTransform>();
-            if (canvasRect != null)
-                canvasRect.sizeDelta = new Vector2(rectW, rectH);
-
-            canvasGO.transform.localScale = new Vector3(scale, scale, scale);
-
-            // --- Semi-transparent background panel ---
-            var bgGO = new GameObject("Background");
-            bgGO.transform.SetParent(canvasGO.transform, false);
-
-            var bgImage = bgGO.AddComponent<UnityEngine.UI.Image>();
-            bgImage.color = new Color(0f, 0f, 0f, 0.45f); // dark, semi-transparent
-
-            var bgRect = bgGO.GetComponent<RectTransform>();
-            bgRect.anchorMin = new Vector2(0f, 0f);
-            bgRect.anchorMax = new Vector2(1f, 1f);
-            bgRect.offsetMin = Vector2.zero;
-            bgRect.offsetMax = Vector2.zero;
-
-            // --- Text on top of the background ---
-            var textGO = new GameObject("Text");
-            textGO.transform.SetParent(canvasGO.transform, false);
-
-            var tmp = textGO.AddComponent<TextMeshProUGUI>();
-            tmp.text = name;
-            tmp.fontSize = fontSize;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = Color.white;
-            tmp.enableWordWrapping = false;
-            tmp.overflowMode = TextOverflowModes.Overflow;
-            tmp.outlineWidth = 0.2f;
-            tmp.outlineColor = new Color32(0, 0, 0, 200);
-
-            var rect = textGO.GetComponent<RectTransform>();
-            rect.anchorMin = new Vector2(0f, 0f);
-            rect.anchorMax = new Vector2(1f, 1f);
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            // Log the actual world size for debugging
-
-            var bb = canvasGO.AddComponent<BillboardNameTag>();
-            bb.followTarget = parent.transform;
-            bb.offsetY = 1.85f;
-        }
-        catch (Exception ex)
-        {
-            CrashLog.LogException("AddNameTag", ex);
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Cleanup & Shutdown
-    // ═══════════════════════════════════════════════════════════════════════
-
-    private void CleanupAll()
-    {
-        // Don't reset join state here — CleanupAll is called every frame when
-        // not connected, and we may still be in WaitingForGameScene after disconnect.
-        // Join state is reset explicitly in DoDisconnect/DoStopHosting/ResetJoinState.
-        foreach (var kvp in _remotePlayers)
-        {
-            if (kvp.Value.GO != null)
-                UnityEngine.Object.Destroy(kvp.Value.GO);
-        }
-        _remotePlayers.Clear();
+        EntityManager.DestroyAll();
     }
 
     public void Shutdown()

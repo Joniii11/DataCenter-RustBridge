@@ -1,10 +1,4 @@
 //! Relay networking — WebSocket connection to the relay server with a single I/O thread.
-//!
-//! Previous design used two threads (reader + writer) sharing an `Arc<Mutex<WebSocket>>`.
-//! This caused writer starvation: the reader held the lock ~100ms per cycle, starving the
-//! writer for 10+ seconds. Now a single I/O thread owns the WebSocket exclusively —
-//! it reads with a short timeout, then drains the outgoing packet queue, eliminating
-//! all lock contention.
 
 use crate::protocol::Message;
 use dc_relay_proto::{self, RelayPacket};
@@ -18,10 +12,8 @@ use std::time::{Duration, Instant};
 use tungstenite::stream::MaybeTlsStream;
 use tungstenite::WebSocket;
 
-/// Convenience alias for the concrete WebSocket stream type.
 type WsStream = WebSocket<MaybeTlsStream<TcpStream>>;
 
-/// Events received from the relay server, delivered to the game thread.
 pub enum RelayEvent {
     RoomCreated(String),
     JoinOk {
@@ -31,7 +23,7 @@ pub enum RelayEvent {
     RoomFull,
     PeerJoined(u64),
     PeerLeft(u64),
-    /// A game message from another player (already deserialized from the PeerData payload).
+    /// A game message from another player.
     GameMessage {
         sender: u64,
         message: Message,

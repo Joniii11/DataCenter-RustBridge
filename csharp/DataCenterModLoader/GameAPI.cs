@@ -95,12 +95,20 @@ public struct GameAPITable
     public IntPtr ConfigGetBool;
     public IntPtr ConfigGetInt;
     public IntPtr ConfigGetFloat;
+
+    public IntPtr SpawnCharacter;
+    public IntPtr DestroyEntity;
+    public IntPtr SetEntityPosition;
+    public IntPtr IsEntityReady;
+    public IntPtr SetEntityAnimation;
+    public IntPtr GetPrefabCount;
+    public IntPtr SetEntityName;
 }
 
 // delegates stored as fields to prevent GC collection while rust holds pointers
 public class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 8;
+    public const uint API_VERSION = 9;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -138,6 +146,15 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint ConfigGetBoolDelegate(IntPtr modId, IntPtr key);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int ConfigGetIntDelegate(IntPtr modId, IntPtr key);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate float ConfigGetFloatDelegate(IntPtr modId, IntPtr key);
+
+    // v9 delegate types
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint SpawnCharacterDelegate(uint prefabIdx, float x, float y, float z, float rotY, IntPtr name);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void DestroyEntityDelegate(uint entityId);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetEntityPositionDelegate(uint entityId, float x, float y, float z, float rotY);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint IsEntityReadyDelegate(uint entityId);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetEntityAnimationDelegate(uint entityId, float speed, uint isWalking);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint GetPrefabCountDelegate();
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetEntityNameDelegate(uint entityId, IntPtr name);
 
     // ISteamNetworking - old NAT-traversal P2P, works for any Steam game
     [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
@@ -234,6 +251,13 @@ public class GameAPIManager : IDisposable
     private readonly ConfigGetBoolDelegate _configGetBool;
     private readonly ConfigGetIntDelegate _configGetInt;
     private readonly ConfigGetFloatDelegate _configGetFloat;
+    private readonly SpawnCharacterDelegate _spawnCharacter;
+    private readonly DestroyEntityDelegate _destroyEntity;
+    private readonly SetEntityPositionDelegate _setEntityPosition;
+    private readonly IsEntityReadyDelegate _isEntityReady;
+    private readonly SetEntityAnimationDelegate _setEntityAnimation;
+    private readonly GetPrefabCountDelegate _getPrefabCount;
+    private readonly SetEntityNameDelegate _setEntityName;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
@@ -272,7 +296,6 @@ public class GameAPIManager : IDisposable
         _isNetWatchEnabled = IsNetWatchEnabledImpl;
         _getNetWatchStats = GetNetWatchStatsImpl;
 
-        // v4
         _getBrokenServerCount = GetBrokenServerCountImpl;
         _getBrokenSwitchCount = GetBrokenSwitchCountImpl;
         _getEolServerCount = GetEolServerCountImpl;
@@ -284,13 +307,11 @@ public class GameAPIManager : IDisposable
         _dispatchReplaceServer = DispatchReplaceServerImpl;
         _dispatchReplaceSwitch = DispatchReplaceSwitchImpl;
 
-        // v5
         _registerCustomEmployee = RegisterCustomEmployeeImpl;
         _isCustomEmployeeHired = IsCustomEmployeeHiredImpl;
         _fireCustomEmployee = FireCustomEmployeeImpl;
         _registerSalary = RegisterSalaryImpl;
 
-        // v6
         _showNotification = ShowNotificationImpl;
         _getMoneyPerSecond = GetMoneyPerSecondImpl;
         _getExpensesPerSecond = GetExpensesPerSecondImpl;
@@ -300,7 +321,6 @@ public class GameAPIManager : IDisposable
         _getDifficulty = GetDifficultyImpl;
         _triggerSave = TriggerSaveImpl;
 
-        // v7
         _steamGetMyId = SteamGetMyIdImpl;
         _steamGetFriendName = SteamGetFriendNameImpl;
         _steamCreateLobby = SteamCreateLobbyImpl;
@@ -319,13 +339,20 @@ public class GameAPIManager : IDisposable
         _steamPollEvent = SteamPollEventImpl;
         _getPlayerPosition = GetPlayerPositionImpl;
 
-        // v8
         _configRegisterBool = ConfigRegisterBoolImpl;
         _configRegisterInt = ConfigRegisterIntImpl;
         _configRegisterFloat = ConfigRegisterFloatImpl;
         _configGetBool = ConfigGetBoolImpl;
         _configGetInt = ConfigGetIntImpl;
         _configGetFloat = ConfigGetFloatImpl;
+
+        _spawnCharacter = SpawnCharacterImpl;
+        _destroyEntity = DestroyEntityImpl;
+        _setEntityPosition = SetEntityPositionImpl;
+        _isEntityReady = IsEntityReadyImpl;
+        _setEntityAnimation = SetEntityAnimationImpl;
+        _getPrefabCount = GetPrefabCountImpl;
+        _setEntityName = SetEntityNameImpl;
 
         _table = new GameAPITable
         {
@@ -353,7 +380,6 @@ public class GameAPIManager : IDisposable
             SetNetWatchEnabled = Marshal.GetFunctionPointerForDelegate(_setNetWatchEnabled),
             IsNetWatchEnabled = Marshal.GetFunctionPointerForDelegate(_isNetWatchEnabled),
             GetNetWatchStats = Marshal.GetFunctionPointerForDelegate(_getNetWatchStats),
-            // v4
             GetBrokenServerCount = Marshal.GetFunctionPointerForDelegate(_getBrokenServerCount),
             GetBrokenSwitchCount = Marshal.GetFunctionPointerForDelegate(_getBrokenSwitchCount),
             GetEolServerCount = Marshal.GetFunctionPointerForDelegate(_getEolServerCount),
@@ -364,12 +390,10 @@ public class GameAPIManager : IDisposable
             DispatchRepairSwitch = Marshal.GetFunctionPointerForDelegate(_dispatchRepairSwitch),
             DispatchReplaceServer = Marshal.GetFunctionPointerForDelegate(_dispatchReplaceServer),
             DispatchReplaceSwitch = Marshal.GetFunctionPointerForDelegate(_dispatchReplaceSwitch),
-            // v5
             RegisterCustomEmployee = Marshal.GetFunctionPointerForDelegate(_registerCustomEmployee),
             IsCustomEmployeeHired = Marshal.GetFunctionPointerForDelegate(_isCustomEmployeeHired),
             FireCustomEmployee = Marshal.GetFunctionPointerForDelegate(_fireCustomEmployee),
             RegisterSalary = Marshal.GetFunctionPointerForDelegate(_registerSalary),
-            // v6
             ShowNotification = Marshal.GetFunctionPointerForDelegate(_showNotification),
             GetMoneyPerSecond = Marshal.GetFunctionPointerForDelegate(_getMoneyPerSecond),
             GetExpensesPerSecond = Marshal.GetFunctionPointerForDelegate(_getExpensesPerSecond),
@@ -378,7 +402,6 @@ public class GameAPIManager : IDisposable
             SetGamePaused = Marshal.GetFunctionPointerForDelegate(_setGamePaused),
             GetDifficulty = Marshal.GetFunctionPointerForDelegate(_getDifficulty),
             TriggerSave = Marshal.GetFunctionPointerForDelegate(_triggerSave),
-            // v7
             SteamGetMyId = Marshal.GetFunctionPointerForDelegate(_steamGetMyId),
             SteamGetFriendName = Marshal.GetFunctionPointerForDelegate(_steamGetFriendName),
             SteamCreateLobby = Marshal.GetFunctionPointerForDelegate(_steamCreateLobby),
@@ -396,13 +419,19 @@ public class GameAPIManager : IDisposable
             SteamAcceptP2P = Marshal.GetFunctionPointerForDelegate(_steamAcceptP2P),
             SteamPollEvent = Marshal.GetFunctionPointerForDelegate(_steamPollEvent),
             GetPlayerPosition = Marshal.GetFunctionPointerForDelegate(_getPlayerPosition),
-            // v8
             ConfigRegisterBool = Marshal.GetFunctionPointerForDelegate(_configRegisterBool),
             ConfigRegisterInt = Marshal.GetFunctionPointerForDelegate(_configRegisterInt),
             ConfigRegisterFloat = Marshal.GetFunctionPointerForDelegate(_configRegisterFloat),
             ConfigGetBool = Marshal.GetFunctionPointerForDelegate(_configGetBool),
             ConfigGetInt = Marshal.GetFunctionPointerForDelegate(_configGetInt),
             ConfigGetFloat = Marshal.GetFunctionPointerForDelegate(_configGetFloat),
+            SpawnCharacter = Marshal.GetFunctionPointerForDelegate(_spawnCharacter),
+            DestroyEntity = Marshal.GetFunctionPointerForDelegate(_destroyEntity),
+            SetEntityPosition = Marshal.GetFunctionPointerForDelegate(_setEntityPosition),
+            IsEntityReady = Marshal.GetFunctionPointerForDelegate(_isEntityReady),
+            SetEntityAnimation = Marshal.GetFunctionPointerForDelegate(_setEntityAnimation),
+            GetPrefabCount = Marshal.GetFunctionPointerForDelegate(_getPrefabCount),
+            SetEntityName = Marshal.GetFunctionPointerForDelegate(_setEntityName),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -410,8 +439,6 @@ public class GameAPIManager : IDisposable
     }
 
     public IntPtr GetTablePointer() => _tablePtr;
-
-    // v1
 
     private void LogInfoImpl(IntPtr msg) { _logger.Msg("[RustMod] " + (Marshal.PtrToStringAnsi(msg) ?? "")); }
     private void LogWarningImpl(IntPtr msg) { _logger.Warning("[RustMod] " + (Marshal.PtrToStringAnsi(msg) ?? "")); }
@@ -455,8 +482,6 @@ public class GameAPIManager : IDisposable
         catch { return IntPtr.Zero; }
     }
 
-    // v2
-
     private double GetPlayerXPImpl()
     {
         try { return GameHooks.GetPlayerXP(); }
@@ -494,7 +519,6 @@ public class GameAPIManager : IDisposable
     private uint GetSwitchCountImpl() { try { return GameHooks.GetSwitchCount(); } catch { return 0; } }
     private uint GetSatisfiedCustomerCountImpl() { try { return (uint)Math.Max(0, GameHooks.GetSatisfiedCustomerCount()); } catch { return 0; } }
 
-    // v3 - standalone state (logic moved to Rust mods)
     private static bool _netWatchEnabled;
 
     private void SetNetWatchEnabledImpl(uint value)
@@ -505,7 +529,6 @@ public class GameAPIManager : IDisposable
     private uint IsNetWatchEnabledImpl() { return _netWatchEnabled ? 1u : 0u; }
     private uint GetNetWatchStatsImpl() { return 0; }
 
-    // v4
 
     private uint GetBrokenServerCountImpl() { try { return GameHooks.GetBrokenServerCount(); } catch { return 0; } }
     private uint GetBrokenSwitchCountImpl() { try { return GameHooks.GetBrokenSwitchCount(); } catch { return 0; } }
@@ -518,7 +541,6 @@ public class GameAPIManager : IDisposable
     private int DispatchReplaceServerImpl() { try { return GameHooks.DispatchReplaceServer(); } catch { return 0; } }
     private int DispatchReplaceSwitchImpl() { try { return GameHooks.DispatchReplaceSwitch(); } catch { return 0; } }
 
-    // v5
 
     private int RegisterCustomEmployeeImpl(IntPtr employeeId, IntPtr name, IntPtr description, float salary, float requiredReputation, uint confirmDialogs)
     {
@@ -574,7 +596,6 @@ public class GameAPIManager : IDisposable
         }
     }
 
-    // v6
 
     private int ShowNotificationImpl(IntPtr message)
     {
@@ -583,7 +604,7 @@ public class GameAPIManager : IDisposable
             string msg = Marshal.PtrToStringAnsi(message) ?? "";
             var ui = StaticUIElements.instance;
             if (ui == null) return 0;
-            ui.AddMeesageInField(msg);  // NOTE: typo "Meesage" is in the game code!
+            ui.AddMeesageInField(msg);
             return 1;
         }
         catch (Exception ex) { CrashLog.LogException("ShowNotification", ex); return 0; }
@@ -697,7 +718,6 @@ public class GameAPIManager : IDisposable
         catch (Exception ex) { CrashLog.LogException("SteamGetFriendName", ex); return IntPtr.Zero; }
     }
 
-    // Lobby stubs (Phase 1b - not yet implemented)
     private int SteamCreateLobbyImpl(uint lobbyType, uint maxPlayers) { return 0; }
     private int SteamJoinLobbyImpl(ulong lobbyId) { return 0; }
     private void SteamLeaveLobbyImpl() { }
@@ -878,11 +898,62 @@ public class GameAPIManager : IDisposable
         catch (Exception ex) { CrashLog.LogException("ConfigGetFloatImpl", ex); return 0f; }
     }
 
+    private static uint SpawnCharacterImpl(uint prefabIdx, float x, float y, float z, float rotY, IntPtr name)
+    {
+        try
+        {
+            string n = Marshal.PtrToStringAnsi(name) ?? "Entity";
+            return EntityManager.SpawnCharacter(prefabIdx, x, y, z, rotY, n);
+        }
+        catch (Exception ex) { CrashLog.LogException("SpawnCharacterImpl", ex); return 0; }
+    }
+
+    private static void DestroyEntityImpl(uint entityId)
+    {
+        try { EntityManager.DestroyEntity(entityId); }
+        catch (Exception ex) { CrashLog.LogException("DestroyEntityImpl", ex); }
+    }
+
+    private static void SetEntityPositionImpl(uint entityId, float x, float y, float z, float rotY)
+    {
+        try { EntityManager.SetPosition(entityId, x, y, z, rotY); }
+        catch (Exception ex) { CrashLog.LogException("SetEntityPositionImpl", ex); }
+    }
+
+    private static uint IsEntityReadyImpl(uint entityId)
+    {
+        try { return EntityManager.IsEntityReady(entityId) ? 1u : 0u; }
+        catch (Exception ex) { CrashLog.LogException("IsEntityReadyImpl", ex); return 0; }
+    }
+
+    private static void SetEntityAnimationImpl(uint entityId, float speed, uint isWalking)
+    {
+        try { EntityManager.SetAnimation(entityId, speed, isWalking != 0); }
+        catch (Exception ex) { CrashLog.LogException("SetEntityAnimationImpl", ex); }
+    }
+
+    private static uint GetPrefabCountImpl()
+    {
+        try { return EntityManager.GetPrefabCount(); }
+        catch (Exception ex) { CrashLog.LogException("GetPrefabCountImpl", ex); return 0; }
+    }
+
+    private static void SetEntityNameImpl(uint entityId, IntPtr name)
+    {
+        try
+        {
+            string n = Marshal.PtrToStringAnsi(name) ?? "";
+            EntityManager.SetEntityName(entityId, n);
+        }
+        catch (Exception ex) { CrashLog.LogException("SetEntityNameImpl", ex); }
+    }
+
     public void Dispose()
     {
         if (_tablePtr != IntPtr.Zero) { Marshal.FreeHGlobal(_tablePtr); _tablePtr = IntPtr.Zero; }
         if (_currentScenePtr != IntPtr.Zero) { Marshal.FreeHGlobal(_currentScenePtr); _currentScenePtr = IntPtr.Zero; }
         if (_friendNamePtr != IntPtr.Zero) { Marshal.FreeHGlobal(_friendNamePtr); _friendNamePtr = IntPtr.Zero; }
         if (_lobbyDataPtr != IntPtr.Zero) { Marshal.FreeHGlobal(_lobbyDataPtr); _lobbyDataPtr = IntPtr.Zero; }
+        GC.SuppressFinalize(this);
     }
 }

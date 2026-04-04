@@ -478,7 +478,6 @@ public static class ModConfigSystem
                 var parent = be.transform.parent;
                 if (parent == null) continue;
 
-                // Collect action buttons; skip Resume (first) since it's oversized
                 var panelActionBtns = new System.Collections.Generic.List<Transform>();
                 for (int i = 0; i < parent.childCount; i++)
                 {
@@ -499,7 +498,6 @@ public static class ModConfigSystem
 
             if (templateBtn == null || buttonPanel == null)
             {
-                // Fallback: just use the first action button and its parent
                 templateBtn = actionButtons[0].transform;
                 buttonPanel = templateBtn.parent;
                 CrashLog.Log($"ModConfig: fallback - using first action button in '{buttonPanel?.name}'.");
