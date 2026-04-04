@@ -507,15 +507,15 @@ function Deploy-ModFiles {
 
     $deployed = 0
 
-    # Copy C# MelonLoader plugin
-    $csharpDll = Join-Path $ProjectRoot "csharp\DataCenterModLoader\bin\Release\net6.0\RustBridge.dll"
+    # Copy C# MelonLoader plugin (built as DataCenterModLoader.dll, deployed as RustBridge.dll)
+    $csharpDll = Join-Path $ProjectRoot "csharp\DataCenterModLoader\bin\Release\net6.0\DataCenterModLoader.dll"
     if (Test-Path $csharpDll) {
-        Copy-Item $csharpDll -Destination $modsDir -Force
+        Copy-Item $csharpDll -Destination (Join-Path $modsDir "RustBridge.dll") -Force
         Write-Ok "  Mods/RustBridge.dll"
         $deployed++
     }
     else {
-        Write-Warn "  RustBridge.dll not found (C# not built yet)."
+        Write-Warn "  DataCenterModLoader.dll not found (C# not built yet)."
     }
 
     # Copy Rust mod DLLs from target/release that match dc_* pattern
@@ -617,6 +617,12 @@ else {
 }
 
 $csharpCheckPath = Join-Path $resolvedGamePath "Mods\RustBridge.dll"
+# Also clean up old name if present from previous installs
+$oldCsharpPath = Join-Path $resolvedGamePath "Mods\DataCenterModLoader.dll"
+if (Test-Path $oldCsharpPath) {
+    Remove-Item $oldCsharpPath -Force
+    Write-Info "Cleaned up old Mods\DataCenterModLoader.dll"
+}
 if (Test-Path $csharpCheckPath) {
     Write-Info "C# Plugin:       Deployed"
 }
