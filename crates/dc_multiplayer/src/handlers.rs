@@ -5,13 +5,13 @@ use crate::player;
 use crate::protocol::Message;
 use crate::state::*;
 use dc_api::Api;
+use dc_api::Vec3;
 
 /// Process a relay event (room created, peer joined, game message, etc.).
 pub fn process_relay_event(api: &Api, event: net::RelayEvent) {
     match event {
         net::RelayEvent::RoomCreated(code) => {
             dc_api::crash_log(&format!("[MP] Room created with code: {}", code));
-            api.log_info(&format!("[MP] Room code: {}", code));
             with_state(|s| {
                 s.room_code = Some(code);
             });
@@ -22,7 +22,6 @@ pub fn process_relay_event(api: &Api, event: net::RelayEvent) {
                 "[MP] Joined room, host steam ID: {}",
                 host_steam_id
             ));
-            api.log_info(&format!("[MP] Joined room (host: {})", host_steam_id));
 
             with_state(|s| {
                 s.peer_id = host_steam_id;
@@ -35,26 +34,22 @@ pub fn process_relay_event(api: &Api, event: net::RelayEvent) {
                 player_name: get_my_steam_name(api),
                 mod_version: "0.1.0".to_string(),
             };
-            let ok = with_state(|s| {
-                if let Some(ref relay) = s.relay {
-                    relay.send_game_message(&msg)
-                } else {
-                    false
-                }
-            })
-            .unwrap_or(false);
 
-            if ok {
-                dc_api::crash_log("[MP] Sent Hello to host via relay");
-            } else {
-                dc_api::crash_log("[MP] Failed to send Hello to host via relay");
-            }
+            with_state(|s| {
+                if let Some(ref relay) = s.relay {
+                    relay.send_game_message_to(&msg, s.peer_id);
+
+                    dc_api::crash_log("[MP] Sent Hello to host via relay");
+                } else {
+                    dc_api::crash_log("[MP] Failed to send Hello to host via relay");
+                }
+            });
         }
 
         net::RelayEvent::RoomNotFound => {
             dc_api::crash_log("[MP] Room not found!");
-            api.log_error("[MP] Room not found. Check the room code and try again.");
             api.show_notification("Room not found!");
+
             for eid in do_disconnect_cleanup() {
                 api.destroy_entity(eid);
             }
@@ -62,8 +57,8 @@ pub fn process_relay_event(api: &Api, event: net::RelayEvent) {
 
         net::RelayEvent::RoomFull => {
             dc_api::crash_log("[MP] Room is full!");
-            api.log_error("[MP] Room is full.");
             api.show_notification("Room is full!");
+
             for eid in do_disconnect_cleanup() {
                 api.destroy_entity(eid);
             }
@@ -76,11 +71,19 @@ pub fn process_relay_event(api: &Api, event: net::RelayEvent) {
 
         net::RelayEvent::PeerLeft(steam_id) => {
             dc_api::crash_log(&format!("[MP] Peer left: {}", steam_id));
+
             let entity_id = with_state(|s| {
                 let eid = s.tracker.remove_player_with_entity(steam_id);
+
                 if s.peer_id == steam_id {
                     s.peer_id = 0;
                     s.connected = false;
+                }
+
+                s.save_transfers.remove(&steam_id);
+                if s.save_transfers.is_empty() {
+                    s.save_outgoing = None;
+                    s.save_chunk_count = 0;
                 }
                 eid
             })
@@ -89,12 +92,17 @@ pub fn process_relay_event(api: &Api, event: net::RelayEvent) {
             if let Some(eid) = entity_id {
                 api.destroy_entity(eid);
             }
+
             api.log_info(&format!("[MP] Peer {} left", steam_id));
             api.show_notification("Player disconnected.");
         }
 
-        net::RelayEvent::GameMessage { sender, message } => {
-            handle_message(api, sender, message);
+        net::RelayEvent::GameMessage {
+            sender,
+            target,
+            message,
+        } => {
+            handle_message(api, sender, target, message);
         }
 
         net::RelayEvent::Error(msg) => {
@@ -106,6 +114,7 @@ pub fn process_relay_event(api: &Api, event: net::RelayEvent) {
             dc_api::crash_log("[MP] Disconnected from relay server");
             api.log_error("[MP] Lost connection to relay server.");
             api.show_notification("Disconnected from server.");
+
             for eid in do_disconnect_cleanup() {
                 api.destroy_entity(eid);
             }
@@ -125,14 +134,22 @@ pub fn get_my_steam_name(api: &Api) -> String {
     "Player".to_string()
 }
 
-// ── Game message handler ────────────────────────────────────────────────────
+fn handle_message(api: &Api, sender: u64, target: u64, msg: Message) {
+    let my_id = with_state(|s| s.my_id).unwrap_or(0);
+    if target != 0 && my_id != 0 && target != my_id {
+        return;
+    }
 
-fn handle_message(api: &Api, sender: u64, msg: Message) {
     match msg {
         Message::Hello {
             player_name,
             mod_version,
         } => {
+            let is_host = with_state(|s| s.is_host).unwrap_or(false);
+            if !is_host {
+                return;
+            }
+
             api.log_info(&format!(
                 "[MP] {} ({}) wants to connect (v{})",
                 player_name, sender, mod_version
@@ -147,13 +164,28 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
 
             let my_name = get_my_steam_name(api);
             let is_host = with_state(|s| s.is_host).unwrap_or(false);
+
+            let pos = api.get_default_spawn_position().unwrap_or(Vec3::zero());
+
+            with_state(|s| {
+                s.default_spawn = if pos.is_zero() { None } else { Some(pos) };
+            });
+
+            dc_api::crash_log(&format!(
+                "[MP] Default spawn for joining player: ({:.1}, {:.1}, {:.1})",
+                pos.x, pos.y, pos.z
+            ));
+
             let welcome = Message::Welcome {
                 player_name: my_name,
                 is_host,
+                spawn_x: pos.x,
+                spawn_y: pos.y,
+                spawn_z: pos.z,
             };
             with_state(|s| {
                 if let Some(ref relay) = s.relay {
-                    relay.send_game_message(&welcome);
+                    relay.send_game_message_to(&welcome, sender);
                 }
             });
 
@@ -163,7 +195,15 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
         Message::Welcome {
             player_name,
             is_host: _,
+            spawn_x,
+            spawn_y,
+            spawn_z,
         } => {
+            let is_host = with_state(|s| s.is_host).unwrap_or(false);
+            if is_host {
+                return;
+            }
+
             api.log_info(&format!("[MP] Connected to {} ({})", player_name, sender));
 
             with_state(|s| {
@@ -193,13 +233,21 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
                 let req = Message::RequestSave;
                 with_state(|s| {
                     if let Some(ref relay) = s.relay {
-                        relay.send_game_message(&req);
+                        relay.send_game_message_to(&req, s.peer_id);
                         dc_api::crash_log("[MP] Sent RequestSave to host");
                     }
                 });
             }
 
             api.show_notification(&format!("Connected to {}!", player_name));
+
+            if spawn_x != 0.0 || spawn_y != 0.0 || spawn_z != 0.0 {
+                api.warp_local_player(spawn_x, spawn_y, spawn_z);
+                dc_api::crash_log(&format!(
+                    "[MP] Warped to default spawn ({:.1}, {:.1}, {:.1})",
+                    spawn_x, spawn_y, spawn_z
+                ));
+            }
         }
 
         Message::Position { x, y, z, rot_y } => {
@@ -210,7 +258,7 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
                         .unwrap_or_else(|| format!("Player_{}", sender % 10000));
                     s.tracker.add_player(sender, fallback_name);
                 }
-                s.tracker.update_position(sender, x, y, z, rot_y);
+                s.tracker.update_position(sender, (x, y, z).into(), rot_y);
             });
         }
 
@@ -231,6 +279,26 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
             api.show_notification("Player disconnected.");
         }
 
+        Message::PlayerState {
+            object_in_hand,
+            num_objects,
+            is_crouching,
+            is_sitting,
+        } => {
+            with_state(|s| {
+                s.tracker.for_each_player_mut(|player| {
+                    if player.steam_id == sender {
+                        player.player_state = crate::player::PlayerStateSnapshot {
+                            object_in_hand,
+                            num_objects,
+                            is_crouching,
+                            is_sitting,
+                        };
+                    }
+                });
+            });
+        }
+
         Message::Ping(ts) => {
             let pong = Message::Pong(ts);
             with_state(|s| {
@@ -248,7 +316,9 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
             dc_api::crash_log(&format!("[MP] Save requested by peer {}", sender));
             with_state(|s| {
                 if s.is_host {
-                    s.save_requested = true;
+                    s.save_transfers
+                        .entry(sender)
+                        .or_insert(crate::state::SaveTransferState { send_index: 0 });
                 }
             });
         }
@@ -272,7 +342,7 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
                         s.save_up_to_date = true;
                         s.join_state = JoinState::SaveUpToDate;
                         if let Some(ref relay) = s.relay {
-                            relay.send_game_message(&Message::SaveSkip);
+                            relay.send_game_message_to(&Message::SaveSkip, sender);
                         }
                         return;
                     }
@@ -327,14 +397,17 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
 
         Message::SaveSkip => {
             dc_api::crash_log(&format!(
-                "[MP] Peer {} says save is up to date, stopping chunks",
+                "[MP] Peer {} says save is up to date, stopping transfer",
                 sender
             ));
             with_state(|s| {
                 if s.is_host {
-                    s.save_outgoing = None;
-                    s.save_send_index = 0;
-                    s.save_send_chunk_count = 0;
+                    s.save_transfers.remove(&sender);
+
+                    if s.save_transfers.is_empty() {
+                        s.save_outgoing = None;
+                        s.save_chunk_count = 0;
+                    }
                 }
             });
         }
@@ -363,10 +436,9 @@ pub fn do_disconnect_cleanup() -> Vec<u32> {
         s.hello_retry_count = 0;
         s.tracker = player::PlayerTracker::new();
 
-        s.save_requested = false;
+        s.save_transfers.clear();
         s.save_outgoing = None;
-        s.save_send_index = 0;
-        s.save_send_chunk_count = 0;
+        s.save_chunk_count = 0;
         s.save_incoming_total = 0;
         s.save_incoming_chunk_count = 0;
         s.save_incoming_data.clear();
@@ -376,6 +448,8 @@ pub fn do_disconnect_cleanup() -> Vec<u32> {
         s.skip_next_save_request = false;
         s.save_up_to_date = false;
         s.join_state = JoinState::Idle;
+        s.last_sent_player_state = crate::player::PlayerStateSnapshot::default();
+        s.player_state_heartbeat_timer = 0.0;
 
         entity_ids
     })

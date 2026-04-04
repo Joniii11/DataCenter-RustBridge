@@ -1,6 +1,17 @@
 use std::collections::HashMap;
 use std::time::Instant;
 
+use dc_api::Vec3;
+
+/// Snapshopt of player
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct PlayerStateSnapshot {
+    pub object_in_hand: u8,
+    pub num_objects: u8,
+    pub is_crouching: bool,
+    pub is_sitting: bool,
+}
+
 /// Lerp between two angles in degrees
 fn lerp_angle(a: f32, b: f32, t: f32) -> f32 {
     let mut delta = (b - a) % 360.0;
@@ -18,9 +29,7 @@ fn lerp_angle(a: f32, b: f32, t: f32) -> f32 {
 #[derive(Clone)]
 pub struct RemotePlayerData {
     pub steam_id: u64,
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+    pub pos: Vec3,
     pub rot_y: f32,
     pub name: [u8; 64],
     pub connected: u8,
@@ -30,9 +39,7 @@ impl Default for RemotePlayerData {
     fn default() -> Self {
         Self {
             steam_id: 0,
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            pos: Vec3::zero(),
             rot_y: 0.0,
             name: [0u8; 64],
             connected: 0,
@@ -52,20 +59,19 @@ impl RemotePlayerData {
 pub struct RemotePlayer {
     pub steam_id: u64,
     pub name: String,
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+    pub pos: Vec3,
     pub rot_y: f32,
     pub last_update: Instant,
 
     pub entity_id: Option<u32>,
 
-    pub prev_x: f32,
-    pub prev_y: f32,
-    pub prev_z: f32,
+    pub prev_pos: Vec3,
     pub prev_rot_y: f32,
 
     pub network_update_time: Instant,
+    pub player_state: PlayerStateSnapshot,
+    pub last_applied_carry_type: u8,
+    pub use_default_spawn: bool,
 }
 
 impl RemotePlayer {
@@ -73,28 +79,23 @@ impl RemotePlayer {
         Self {
             steam_id,
             name,
-            x: 0.0,
-            y: 0.0,
-            z: 0.0,
+            pos: Vec3::zero(),
             rot_y: 0.0,
             last_update: Instant::now(),
             entity_id: None,
-            prev_x: 0.0,
-            prev_y: 0.0,
-            prev_z: 0.0,
+            prev_pos: Vec3::zero(),
             prev_rot_y: 0.0,
             network_update_time: Instant::now(),
+            player_state: PlayerStateSnapshot::default(),
+            last_applied_carry_type: 0,
+            use_default_spawn: true,
         }
     }
 
-    pub fn update_position(&mut self, x: f32, y: f32, z: f32, rot_y: f32) {
-        self.prev_x = self.x;
-        self.prev_y = self.y;
-        self.prev_z = self.z;
+    pub fn update_position(&mut self, pos: Vec3, rot_y: f32) {
+        self.prev_pos = self.pos;
         self.prev_rot_y = self.rot_y;
-        self.x = x;
-        self.y = y;
-        self.z = z;
+        self.pos = pos;
         self.rot_y = rot_y;
         self.network_update_time = Instant::now();
         self.last_update = Instant::now();
@@ -104,9 +105,11 @@ impl RemotePlayer {
     pub fn interpolated_position(&self) -> (f32, f32, f32, f32) {
         let elapsed = self.network_update_time.elapsed().as_secs_f32();
         let t = (elapsed / 0.05).clamp(0.0, 1.5);
-        let ix = self.prev_x + (self.x - self.prev_x) * t;
-        let iy = self.prev_y + (self.y - self.prev_y) * t;
-        let iz = self.prev_z + (self.z - self.prev_z) * t;
+
+        let ix = self.prev_pos.x + (self.pos.x - self.prev_pos.x) * t;
+        let iy = self.prev_pos.y + (self.pos.y - self.prev_pos.y) * t;
+        let iz = self.prev_pos.z + (self.pos.z - self.prev_pos.z) * t;
+
         let t_rot = t.min(1.0);
         let irot = lerp_angle(self.prev_rot_y, self.rot_y, t_rot);
         (ix, iy, iz, irot)
@@ -114,7 +117,7 @@ impl RemotePlayer {
 
     /// Returns true if this player has a valid position but no entity spawned yet
     pub fn needs_spawn(&self) -> bool {
-        self.entity_id.is_none() && (self.x != 0.0 || self.y != 0.0 || self.z != 0.0)
+        self.entity_id.is_none() && (self.pos.x != 0.0 || self.pos.y != 0.0 || self.pos.z != 0.0)
     }
 
     pub fn is_stale(&self) -> bool {
@@ -124,9 +127,7 @@ impl RemotePlayer {
     pub fn to_ffi(&self) -> RemotePlayerData {
         let mut data = RemotePlayerData {
             steam_id: self.steam_id,
-            x: self.x,
-            y: self.y,
-            z: self.z,
+            pos: self.pos,
             rot_y: self.rot_y,
             name: [0u8; 64],
             connected: 1,
@@ -149,8 +150,13 @@ impl PlayerTracker {
     }
 
     pub fn add_player(&mut self, steam_id: u64, name: String) {
-        self.players
-            .insert(steam_id, RemotePlayer::new(steam_id, name));
+        if let Some(existing) = self.players.get_mut(&steam_id) {
+            existing.name = name;
+            existing.last_update = Instant::now();
+        } else {
+            self.players
+                .insert(steam_id, RemotePlayer::new(steam_id, name));
+        }
     }
 
     #[allow(dead_code)]
@@ -158,9 +164,9 @@ impl PlayerTracker {
         self.players.remove(&steam_id);
     }
 
-    pub fn update_position(&mut self, steam_id: u64, x: f32, y: f32, z: f32, rot_y: f32) {
+    pub fn update_position(&mut self, steam_id: u64, pos: Vec3, rot_y: f32) {
         if let Some(player) = self.players.get_mut(&steam_id) {
-            player.update_position(x, y, z, rot_y);
+            player.update_position(pos, rot_y);
         }
     }
 

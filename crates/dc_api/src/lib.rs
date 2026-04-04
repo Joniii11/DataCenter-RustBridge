@@ -46,6 +46,9 @@
 pub mod events;
 pub use events::{Event, EventCategory, EventId};
 
+pub mod util;
+pub use util::*;
+
 // Re-export proc macros so users can write `#[dc_api::mod_entry(...)]` etc.
 pub use dc_api_macros::{mod_entry, on_event, on_scene_loaded, on_shutdown, on_update};
 
@@ -325,6 +328,22 @@ pub struct GameAPI {
     pub set_entity_animation: extern "C" fn(entity_id: u32, speed: f32, is_walking: u32),
     pub get_prefab_count: extern "C" fn() -> u32,
     pub set_entity_name: extern "C" fn(entity_id: u32, name: *const c_char),
+
+    pub get_player_carry_state:
+        extern "C" fn(out_object_in_hand: *mut u32, out_num_objects: *mut u32),
+    pub get_player_crouching: extern "C" fn() -> u32,
+    pub get_player_sitting: extern "C" fn() -> u32,
+
+    pub set_entity_crouching: extern "C" fn(entity_id: u32, is_crouching: u32),
+    pub set_entity_sitting: extern "C" fn(entity_id: u32, is_sitting: u32),
+
+    pub set_entity_carry_anim: extern "C" fn(entity_id: u32, is_carrying: u32),
+    pub create_entity_carry_visual: extern "C" fn(entity_id: u32, object_in_hand_type: u32),
+    pub destroy_entity_carry_visual: extern "C" fn(entity_id: u32),
+
+    pub get_default_spawn_position:
+        extern "C" fn(out_x: *mut f32, out_y: *mut f32, out_z: *mut f32),
+    pub warp_local_player: extern "C" fn(x: f32, y: f32, z: f32),
 }
 
 unsafe impl Send for GameAPI {}
@@ -1017,9 +1036,7 @@ impl Api {
     pub fn spawn_character(
         &self,
         prefab_idx: u32,
-        x: f32,
-        y: f32,
-        z: f32,
+        pos: Vec3,
         rot_y: f32,
         name: &str,
     ) -> Option<u32> {
@@ -1027,6 +1044,8 @@ impl Api {
             return None;
         }
         let c_name = CString::new(name).ok()?;
+        let (x, y, z) = (pos.x, pos.y, pos.z);
+
         let id = (self.raw.spawn_character)(prefab_idx, x, y, z, rot_y, c_name.as_ptr());
         if id == 0 {
             None
@@ -1044,8 +1063,9 @@ impl Api {
 
     //FIXME correct rotation it's kind of broken
     /// Update entity pos and rot
-    pub fn set_entity_position(&self, entity_id: u32, x: f32, y: f32, z: f32, rot_y: f32) {
+    pub fn set_entity_position(&self, entity_id: u32, pos: Vec3, rot_y: f32) {
         if self.version() >= 9 {
+            let (x, y, z) = (pos.x, pos.y, pos.z);
             (self.raw.set_entity_position)(entity_id, x, y, z, rot_y);
         }
     }
@@ -1079,6 +1099,88 @@ impl Api {
             if let Ok(c) = CString::new(name) {
                 (self.raw.set_entity_name)(entity_id, c.as_ptr());
             }
+        }
+    }
+
+    /// Get what the local player is carrying
+    pub fn get_player_carry_state(&self) -> Option<(u32, u32)> {
+        if self.version() < 10 {
+            return None;
+        }
+        let (mut obj, mut num) = (0u32, 0u32);
+        (self.raw.get_player_carry_state)(&mut obj, &mut num);
+        Some((obj, num))
+    }
+
+    /// Check if the local player is crouching
+    pub fn get_player_crouching(&self) -> Option<bool> {
+        if self.version() < 10 {
+            return None;
+        }
+        Some((self.raw.get_player_crouching)() != 0)
+    }
+
+    /// Check if the local player is sitting
+    pub fn get_player_sitting(&self) -> Option<bool> {
+        if self.version() < 10 {
+            return None;
+        }
+        Some((self.raw.get_player_sitting)() != 0)
+    }
+
+    /// Set the crouching state on a remote entity
+    pub fn set_entity_crouching(&self, entity_id: u32, is_crouching: bool) {
+        if self.version() >= 10 {
+            (self.raw.set_entity_crouching)(entity_id, if is_crouching { 1 } else { 0 });
+        }
+    }
+
+    /// Set the sitting state on a remote entity
+    pub fn set_entity_sitting(&self, entity_id: u32, is_sitting: bool) {
+        if self.version() >= 10 {
+            (self.raw.set_entity_sitting)(entity_id, if is_sitting { 1 } else { 0 });
+        }
+    }
+
+    /// Set carry animation bool on a remote entity
+    pub fn set_entity_carry_anim(&self, entity_id: u32, is_carrying: bool) {
+        if self.version() >= 11 {
+            (self.raw.set_entity_carry_anim)(entity_id, if is_carrying { 1 } else { 0 });
+        }
+    }
+
+    /// Create a visual proxy on a remote entity from real game prefabs
+    pub fn create_entity_carry_visual(&self, entity_id: u32, object_in_hand_type: u32) {
+        if self.version() >= 11 {
+            (self.raw.create_entity_carry_visual)(entity_id, object_in_hand_type);
+        }
+    }
+
+    /// Destroy the carry visual proxy on a remote entity
+    pub fn destroy_entity_carry_visual(&self, entity_id: u32) {
+        if self.version() >= 11 {
+            (self.raw.destroy_entity_carry_visual)(entity_id);
+        }
+    }
+
+    /// Get the games default spawn position
+    pub fn get_default_spawn_position(&self) -> Option<Vec3> {
+        if self.version() < 12 {
+            return None;
+        }
+        let (mut x, mut y, mut z) = (0.0f32, 0.0f32, 0.0f32);
+        (self.raw.get_default_spawn_position)(&mut x, &mut y, &mut z);
+        if x == 0.0 && y == 0.0 && z == 0.0 {
+            None
+        } else {
+            Some((x, y, z).into())
+        }
+    }
+
+    /// Warp the local player to a specific world position
+    pub fn warp_local_player(&self, x: f32, y: f32, z: f32) {
+        if self.version() >= 12 {
+            (self.raw.warp_local_player)(x, y, z);
         }
     }
 }

@@ -19,9 +19,6 @@ use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{parse_macro_input, ItemFn, LitStr, Token};
 
-// ── Helper ──────────────────────────────────────────────────────────────────
-
-/// Extract the identifier from a `FnArg::Typed` pattern, e.g. `api` from `api: &Api`.
 fn extract_param_name(arg: &syn::FnArg) -> Option<syn::Ident> {
     if let syn::FnArg::Typed(pat_type) = arg {
         if let syn::Pat::Ident(pat_ident) = pat_type.pat.as_ref() {
@@ -30,8 +27,6 @@ fn extract_param_name(arg: &syn::FnArg) -> Option<syn::Ident> {
     }
     None
 }
-
-// ── mod_entry ───────────────────────────────────────────────────────────────
 
 struct ModEntryArgs {
     id: LitStr,
@@ -121,21 +116,17 @@ pub fn mod_entry(attr: TokenStream, item: TokenStream) -> TokenStream {
     let author = &args.author;
     let desc = &args.description;
 
-    // Rename user function to an internal name
     let user_fn_name = &input_fn.sig.ident;
     let internal_name = format_ident!("__dc_user_{}", user_fn_name);
 
-    // Preserve user function with renamed ident and forced-private visibility
     let mut internal_fn = input_fn.clone();
     internal_fn.sig.ident = internal_name.clone();
     internal_fn.vis = syn::Visibility::Inherited;
 
-    // Build log strings at compile time
     let loaded_msg = format!("[{}] v{} loaded", name.value(), version.value());
     let api_ver_prefix = format!("[{}] API version: ", name.value());
 
     let expanded = quote! {
-        // User init function (renamed, private)
         #internal_fn
 
         #[no_mangle]
@@ -203,8 +194,6 @@ pub fn mod_entry(attr: TokenStream, item: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-// ── on_update ───────────────────────────────────────────────────────────────
-
 /// Generates a `mod_update(f32)` FFI export with automatic panic handling.
 ///
 /// The decorated function must have the signature `fn(api: &Api, dt: f32)`.
@@ -265,8 +254,6 @@ pub fn on_update(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     expanded.into()
 }
-
-// ── on_event ────────────────────────────────────────────────────────────────
 
 /// Generates a `mod_on_event(u32, *const u8, u32)` FFI export with automatic
 /// event decoding and panic handling.
@@ -343,8 +330,6 @@ pub fn on_event(_attr: TokenStream, item: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-// ── on_scene_loaded ─────────────────────────────────────────────────────────
-
 /// Generates a `mod_on_scene_loaded(*const c_char)` FFI export with automatic
 /// C-string conversion and panic handling.
 ///
@@ -412,8 +397,6 @@ pub fn on_scene_loaded(_attr: TokenStream, item: TokenStream) -> TokenStream {
 
     expanded.into()
 }
-
-// ── on_shutdown ─────────────────────────────────────────────────────────────
 
 /// Generates a `mod_shutdown()` FFI export with automatic panic handling.
 ///

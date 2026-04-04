@@ -203,10 +203,9 @@ pub extern "C" fn mp_disconnect() -> i32 {
         s.tracker = PlayerTracker::new();
         s.skip_next_save_request = false;
 
-        s.save_requested = false;
+        s.save_transfers.clear();
         s.save_outgoing = None;
-        s.save_send_index = 0;
-        s.save_send_chunk_count = 0;
+        s.save_chunk_count = 0;
         s.save_incoming_total = 0;
         s.save_incoming_chunk_count = 0;
         s.save_incoming_data.clear();

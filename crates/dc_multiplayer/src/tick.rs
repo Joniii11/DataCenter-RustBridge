@@ -2,9 +2,10 @@
 
 use crate::handlers;
 use crate::net;
+use crate::player::PlayerStateSnapshot;
 use crate::protocol::Message;
 use crate::state::*;
-use dc_api::Api;
+use dc_api::{Api, Vec3};
 
 /// Called every frame by the mod loader.
 pub fn update(api: &Api, dt: f32) {
@@ -63,7 +64,7 @@ pub fn update(api: &Api, dt: f32) {
         };
         let ok = with_state(|s| {
             if let Some(ref relay) = s.relay {
-                relay.send_game_message(&msg)
+                relay.send_game_message_to(&msg, s.peer_id)
             } else {
                 false
             }
@@ -106,8 +107,50 @@ pub fn update(api: &Api, dt: f32) {
         }
     }
 
-    // Host: send save chunks
-    let chunks_to_send: Vec<(u32, Vec<u8>)> = with_state(|s| {
+    // Send player state (on change + heartbeat)
+    if api.version() >= 10 {
+        let current_state = {
+            let carry = api.get_player_carry_state().unwrap_or((0, 0));
+            let crouching = api.get_player_crouching().unwrap_or(false);
+            let sitting = api.get_player_sitting().unwrap_or(false);
+            crate::player::PlayerStateSnapshot {
+                object_in_hand: carry.0 as u8,
+                num_objects: carry.1 as u8,
+                is_crouching: crouching,
+                is_sitting: sitting,
+            }
+        };
+
+        let should_send_state = with_state(|s| {
+            s.player_state_heartbeat_timer += dt;
+            let changed = current_state != s.last_sent_player_state;
+            let heartbeat = s.player_state_heartbeat_timer >= PLAYER_STATE_HEARTBEAT_INTERVAL;
+            if changed || heartbeat {
+                s.last_sent_player_state = current_state;
+                s.player_state_heartbeat_timer = 0.0;
+                true
+            } else {
+                false
+            }
+        })
+        .unwrap_or(false);
+
+        if should_send_state {
+            let msg = Message::PlayerState {
+                object_in_hand: current_state.object_in_hand,
+                num_objects: current_state.num_objects,
+                is_crouching: current_state.is_crouching,
+                is_sitting: current_state.is_sitting,
+            };
+            with_state(|s| {
+                if let Some(ref relay) = s.relay {
+                    relay.send_game_message(&msg);
+                }
+            });
+        }
+    }
+
+    let targeted_chunks: Vec<(u64, Vec<(u32, Vec<u8>)>)> = with_state(|s| {
         if !s.is_host {
             return Vec::new();
         }
@@ -116,31 +159,50 @@ pub fn update(api: &Api, dt: f32) {
             None => return Vec::new(),
         };
 
-        let mut chunks = Vec::new();
+        let mut all_chunks = Vec::new();
+        let mut completed = Vec::new();
         let max_per_frame = 5;
-        for _ in 0..max_per_frame {
-            if s.save_send_index >= s.save_send_chunk_count {
-                s.save_outgoing = None;
-                dc_api::crash_log("[MP] All save chunks sent");
-                break;
+
+        for (&peer_id, transfer) in s.save_transfers.iter_mut() {
+            let mut peer_chunks = Vec::new();
+            for _ in 0..max_per_frame {
+                if transfer.send_index >= s.save_chunk_count {
+                    completed.push(peer_id);
+                    break;
+                }
+                let offset = transfer.send_index as usize * SAVE_CHUNK_SIZE;
+                let end = (offset + SAVE_CHUNK_SIZE).min(outgoing.len());
+                peer_chunks.push((transfer.send_index, outgoing[offset..end].to_vec()));
+                transfer.send_index += 1;
             }
-            let offset = s.save_send_index as usize * SAVE_CHUNK_SIZE;
-            let end = (offset + SAVE_CHUNK_SIZE).min(outgoing.len());
-            let chunk_data = outgoing[offset..end].to_vec();
-            chunks.push((s.save_send_index, chunk_data));
-            s.save_send_index += 1;
+            if !peer_chunks.is_empty() {
+                all_chunks.push((peer_id, peer_chunks));
+            }
         }
-        chunks
+
+        for id in completed {
+            s.save_transfers.remove(&id);
+            dc_api::crash_log(&format!("[MP] All save chunks sent to peer {}", id));
+        }
+
+        if s.save_transfers.is_empty() && s.save_outgoing.is_some() {
+            s.save_outgoing = None;
+            dc_api::crash_log("[MP] All save transfers complete, cleared outgoing data");
+        }
+
+        all_chunks
     })
     .unwrap_or_default();
 
-    for (index, data) in chunks_to_send {
-        let msg = Message::SaveChunk { index, data };
-        with_state(|s| {
-            if let Some(ref relay) = s.relay {
-                relay.send_game_message(&msg);
-            }
-        });
+    for (target, chunks) in targeted_chunks {
+        for (index, data) in chunks {
+            let msg = Message::SaveChunk { index, data };
+            with_state(|s| {
+                if let Some(ref relay) = s.relay {
+                    relay.send_game_message_to(&msg, target);
+                }
+            });
+        }
     }
 
     // Cleanup stale players
@@ -159,8 +221,6 @@ pub fn update(api: &Api, dt: f32) {
         return;
     }
 
-    // Don't spawn/update entities until the game scene is fully loaded
-    // Host (join_state stays at Idle) can spawn immediately since they're already in-game
     let (is_host, join_state) =
         with_state(|s| (s.is_host, s.join_state)).unwrap_or((false, JoinState::Idle));
     if !is_host && join_state != JoinState::Loaded {
@@ -170,25 +230,22 @@ pub fn update(api: &Api, dt: f32) {
     update_entities(api, dt);
 }
 
-// ── Entity spawning & interpolation ─────────────────────────────────────────
-
 struct SpawnInfo {
     steam_id: u64,
     prefab_idx: u32,
-    x: f32,
-    y: f32,
-    z: f32,
+    pos: Vec3,
     rot_y: f32,
     name: String,
 }
 
 struct UpdateInfo {
     entity_id: u32,
-    ix: f32,
-    iy: f32,
-    iz: f32,
+    pos: Vec3,
     irot: f32,
     speed: f32,
+    player_state: PlayerStateSnapshot,
+    carry_changed: bool,
+    old_carry_type: u8,
 }
 
 fn update_entities(api: &Api, _dt: f32) {
@@ -200,28 +257,51 @@ fn update_entities(api: &Api, _dt: f32) {
 
         s.tracker.for_each_player_mut(|player| {
             if player.needs_spawn() {
+                let pos = if player.use_default_spawn {
+                    if let Some(ds) = s.default_spawn {
+                        dc_api::crash_log(&format!(
+                            "[MP] Using default spawn ({:.1},{:.1},{:.1}) for player {}",
+                            ds.x, ds.y, ds.z, player.steam_id
+                        ));
+                        ds
+                    } else {
+                        player.pos
+                    }
+                } else {
+                    player.pos
+                };
+
+                player.use_default_spawn = false;
+
                 spawns.push(SpawnInfo {
                     steam_id: player.steam_id,
                     prefab_idx: (player.steam_id % prefab_count as u64) as u32,
-                    x: player.x,
-                    y: player.y,
-                    z: player.z,
+                    pos,
                     rot_y: player.rot_y,
                     name: player.name.clone(),
                 });
             } else if let Some(eid) = player.entity_id {
                 let (ix, iy, iz, irot) = player.interpolated_position();
-                // Speed from stable target-to-target distance (not interpolated, which fluctuates)
-                let dx = player.x - player.prev_x;
-                let dz = player.z - player.prev_z;
+                let dx = player.pos.x - player.prev_pos.x;
+                let dz = player.pos.z - player.prev_pos.z;
+
                 let speed = (dx * dx + dz * dz).sqrt() / POSITION_SEND_INTERVAL;
+
+                let carry_changed =
+                    player.player_state.object_in_hand != player.last_applied_carry_type;
+                let old_carry = player.last_applied_carry_type;
+                if carry_changed {
+                    player.last_applied_carry_type = player.player_state.object_in_hand;
+                }
+
                 updates.push(UpdateInfo {
                     entity_id: eid,
-                    ix,
-                    iy,
-                    iz,
+                    pos: Vec3::new(ix, iy, iz),
                     irot,
                     speed,
+                    player_state: player.player_state,
+                    carry_changed,
+                    old_carry_type: old_carry,
                 });
             }
         });
@@ -231,18 +311,12 @@ fn update_entities(api: &Api, _dt: f32) {
     .unwrap_or_default();
 
     for info in to_spawn {
-        if let Some(eid) = api.spawn_character(
-            info.prefab_idx,
-            info.x,
-            info.y,
-            info.z,
-            info.rot_y,
-            &info.name,
-        ) {
+        if let Some(eid) = api.spawn_character(info.prefab_idx, info.pos, info.rot_y, &info.name) {
             dc_api::crash_log(&format!(
                 "[MP] Spawned entity {} for player {} '{}'",
                 eid, info.steam_id, info.name
             ));
+
             with_state(|s| {
                 s.tracker.set_entity_id(info.steam_id, eid);
             });
@@ -250,8 +324,26 @@ fn update_entities(api: &Api, _dt: f32) {
     }
 
     for info in to_update {
-        api.set_entity_position(info.entity_id, info.ix, info.iy, info.iz, info.irot);
+        api.set_entity_position(info.entity_id, info.pos, info.irot);
+
         let is_walking = info.speed > 0.1;
         api.set_entity_animation(info.entity_id, info.speed, is_walking);
+
+        if info.carry_changed {
+            if info.old_carry_type != 0 {
+                api.destroy_entity_carry_visual(info.entity_id);
+            }
+
+            if info.player_state.object_in_hand != 0 {
+                api.create_entity_carry_visual(
+                    info.entity_id,
+                    info.player_state.object_in_hand as u32,
+                );
+            }
+
+            api.set_entity_carry_anim(info.entity_id, info.player_state.object_in_hand != 0);
+        }
+        api.set_entity_crouching(info.entity_id, info.player_state.is_crouching);
+        api.set_entity_sitting(info.entity_id, info.player_state.is_sitting);
     }
 }

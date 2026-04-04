@@ -103,12 +103,25 @@ public struct GameAPITable
     public IntPtr SetEntityAnimation;
     public IntPtr GetPrefabCount;
     public IntPtr SetEntityName;
+
+    public IntPtr GetPlayerCarryState;
+    public IntPtr GetPlayerCrouching;
+    public IntPtr GetPlayerSitting;
+    public IntPtr SetEntityCrouching;
+    public IntPtr SetEntitySitting;
+
+    public IntPtr SetEntityCarryAnim;
+    public IntPtr CreateEntityCarryVisual;
+    public IntPtr DestroyEntityCarryVisual;
+
+    public IntPtr GetDefaultSpawnPosition;
+    public IntPtr WarpLocalPlayer;
 }
 
 // delegates stored as fields to prevent GC collection while rust holds pointers
 public class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 9;
+    public const uint API_VERSION = 12;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -156,7 +169,21 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint GetPrefabCountDelegate();
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetEntityNameDelegate(uint entityId, IntPtr name);
 
-    // ISteamNetworking - old NAT-traversal P2P, works for any Steam game
+    // v10 delegate types
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void GetPlayerCarryStateDelegate(IntPtr outObjectInHand, IntPtr outNumObjects);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint GetPlayerCrouchingDelegate();
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate uint GetPlayerSittingDelegate();
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetEntityCrouchingDelegate(uint entityId, uint isCrouching);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetEntitySittingDelegate(uint entityId, uint isSitting);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void SetEntityCarryAnimDelegate(uint entityId, uint isCarrying);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void CreateEntityCarryVisualDelegate(uint entityId, uint objectInHandType);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void DestroyEntityCarryVisualDelegate(uint entityId);
+
+    // v12 delegate types
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void GetDefaultSpawnPositionDelegate(IntPtr outX, IntPtr outY, IntPtr outZ);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void WarpLocalPlayerDelegate(float x, float y, float z);
+
     [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr SteamAPI_SteamNetworking_v006();
 
@@ -258,6 +285,17 @@ public class GameAPIManager : IDisposable
     private readonly SetEntityAnimationDelegate _setEntityAnimation;
     private readonly GetPrefabCountDelegate _getPrefabCount;
     private readonly SetEntityNameDelegate _setEntityName;
+    private readonly GetPlayerCarryStateDelegate _getPlayerCarryState;
+    private readonly GetPlayerCrouchingDelegate _getPlayerCrouching;
+    private readonly GetPlayerSittingDelegate _getPlayerSitting;
+    private readonly SetEntityCrouchingDelegate _setEntityCrouching;
+    private readonly SetEntitySittingDelegate _setEntitySitting;
+    private readonly SetEntityCarryAnimDelegate _setEntityCarryAnim;
+    private readonly CreateEntityCarryVisualDelegate _createEntityCarryVisual;
+    private readonly DestroyEntityCarryVisualDelegate _destroyEntityCarryVisual;
+
+    private readonly GetDefaultSpawnPositionDelegate _getDefaultSpawnPosition;
+    private readonly WarpLocalPlayerDelegate _warpLocalPlayer;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
@@ -353,6 +391,16 @@ public class GameAPIManager : IDisposable
         _setEntityAnimation = SetEntityAnimationImpl;
         _getPrefabCount = GetPrefabCountImpl;
         _setEntityName = SetEntityNameImpl;
+        _getPlayerCarryState = GetPlayerCarryStateImpl;
+        _getPlayerCrouching = GetPlayerCrouchingImpl;
+        _getPlayerSitting = GetPlayerSittingImpl;
+        _setEntityCrouching = SetEntityCrouchingImpl;
+        _setEntitySitting = SetEntitySittingImpl;
+        _setEntityCarryAnim = SetEntityCarryAnimImpl;
+        _createEntityCarryVisual = CreateEntityCarryVisualImpl;
+        _destroyEntityCarryVisual = DestroyEntityCarryVisualImpl;
+        _getDefaultSpawnPosition = GetDefaultSpawnPositionImpl;
+        _warpLocalPlayer = WarpLocalPlayerImpl;
 
         _table = new GameAPITable
         {
@@ -432,6 +480,16 @@ public class GameAPIManager : IDisposable
             SetEntityAnimation = Marshal.GetFunctionPointerForDelegate(_setEntityAnimation),
             GetPrefabCount = Marshal.GetFunctionPointerForDelegate(_getPrefabCount),
             SetEntityName = Marshal.GetFunctionPointerForDelegate(_setEntityName),
+            GetPlayerCarryState = Marshal.GetFunctionPointerForDelegate(_getPlayerCarryState),
+            GetPlayerCrouching = Marshal.GetFunctionPointerForDelegate(_getPlayerCrouching),
+            GetPlayerSitting = Marshal.GetFunctionPointerForDelegate(_getPlayerSitting),
+            SetEntityCrouching = Marshal.GetFunctionPointerForDelegate(_setEntityCrouching),
+            SetEntitySitting = Marshal.GetFunctionPointerForDelegate(_setEntitySitting),
+            SetEntityCarryAnim = Marshal.GetFunctionPointerForDelegate(_setEntityCarryAnim),
+            CreateEntityCarryVisual = Marshal.GetFunctionPointerForDelegate(_createEntityCarryVisual),
+            DestroyEntityCarryVisual = Marshal.GetFunctionPointerForDelegate(_destroyEntityCarryVisual),
+            GetDefaultSpawnPosition = Marshal.GetFunctionPointerForDelegate(_getDefaultSpawnPosition),
+            WarpLocalPlayer = Marshal.GetFunctionPointerForDelegate(_warpLocalPlayer),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -946,6 +1004,121 @@ public class GameAPIManager : IDisposable
             EntityManager.SetEntityName(entityId, n);
         }
         catch (Exception ex) { CrashLog.LogException("SetEntityNameImpl", ex); }
+    }
+
+    private void GetPlayerCarryStateImpl(IntPtr outObjectInHand, IntPtr outNumObjects)
+    {
+        try
+        {
+            var pm = PlayerManager.instance;
+            if (pm == null) return;
+            uint objInHand = (uint)(int)pm.objectInHand;
+            uint numObj = (uint)pm.numberOfObjectsInHand;
+            if (outObjectInHand != IntPtr.Zero) Marshal.Copy(new int[] { (int)objInHand }, 0, outObjectInHand, 1);
+            if (outNumObjects != IntPtr.Zero) Marshal.Copy(new int[] { (int)numObj }, 0, outNumObjects, 1);
+        }
+        catch (Exception ex) { CrashLog.LogException("GetPlayerCarryStateImpl", ex); }
+    }
+
+    private static uint GetPlayerCrouchingImpl()
+    {
+        try
+        {
+            var pm = PlayerManager.instance;
+            if (pm == null || pm.fpc == null) return 0;
+            return pm.fpc.m_isCrouching ? 1u : 0u;
+        }
+        catch (Exception ex) { CrashLog.LogException("GetPlayerCrouchingImpl", ex); return 0; }
+    }
+
+    private static uint GetPlayerSittingImpl()
+    {
+        try
+        {
+            var pm = PlayerManager.instance;
+            if (pm == null || pm.fpc == null) return 0;
+            return pm.fpc.m_IsSitting ? 1u : 0u;
+        }
+        catch (Exception ex) { CrashLog.LogException("GetPlayerSittingImpl", ex); return 0; }
+    }
+
+    private static void SetEntityCrouchingImpl(uint entityId, uint isCrouching)
+    {
+        try { EntityManager.SetCrouching(entityId, isCrouching != 0); }
+        catch (Exception ex) { CrashLog.LogException("SetEntityCrouchingImpl", ex); }
+    }
+
+    private static void SetEntitySittingImpl(uint entityId, uint isSitting)
+    {
+        try { EntityManager.SetSitting(entityId, isSitting != 0); }
+        catch (Exception ex) { CrashLog.LogException("SetEntitySittingImpl", ex); }
+    }
+
+    private static void SetEntityCarryAnimImpl(uint entityId, uint isCarrying)
+    {
+        try { EntityManager.SetCarryAnim(entityId, isCarrying != 0); }
+        catch (Exception ex) { CrashLog.LogException("SetEntityCarryAnimImpl", ex); }
+    }
+
+    private static void CreateEntityCarryVisualImpl(uint entityId, uint objectInHandType)
+    {
+        try { EntityManager.CreateCarryVisual(entityId, objectInHandType); }
+        catch (Exception ex) { CrashLog.LogException("CreateEntityCarryVisualImpl", ex); }
+    }
+
+    private static void DestroyEntityCarryVisualImpl(uint entityId)
+    {
+        try { EntityManager.DestroyCarryVisual(entityId); }
+        catch (Exception ex) { CrashLog.LogException("DestroyEntityCarryVisualImpl", ex); }
+    }
+
+    private void GetDefaultSpawnPositionImpl(IntPtr outX, IntPtr outY, IntPtr outZ)
+    {
+        try
+        {
+            var pm = PlayerManager.instance;
+            if (pm == null || pm.playerClass == null) return;
+
+            var player = pm.playerClass;
+
+            if (player.targetSpawn != null)
+            {
+                var pos = player.targetSpawn.position;
+                if (outX != IntPtr.Zero) Marshal.Copy(new float[] { pos.x }, 0, outX, 1);
+                if (outY != IntPtr.Zero) Marshal.Copy(new float[] { pos.y }, 0, outY, 1);
+                if (outZ != IntPtr.Zero) Marshal.Copy(new float[] { pos.z }, 0, outZ, 1);
+                CrashLog.Log($"[GameAPI] Default spawn from targetSpawn: ({pos.x:F1},{pos.y:F1},{pos.z:F1})");
+                return;
+            }
+
+            var rp = player.respawnPos;
+            if (rp.x != 0f || rp.y != 0f || rp.z != 0f)
+            {
+                if (outX != IntPtr.Zero) Marshal.Copy(new float[] { rp.x }, 0, outX, 1);
+                if (outY != IntPtr.Zero) Marshal.Copy(new float[] { rp.y }, 0, outY, 1);
+                if (outZ != IntPtr.Zero) Marshal.Copy(new float[] { rp.z }, 0, outZ, 1);
+                CrashLog.Log($"[GameAPI] Default spawn from respawnPos: ({rp.x:F1},{rp.y:F1},{rp.z:F1})");
+                return;
+            }
+
+            CrashLog.Log("[GameAPI] No default spawn position available");
+        }
+        catch (Exception ex) { CrashLog.LogException("GetDefaultSpawnPosition", ex); }
+    }
+
+    private void WarpLocalPlayerImpl(float x, float y, float z)
+    {
+        try
+        {
+            var pm = PlayerManager.instance;
+            if (pm == null || pm.playerClass == null || pm.playerGO == null) return;
+
+            var pos = new Vector3(x, y, z);
+            var rot = pm.playerGO.transform.rotation;
+            pm.playerClass.WarpPlayer(pos, rot);
+            CrashLog.Log($"[GameAPI] Warped local player to ({x:F1},{y:F1},{z:F1})");
+        }
+        catch (Exception ex) { CrashLog.LogException("WarpLocalPlayer", ex); }
     }
 
     public void Dispose()

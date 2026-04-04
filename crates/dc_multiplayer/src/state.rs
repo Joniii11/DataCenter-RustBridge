@@ -1,7 +1,10 @@
 //! Shared multiplayer state, constants, and join-state machine.
 
+use dc_api::Vec3;
+
 use crate::net;
-use crate::player::PlayerTracker;
+use crate::player::{PlayerStateSnapshot, PlayerTracker};
+use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Mutex;
 use std::sync::OnceLock;
@@ -13,8 +16,7 @@ pub const HELLO_RETRY_INTERVAL: f32 = 2.0;
 pub const HELLO_MAX_RETRIES: u32 = 15;
 pub const DEFAULT_RELAY_URL: &str = "ws://192.99.16.77:9943"; // FIXME: Proper URL before release
 pub const SAVE_CHUNK_SIZE: usize = 60_000;
-
-// ── Join state machine ──────────────────────────────────────────────────────
+pub const PLAYER_STATE_HEARTBEAT_INTERVAL: f32 = 1.0;
 
 /// Join state — Rust is the authority, C# polls/sets via FFI.
 #[repr(u32)]
@@ -41,7 +43,10 @@ impl JoinState {
     }
 }
 
-// ── Global state ────────────────────────────────────────────────────────────
+/// per client save transfer state
+pub struct SaveTransferState {
+    pub send_index: u32,
+}
 
 static STATE: OnceLock<Mutex<MultiplayerState>> = OnceLock::new();
 
@@ -60,10 +65,9 @@ pub struct MultiplayerState {
     pub room_code_cstr: Option<CString>,
     pub join_ok_received: bool,
 
-    pub save_requested: bool,
     pub save_outgoing: Option<Vec<u8>>,
-    pub save_send_index: u32,
-    pub save_send_chunk_count: u32,
+    pub save_chunk_count: u32,
+    pub save_transfers: HashMap<u64, SaveTransferState>,
 
     pub save_incoming_total: u32,
     pub save_incoming_chunk_count: u32,
@@ -77,6 +81,11 @@ pub struct MultiplayerState {
     pub save_up_to_date: bool,
 
     pub join_state: JoinState,
+
+    pub last_sent_player_state: PlayerStateSnapshot,
+    pub player_state_heartbeat_timer: f32,
+
+    pub default_spawn: Option<Vec3>,
 }
 
 impl MultiplayerState {
@@ -96,10 +105,9 @@ impl MultiplayerState {
             room_code_cstr: None,
             join_ok_received: false,
 
-            save_requested: false,
             save_outgoing: None,
-            save_send_index: 0,
-            save_send_chunk_count: 0,
+            save_chunk_count: 0,
+            save_transfers: HashMap::new(),
 
             save_incoming_total: 0,
             save_incoming_chunk_count: 0,
@@ -113,6 +121,11 @@ impl MultiplayerState {
             save_up_to_date: false,
 
             join_state: JoinState::Idle,
+
+            last_sent_player_state: PlayerStateSnapshot::default(),
+            player_state_heartbeat_timer: 0.0,
+
+            default_spawn: None,
         }
     }
 }

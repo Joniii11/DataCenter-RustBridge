@@ -25,12 +25,24 @@ public static class EntityManager
         public bool HasSpeedParam;
         public bool HasWalkingParam;
         public bool AnimParamsDiscovered;
+        public int CrouchParamHash;
+        public int SittingParamHash;
+        public int CarryingParamHash;
+        public bool HasCrouchParam;
+        public bool HasSittingParam;
+        public bool HasCarryingParam;
         public GameObject NameTagGO;
         public Vector3 LastPos;
+        public GameObject CarryProxyGO;
+        public Transform HandBone;
+        public bool HandBoneSearched;
+        public bool ColliderAdded;
+        public float ColliderEligibleTime;
     }
 
     private static readonly Dictionary<uint, ManagedEntity> _entities = new();
     private static uint _nextId = 1;
+    private static float _lastRoofCheckTime = 0f;
 
     public static uint SpawnCharacter(uint prefabIdx, float x, float y, float z, float rotY, string name)
     {
@@ -42,7 +54,11 @@ public static class EntityManager
             {
                 int idx = (int)(prefabIdx % (uint)mgr.techniciansPrefabs.Length);
                 var prefab = mgr.techniciansPrefabs[idx];
+
+                bool prefabWasActive = prefab.activeSelf;
+                prefab.SetActive(false);
                 go = UnityEngine.Object.Instantiate(prefab);
+                if (prefabWasActive) prefab.SetActive(true);
             }
             else
             {
@@ -68,22 +84,12 @@ public static class EntityManager
             go.SetActive(false);
 
             var spawnPos = new Vector3(x, y, z);
+
             go.transform.position = spawnPos;
             go.transform.eulerAngles = new Vector3(0, rotY, 0);
 
-            NavMeshAgent nav = null;
+
             var navCheck = go.GetComponent<NavMeshAgent>();
-            if (navCheck != null)
-            {
-                nav = navCheck;
-                nav.updatePosition = false;
-                nav.updateRotation = false;
-                nav.updateUpAxis = false;
-                nav.isStopped = true;
-                nav.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
-                nav.autoTraverseOffMeshLink = false;
-                nav.autoBraking = false;
-            }
 
             foreach (var mb in go.GetComponentsInChildren<MonoBehaviour>(true))
             {
@@ -96,21 +102,19 @@ public static class EntityManager
                 try { mb.enabled = false; } catch { }
             }
 
+
+            if (navCheck != null)
+                try { UnityEngine.Object.DestroyImmediate(navCheck); } catch { }
+            foreach (var cc in go.GetComponentsInChildren<CharacterController>(true))
+                try { UnityEngine.Object.DestroyImmediate(cc); } catch { }
             foreach (var c in go.GetComponentsInChildren<Collider>(true))
-                try { UnityEngine.Object.Destroy(c); } catch { }
+                try { UnityEngine.Object.DestroyImmediate(c); } catch { }
             foreach (var rb in go.GetComponentsInChildren<Rigidbody>(true))
-                try { UnityEngine.Object.Destroy(rb); } catch { }
+                try { UnityEngine.Object.DestroyImmediate(rb); } catch { }
+            foreach (var nav in go.GetComponentsInChildren<NavMeshAgent>(true))
+                try { UnityEngine.Object.DestroyImmediate(nav); } catch { }
 
-            // Disable nav before activation so it doesnt snap
-            if (nav != null) nav.enabled = false;
             go.SetActive(true);
-
-            if (nav != null)
-            {
-                nav.enabled = true;
-                nav.Warp(spawnPos);
-                nav.enabled = false; // Disable permanently — remote entities don't need pathfinding
-            }
 
             Animator animator = go.GetComponentInChildren<Animator>();
             if (animator != null)
@@ -124,7 +128,7 @@ public static class EntityManager
                 Id = id,
                 GO = go,
                 Animator = animator,
-                NavAgent = nav,
+                NavAgent = null, // NavMeshAgent destroyed — remote entities don't need pathfinding
                 WaitingForUMA = true,
                 UMAWaitStart = Time.time,
                 LastPos = spawnPos,
@@ -133,7 +137,7 @@ public static class EntityManager
             AddNameTag(go, name, entity);
             _entities[id] = entity;
 
-            CrashLog.Log($"[EntityManager] Spawned entity {id} '{name}' at ({x:F1},{y:F1},{z:F1}) nav={nav?.isOnNavMesh} anim={animator != null}");
+            CrashLog.Log($"[EntityManager] Spawned entity {id} '{name}' at ({spawnPos.x:F1},{spawnPos.y:F1},{spawnPos.z:F1}) anim={animator != null}");
             return id;
         }
         catch (Exception ex)
@@ -146,6 +150,7 @@ public static class EntityManager
     public static void DestroyEntity(uint entityId)
     {
         if (!_entities.TryGetValue(entityId, out var entity)) return;
+        if (entity.CarryProxyGO != null) UnityEngine.Object.Destroy(entity.CarryProxyGO);
         if (entity.NameTagGO != null) UnityEngine.Object.Destroy(entity.NameTagGO);
         if (entity.GO != null) UnityEngine.Object.Destroy(entity.GO);
         _entities.Remove(entityId);
@@ -186,6 +191,349 @@ public static class EntityManager
         catch { }
     }
 
+    /// <summary>Set just the carry animator bool (cheap, can be called every frame)</summary>
+    public static void SetCarryAnim(uint entityId, bool isCarrying)
+    {
+        if (!_entities.TryGetValue(entityId, out var entity)) return;
+        if (entity.Animator == null || !entity.HasCarryingParam) return;
+        try { entity.Animator.SetBool(entity.CarryingParamHash, isCarrying); }
+        catch { }
+    }
+
+    /// <summary>Create a visual proxy from real game prefab, parented to hand bone</summary>
+    public static void CreateCarryVisual(uint entityId, uint objectInHandType)
+    {
+        if (!_entities.TryGetValue(entityId, out var entity)) return;
+        try
+        {
+            // Destroy existing proxy if any
+            if (entity.CarryProxyGO != null)
+            {
+                UnityEngine.Object.Destroy(entity.CarryProxyGO);
+                entity.CarryProxyGO = null;
+            }
+
+            // Find hand bone if not searched yet
+            if (!entity.HandBoneSearched && entity.GO != null)
+            {
+                entity.HandBoneSearched = true;
+                entity.HandBone = FindHandBone(entity.GO.transform);
+                if (entity.HandBone != null)
+                    CrashLog.Log($"[EntityManager] Found hand bone '{entity.HandBone.name}' for entity {entity.Id}");
+                else
+                    CrashLog.Log($"[EntityManager] No hand bone found for entity {entity.Id}");
+            }
+
+            // Try real game prefab first, fall back to primitive
+            GameObject proxy = TryCreateFromGamePrefab(objectInHandType);
+            if (proxy == null)
+                proxy = CreateFallbackProxy(objectInHandType);
+
+            if (proxy != null)
+            {
+                Transform parent = entity.HandBone ?? entity.GO?.transform;
+                if (parent != null)
+                {
+                    proxy.transform.SetParent(parent, false);
+                    var (pos, rot) = GetCarryOffsets(objectInHandType, entity.HandBone != null);
+                    proxy.transform.localPosition = pos;
+                    proxy.transform.localRotation = rot;
+                }
+                entity.CarryProxyGO = proxy;
+            }
+
+            CrashLog.Log($"[EntityManager] Created carry visual type={objectInHandType} prefab={proxy != null} for entity {entity.Id} bone={entity.HandBone?.name ?? "none"} parent={proxy?.transform.parent?.name ?? "none"}");
+        }
+        catch (Exception ex) { CrashLog.LogException("EntityManager.CreateCarryVisual", ex); }
+    }
+
+    private static (Vector3 position, Quaternion rotation) GetCarryOffsets(uint objectInHandType, bool hasHandBone)
+    {
+        if (!hasHandBone)
+        {
+            return (new Vector3(0.3f, 0.8f, 0.3f), Quaternion.identity);
+        }
+
+        switch (objectInHandType)
+        {
+            case 1: // Server1U — flat server unit
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+            case 2: // Server2U — taller server
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+            case 3: // Server3U — tallest server
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+            case 4: // Switch — flat network switch
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+            case 5: // Rack — large item
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+            case 6: // CableSpinner — round spool
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 0f, 0f));
+            case 7: // PatchPanel — flat panel
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+            case 8: // SFPModule — tiny module
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 0f, 0f));
+            case 9: // SFPBox — small box
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 0f, 0f));
+            default:
+                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 0f, 0f));
+        }
+    }
+
+    /// <summary>Destroy the carry visual proxy</summary>
+    public static void DestroyCarryVisual(uint entityId)
+    {
+        if (!_entities.TryGetValue(entityId, out var entity)) return;
+        if (entity.CarryProxyGO != null)
+        {
+            UnityEngine.Object.Destroy(entity.CarryProxyGO);
+            entity.CarryProxyGO = null;
+        }
+    }
+
+    /// <summary>Find the right hand bone in a humanoid UMA rig</summary>
+    private static Transform FindHandBone(Transform root)
+    {
+        // UMA humanoid rigs use standard naming; search for right hand
+        string[] handNames = { "Right Hand", "RightHand", "Hand_R", "hand_r", "R_Hand", "Bip01 R Hand" };
+        foreach (var name in handNames)
+        {
+            var bone = FindChildRecursive(root, name);
+            if (bone != null) return bone;
+        }
+
+        // Fallback: search for any transform containing "hand" and "r" (case insensitive)
+        return FindChildByPattern(root, t =>
+        {
+            string n = t.name.ToLower();
+            return n.Contains("hand") && (n.Contains("right") || (n.Contains("_r") || n.Contains(".r") || n.StartsWith("r_") || n.EndsWith(" r")));
+        });
+    }
+
+    private static Transform FindChildRecursive(Transform parent, string name)
+    {
+        if (parent.name == name) return parent;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var found = FindChildRecursive(parent.GetChild(i), name);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+    private static Transform FindChildByPattern(Transform parent, Func<Transform, bool> predicate)
+    {
+        if (predicate(parent)) return parent;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var found = FindChildByPattern(parent.GetChild(i), predicate);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
+
+    /// <summary>Cached prefab templates per ObjectInHand type (stripped visual clones)</summary>
+    private static readonly Dictionary<uint, GameObject> _carryPrefabCache = new();
+    private static bool _prefabCacheAttempted = false;
+
+    /// <summary>Try to clone a real game prefab for the carried item type</summary>
+    private static GameObject TryCreateFromGamePrefab(uint objectInHandType)
+    {
+        try
+        {
+            // Check cache first
+            if (_carryPrefabCache.TryGetValue(objectInHandType, out var cachedTemplate))
+            {
+                if (cachedTemplate != null)
+                {
+                    var clone = UnityEngine.Object.Instantiate(cachedTemplate);
+                    clone.SetActive(true);
+                    clone.name = $"CarryVisual_{objectInHandType}";
+                    return clone;
+                }
+                return null;
+            }
+
+            var shop = UnityEngine.Object.FindObjectOfType<ComputerShop>();
+            if (shop == null || shop.shopItems == null)
+            {
+                CrashLog.Log("[EntityManager] ComputerShop not found, using fallback proxy");
+                return null;
+            }
+
+            PlayerManager.ObjectInHand targetType = (PlayerManager.ObjectInHand)(int)objectInHandType;
+
+            foreach (var shopItem in shop.shopItems)
+            {
+                if (shopItem == null || shopItem.shopItemSO == null) continue;
+                if (shopItem.shopItemSO.itemType != targetType) continue;
+
+                int itemID = shopItem.shopItemSO.itemID;
+                var prefab = shop.GetPrefabForItem(itemID, targetType);
+                if (prefab == null) continue;
+
+                var template = UnityEngine.Object.Instantiate(prefab);
+                StripToVisualOnly(template);
+                template.SetActive(false);
+                template.name = $"CarryTemplate_{objectInHandType}";
+                UnityEngine.Object.DontDestroyOnLoad(template);
+                _carryPrefabCache[objectInHandType] = template;
+
+                CrashLog.Log($"[EntityManager] Cached carry prefab for type {objectInHandType} (itemID={itemID})");
+
+                var instance = UnityEngine.Object.Instantiate(template);
+                instance.SetActive(true);
+                instance.name = $"CarryVisual_{objectInHandType}";
+                return instance;
+            }
+
+            // No matching shop item found, cache null to avoid retrying
+            CrashLog.Log($"[EntityManager] No shop prefab found for type {objectInHandType}");
+            _carryPrefabCache[objectInHandType] = null;
+            return null;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("EntityManager.TryCreateFromGamePrefab", ex);
+            _carryPrefabCache[objectInHandType] = null;
+            return null;
+        }
+    }
+
+    /// <summary>Strip all non-visual components from a GameObject (physics, scripts, nav)</summary>
+    private static void StripToVisualOnly(GameObject go)
+    {
+        // Remove all colliders
+        foreach (var col in go.GetComponentsInChildren<Collider>(true))
+            try { UnityEngine.Object.DestroyImmediate(col); } catch { }
+
+        // Remove all rigidbodies
+        foreach (var rb in go.GetComponentsInChildren<Rigidbody>(true))
+            try { UnityEngine.Object.DestroyImmediate(rb); } catch { }
+
+        // Remove NavMeshAgents
+        foreach (var nav in go.GetComponentsInChildren<NavMeshAgent>(true))
+            try { UnityEngine.Object.DestroyImmediate(nav); } catch { }
+
+        // Remove CharacterControllers
+        foreach (var cc in go.GetComponentsInChildren<CharacterController>(true))
+            try { UnityEngine.Object.DestroyImmediate(cc); } catch { }
+
+        // Remove all game scripts (MonoBehaviours) — keeps Transform, MeshFilter, MeshRenderer, etc.
+        foreach (var mb in go.GetComponentsInChildren<MonoBehaviour>(true))
+            try { UnityEngine.Object.DestroyImmediate(mb); } catch { }
+
+        // Disable animators (don't want independent animation)
+        foreach (var anim in go.GetComponentsInChildren<Animator>(true))
+            try { anim.enabled = false; } catch { }
+    }
+
+    /// <summary>Create a primitive fallback when real prefab isn't available</summary>
+    private static GameObject CreateFallbackProxy(uint objectInHandType)
+    {
+        try
+        {
+            var proxy = new GameObject($"CarryFallback_{objectInHandType}");
+            var visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+            // Remove collider
+            var col = visual.GetComponent<Collider>();
+            if (col != null) UnityEngine.Object.DestroyImmediate(col);
+
+            visual.transform.SetParent(proxy.transform, false);
+
+            Vector3 scale;
+            Color color;
+            switch (objectInHandType)
+            {
+                case 1: // Server1U
+                    scale = new Vector3(0.43f, 0.045f, 0.5f);
+                    color = new Color(0.2f, 0.2f, 0.25f);
+                    break;
+                case 2: // Server2U
+                    scale = new Vector3(0.43f, 0.09f, 0.5f);
+                    color = new Color(0.2f, 0.2f, 0.25f);
+                    break;
+                case 3: // Server3U
+                    scale = new Vector3(0.43f, 0.135f, 0.5f);
+                    color = new Color(0.2f, 0.2f, 0.25f);
+                    break;
+                case 4: // Switch
+                    scale = new Vector3(0.43f, 0.045f, 0.3f);
+                    color = new Color(0.15f, 0.3f, 0.15f);
+                    break;
+                case 5: // Rack
+                    scale = new Vector3(0.6f, 1.2f, 0.8f);
+                    color = new Color(0.3f, 0.3f, 0.3f);
+                    break;
+                case 6: // CableSpinner
+                    scale = new Vector3(0.15f, 0.15f, 0.15f);
+                    color = new Color(0.4f, 0.3f, 0.1f);
+                    break;
+                case 7: // PatchPanel
+                    scale = new Vector3(0.43f, 0.045f, 0.3f);
+                    color = new Color(0.25f, 0.25f, 0.3f);
+                    break;
+                case 8: // SFPModule
+                    scale = new Vector3(0.02f, 0.01f, 0.06f);
+                    color = new Color(0.6f, 0.6f, 0.6f);
+                    break;
+                case 9: // SFPBox
+                    scale = new Vector3(0.1f, 0.06f, 0.08f);
+                    color = new Color(0.35f, 0.35f, 0.4f);
+                    break;
+                default:
+                    scale = new Vector3(0.3f, 0.15f, 0.4f);
+                    color = new Color(0.25f, 0.25f, 0.3f);
+                    break;
+            }
+
+            visual.transform.localScale = scale;
+            var renderer = visual.GetComponent<Renderer>();
+            if (renderer != null)
+            {
+                try
+                {
+                    var mat = new Material(Shader.Find("Standard"));
+                    mat.color = color;
+                    renderer.material = mat;
+                }
+                catch { }
+            }
+
+            return proxy;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("EntityManager.CreateFallbackProxy", ex);
+            return null;
+        }
+    }
+
+    public static void SetCrouching(uint entityId, bool isCrouching)
+    {
+        if (!_entities.TryGetValue(entityId, out var entity)) return;
+        if (entity.Animator == null) return;
+        try
+        {
+            if (entity.HasCrouchParam)
+                entity.Animator.SetBool(entity.CrouchParamHash, isCrouching);
+        }
+        catch { }
+    }
+
+    public static void SetSitting(uint entityId, bool isSitting)
+    {
+        if (!_entities.TryGetValue(entityId, out var entity)) return;
+        if (entity.Animator == null) return;
+        try
+        {
+            if (entity.HasSittingParam)
+                entity.Animator.SetBool(entity.SittingParamHash, isSitting);
+        }
+        catch { }
+    }
+
     public static uint GetPrefabCount()
     {
         try
@@ -213,6 +561,28 @@ public static class EntityManager
     /// <summary>Called once per frame from Core.cs to process UMA ready</summary>
     public static void Update()
     {
+        try
+        {
+            if (_entities.Count > 0 && Time.time - _lastRoofCheckTime >= 2.0f)
+            {
+                _lastRoofCheckTime = Time.time;
+                var pm = PlayerManager.instance;
+                if (pm != null && pm.playerGO != null && pm.playerClass != null)
+                {
+                    float playerY = pm.playerGO.transform.position.y;
+                    if (playerY > 3.5f)
+                    {
+                        CrashLog.Log($"[EntityManager] Roof safety net triggered — player Y={playerY:F2}, warping to origin.");
+                        pm.playerClass.WarpPlayer(Vector3.zero, pm.playerGO.transform.rotation);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("[EntityManager] Roof safety net error", ex);
+        }
+
         // Check UMA mesh status for all waiting entities
         var toRetry = new List<uint>();
         foreach (var kvp in _entities)
@@ -259,10 +629,13 @@ public static class EntityManager
                     try { mb.enabled = false; } catch { }
                 }
                 entity.WaitingForUMA = false;
+                entity.ColliderEligibleTime = Time.time + 3.0f; // wait 3s for position to settle
 
                 // Disable NavMeshAgent — remote entities don't need pathfinding
                 if (entity.NavAgent != null && entity.NavAgent.enabled)
                     entity.NavAgent.enabled = false;
+
+
 
                 if (!entity.AnimParamsDiscovered)
                 {
@@ -288,6 +661,24 @@ public static class EntityManager
                                     entity.WalkingParamHash = param.nameHash;
                                     entity.HasWalkingParam = true;
                                 }
+                                if (!entity.HasCrouchParam && param.type == AnimatorControllerParameterType.Bool &&
+                                    lower.Contains("crouch"))
+                                {
+                                    entity.CrouchParamHash = param.nameHash;
+                                    entity.HasCrouchParam = true;
+                                }
+                                if (!entity.HasSittingParam && param.type == AnimatorControllerParameterType.Bool &&
+                                    (lower == "issitting" || lower.Contains("sitting")))
+                                {
+                                    entity.SittingParamHash = param.nameHash;
+                                    entity.HasSittingParam = true;
+                                }
+                                if (!entity.HasCarryingParam && param.type == AnimatorControllerParameterType.Bool &&
+                                    (lower.Contains("carry") || lower.Contains("carrying")))
+                                {
+                                    entity.CarryingParamHash = param.nameHash;
+                                    entity.HasCarryingParam = true;
+                                }
                             }
                         }
                         catch (Exception ex)
@@ -302,6 +693,41 @@ public static class EntityManager
             {
                 // retry
                 toRetry.Add(entity.Id);
+            }
+
+            if (!entity.ColliderAdded && !entity.WaitingForUMA && entity.GO != null && Time.time >= entity.ColliderEligibleTime)
+            {
+                try
+                {
+                    bool farEnough = false;
+                    var pm = PlayerManager.instance;
+                    if (pm != null && pm.playerGO != null)
+                    {
+                        var lp = pm.playerGO.transform.position;
+                        var ep = entity.GO.transform.position;
+                        float dx = ep.x - lp.x;
+                        float dz = ep.z - lp.z;
+                        farEnough = (dx * dx + dz * dz) >= 2.25f; // >= 1.5m
+                    }
+                    else
+                    {
+                        farEnough = true; // no local player ref, safe to add
+                    }
+
+                    if (farEnough)
+                    {
+                        var capsule = entity.GO.AddComponent<CapsuleCollider>();
+                        capsule.center = new Vector3(0f, 0.9f, 0f);
+                        capsule.radius = 0.3f;
+                        capsule.height = 1.8f;
+                        entity.ColliderAdded = true;
+                        CrashLog.Log($"[EntityManager] Added collision capsule to entity {entity.Id}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.LogException($"[EntityManager] Failed to add collision capsule to entity {entity.Id}", ex);
+                }
             }
         }
 
@@ -333,10 +759,14 @@ public static class EntityManager
     {
         foreach (var kvp in _entities)
         {
+            if (kvp.Value.CarryProxyGO != null) UnityEngine.Object.Destroy(kvp.Value.CarryProxyGO);
             if (kvp.Value.NameTagGO != null) UnityEngine.Object.Destroy(kvp.Value.NameTagGO);
             if (kvp.Value.GO != null) UnityEngine.Object.Destroy(kvp.Value.GO);
         }
         _entities.Clear();
+        foreach (var kvp in _carryPrefabCache)
+            if (kvp.Value != null) UnityEngine.Object.Destroy(kvp.Value);
+        _carryPrefabCache.Clear();
         _nextId = 1;
     }
 

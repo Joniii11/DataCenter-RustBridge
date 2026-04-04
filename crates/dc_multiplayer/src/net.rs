@@ -1,6 +1,6 @@
 //! Relay networking — WebSocket connection to the relay server with a single I/O thread.
 
-use crate::protocol::Message;
+use crate::protocol::{Envelope, Message};
 use dc_relay_proto::{self, RelayPacket};
 use std::io;
 use std::net::TcpStream;
@@ -26,6 +26,7 @@ pub enum RelayEvent {
     /// A game message from another player.
     GameMessage {
         sender: u64,
+        target: u64,
         message: Message,
     },
     /// Raw peer data that couldn't be deserialized, or a server-side error.
@@ -104,9 +105,19 @@ impl RelayConnection {
         self.tx.send(packet).is_ok()
     }
 
-    /// Send a game message (serialized and wrapped in GameData).
+    /// Send a broadcast game message (all peers receive and process).
     pub fn send_game_message(&self, msg: &Message) -> bool {
-        let Some(payload) = msg.serialize() else {
+        let envelope = Envelope::broadcast(msg.clone());
+        let Some(payload) = envelope.serialize() else {
+            return false;
+        };
+        self.send_packet(RelayPacket::GameData { payload })
+    }
+
+    /// Send a targeted game message to a specific peer
+    pub fn send_game_message_to(&self, msg: &Message, target: u64) -> bool {
+        let envelope = Envelope::targeted(target, msg.clone());
+        let Some(payload) = envelope.serialize() else {
             return false;
         };
         self.send_packet(RelayPacket::GameData { payload })
@@ -242,10 +253,11 @@ fn packet_to_event(packet: RelayPacket) -> RelayEvent {
         RelayPacket::PeerData {
             sender_steam_id,
             payload,
-        } => match Message::deserialize(&payload) {
-            Some(message) => RelayEvent::GameMessage {
+        } => match Envelope::deserialize(&payload) {
+            Some(envelope) => RelayEvent::GameMessage {
                 sender: sender_steam_id,
-                message,
+                target: envelope.target,
+                message: envelope.message,
             },
             None => RelayEvent::Error(format!(
                 "Failed to deserialize game message from {} ({} bytes)",

@@ -15,7 +15,14 @@ pub extern "C" fn mp_skip_next_save_request() {
 /// Host: returns 1 if a client has requested save data and C# should provide it.
 #[no_mangle]
 pub extern "C" fn mp_should_send_save() -> u32 {
-    with_state(|s| if s.save_requested { 1u32 } else { 0u32 }).unwrap_or(0)
+    with_state(|s| {
+        if !s.save_transfers.is_empty() && s.save_outgoing.is_none() {
+            1u32
+        } else {
+            0u32
+        }
+    })
+    .unwrap_or(0)
 }
 
 /// Host: C# provides save file bytes. Rust will chunk and send them.
@@ -41,17 +48,32 @@ pub extern "C" fn mp_send_save_data(data: *const u8, len: u32) -> i32 {
         chunk_count,
         save_hash,
     };
-    let sent = with_state(|s| {
-        s.save_requested = false;
-        s.save_outgoing = Some(bytes);
-        s.save_send_index = 0;
-        s.save_send_chunk_count = chunk_count;
 
-        if let Some(ref relay) = s.relay {
-            relay.send_game_message(&offer)
-        } else {
-            false
+    let sent = with_state(|s| {
+        s.save_outgoing = Some(bytes);
+        s.save_chunk_count = chunk_count;
+
+        // Send targeted SaveOffer to each waiting client and start their transfer
+        let waiting: Vec<u64> = s.save_transfers.keys().copied().collect();
+        let mut any_sent = false;
+
+        for peer_id in waiting {
+            if let Some(ref relay) = s.relay {
+                if relay.send_game_message_to(&offer, peer_id) {
+                    any_sent = true;
+                    dc_api::crash_log(&format!(
+                        "[MP] Sent SaveOffer to peer {} ({} bytes, {} chunks)",
+                        peer_id, total_bytes, chunk_count
+                    ));
+                }
+            }
+            // Reset send_index to 0 (start chunking for this client)
+            if let Some(t) = s.save_transfers.get_mut(&peer_id) {
+                t.send_index = 0;
+            }
         }
+
+        any_sent
     })
     .unwrap_or(false);
 
