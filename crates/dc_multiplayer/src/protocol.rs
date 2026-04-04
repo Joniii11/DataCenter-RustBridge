@@ -57,8 +57,8 @@ impl Message {
             .map(|(msg, _)| msg)
     }
 
+    #[allow(dead_code)]
     pub fn is_reliable(&self) -> bool {
-        // position updates can be lost, everything else should be reliable
         !matches!(self, Message::Position { .. })
     }
 }
