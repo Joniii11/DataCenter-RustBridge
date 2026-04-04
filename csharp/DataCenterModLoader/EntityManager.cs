@@ -257,13 +257,13 @@ public static class EntityManager
         switch (objectInHandType)
         {
             case 1: // Server1U — flat server unit
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+                return (new Vector3(0.5f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
             case 2: // Server2U — taller server
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+                return (new Vector3(0.5f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
             case 3: // Server3U — tallest server
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+                return (new Vector3(0.5f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
             case 4: // Switch — flat network switch
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
+                return (new Vector3(0.5f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
             case 5: // Rack — large item
                 return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
             case 6: // CableSpinner — round spool
