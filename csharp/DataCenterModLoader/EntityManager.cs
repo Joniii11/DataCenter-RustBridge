@@ -109,6 +109,7 @@ public static class EntityManager
             {
                 nav.enabled = true;
                 nav.Warp(spawnPos);
+                nav.enabled = false; // Disable permanently — remote entities don't need pathfinding
             }
 
             Animator animator = go.GetComponentInChildren<Animator>();
@@ -155,19 +156,8 @@ public static class EntityManager
         if (!_entities.TryGetValue(entityId, out var entity)) return;
         if (entity.GO == null) { _entities.Remove(entityId); return; }
 
-        var target = new Vector3(x, y, z);
-
-        if (entity.NavAgent != null && entity.NavAgent.isOnNavMesh)
-        {
-            entity.NavAgent.Warp(target);
-            entity.GO.transform.position = entity.NavAgent.nextPosition;
-        }
-        else
-        {
-            entity.GO.transform.position = target;
-        }
-
-        // Rotation is already interpolated by Rust — apply directly, no extra smoothing
+        // Direct transform — no NavMeshAgent involvement for remote entities
+        entity.GO.transform.position = new Vector3(x, y, z);
         entity.GO.transform.eulerAngles = new Vector3(0f, rotY, 0f);
     }
 
@@ -184,7 +174,12 @@ public static class EntityManager
         try
         {
             if (entity.HasSpeedParam)
-                entity.Animator.SetFloat(entity.SpeedParamHash, speed);
+            {
+                // Smooth the speed to avoid jittery animation blending
+                float current = entity.Animator.GetFloat(entity.SpeedParamHash);
+                float smoothed = Mathf.Lerp(current, speed, Time.deltaTime * 8f);
+                entity.Animator.SetFloat(entity.SpeedParamHash, smoothed);
+            }
             if (entity.HasWalkingParam)
                 entity.Animator.SetBool(entity.WalkingParamHash, isWalking);
         }
@@ -264,6 +259,10 @@ public static class EntityManager
                     try { mb.enabled = false; } catch { }
                 }
                 entity.WaitingForUMA = false;
+
+                // Disable NavMeshAgent — remote entities don't need pathfinding
+                if (entity.NavAgent != null && entity.NavAgent.enabled)
+                    entity.NavAgent.enabled = false;
 
                 if (!entity.AnimParamsDiscovered)
                 {

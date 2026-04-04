@@ -188,11 +188,10 @@ struct UpdateInfo {
     iy: f32,
     iz: f32,
     irot: f32,
-    prev_x: f32,
-    prev_z: f32,
+    speed: f32,
 }
 
-fn update_entities(api: &Api, dt: f32) {
+fn update_entities(api: &Api, _dt: f32) {
     let prefab_count = api.get_prefab_count().unwrap_or(1).max(1);
 
     let (to_spawn, to_update): (Vec<SpawnInfo>, Vec<UpdateInfo>) = with_state(|s| {
@@ -212,14 +211,17 @@ fn update_entities(api: &Api, dt: f32) {
                 });
             } else if let Some(eid) = player.entity_id {
                 let (ix, iy, iz, irot) = player.interpolated_position();
+                // Speed from stable target-to-target distance (not interpolated, which fluctuates)
+                let dx = player.x - player.prev_x;
+                let dz = player.z - player.prev_z;
+                let speed = (dx * dx + dz * dz).sqrt() / POSITION_SEND_INTERVAL;
                 updates.push(UpdateInfo {
                     entity_id: eid,
                     ix,
                     iy,
                     iz,
                     irot,
-                    prev_x: player.prev_x,
-                    prev_z: player.prev_z,
+                    speed,
                 });
             }
         });
@@ -249,11 +251,7 @@ fn update_entities(api: &Api, dt: f32) {
 
     for info in to_update {
         api.set_entity_position(info.entity_id, info.ix, info.iy, info.iz, info.irot);
-
-        let dx = info.ix - info.prev_x;
-        let dz = info.iz - info.prev_z;
-        let speed = (dx * dx + dz * dz).sqrt() / 0.05_f32.max(dt);
-        let is_walking = speed > 0.05;
-        api.set_entity_animation(info.entity_id, speed, is_walking);
+        let is_walking = info.speed > 0.1;
+        api.set_entity_animation(info.entity_id, info.speed, is_walking);
     }
 }
