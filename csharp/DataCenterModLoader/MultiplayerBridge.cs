@@ -467,7 +467,6 @@ public class MultiplayerBridge
                 SendSaveToClients();
             }
 
-            // Age the save cache
             if (_isHosting && _cachedSaveData != null)
             {
                 _cachedSaveAge += dt;
@@ -479,7 +478,6 @@ public class MultiplayerBridge
                 }
             }
 
-            // ── Client join state machine ──
             if (!_isHosting)
             {
                 switch (_joinState)
@@ -487,13 +485,11 @@ public class MultiplayerBridge
                     case ClientJoinState.WaitingForSave:
                         if (_skipSaveOnReconnect)
                         {
-                            // We already loaded the save — discard any incoming save data
                             if (_hasPendingSave != null && _hasPendingSave() != 0)
                             {
                                 CrashLog.Log("[MP Join] Discarding save data (already loaded on reconnect)");
                                 if (_saveLoadComplete != null) _saveLoadComplete();
                             }
-                            // Once connected, transition to Loaded
                             if (_isConnectedState)
                             {
                                 CrashLog.Log("[MP Join] Reconnect complete — state → Loaded");
@@ -502,13 +498,11 @@ public class MultiplayerBridge
                             }
                             break;
                         }
-                        // Check if save versioning determined we already have the current save
                         if (_isSaveUpToDate != null && _isSaveUpToDate() != 0)
                         {
                             CrashLog.Log("[MP Join] Save is up to date — no download needed!");
                             try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Save is up to date!"); } catch { }
 
-                            // We still need to load the save from disk
                             string savePath = DiscoverSaveFile();
                             if (savePath != null)
                             {
@@ -530,11 +524,9 @@ public class MultiplayerBridge
                             else
                             {
                                 CrashLog.Log("[MP Join] Save up to date but couldn't find local file — falling back to download");
-                                // Don't break — fall through to normal download path
                             }
                             break;
                         }
-                        // Poll Rust for completed save transfer
                         if (_hasPendingSave != null && _hasPendingSave() != 0)
                         {
                             CrashLog.Log("[MP Join] Save data ready from Rust — transitioning to SaveReceived");
@@ -544,12 +536,10 @@ public class MultiplayerBridge
                         break;
 
                     case ClientJoinState.SaveReceived:
-                        // Grab the bytes and decide how to load
                         FetchAndProcessSave();
                         break;
 
                     case ClientJoinState.WaitingForGameScene:
-                        // Save is on disk, scene transition triggered — wait for game scene
                         if (_deferredLoadDelay > 0f)
                         {
                             _deferredLoadDelay -= dt;
@@ -558,7 +548,6 @@ public class MultiplayerBridge
                         {
                             if (_gameHandledSaveLoad)
                             {
-                                // MainMenu.Continue() handled the scene transition + save load
                                 CrashLog.Log("[MP Join] Game scene loaded via MainMenu.Continue() — transitioning to Loaded");
                                 _joinState = ClientJoinState.Loaded;
                                 _gameHandledSaveLoad = false;
@@ -569,7 +558,6 @@ public class MultiplayerBridge
                             }
                             else
                             {
-                                // Manual approach fallback — load the save ourselves
                                 CrashLog.Log("[MP Join] Game scene detected after deferred wait, attempting load...");
                                 AttemptSaveLoad();
                             }
@@ -577,16 +565,14 @@ public class MultiplayerBridge
                         break;
 
                     case ClientJoinState.Loaded:
-                        // Discard any late-arriving save data
                         if (_hasPendingSave != null && _hasPendingSave() != 0)
                         {
                             CrashLog.Log("[MP Join] Discarding late save data (already loaded)");
                             if (_saveLoadComplete != null) _saveLoadComplete();
                         }
-                        // Auto-reconnect if relay died (e.g. after scene transition)
                         if (_reconnectRoomCode != null && !relayAlive && _reconnectCooldown <= 0f)
                         {
-                            _reconnectCooldown = 5f; // Don't try again for 5 seconds
+                            _reconnectCooldown = 5f;
                             CrashLog.Log($"[MP Join] Relay not alive in Loaded state — auto-reconnecting to {_reconnectRoomCode}");
                             AutoReconnect();
                         }
@@ -2738,29 +2724,35 @@ public class MultiplayerBridge
                 remote.TargetPos = new Vector3(data.X, data.Y, data.Z);
                 remote.TargetRotY = data.RotY;
 
-                // Measure movement speed before interpolating
+                // Measure movement speed before moving
                 Vector3 prevPos = remote.GO.transform.position;
 
-                // Smooth interpolation towards target position/rotation
-                // Use NavMeshAgent.Warp() if available — Unity automatically snaps
-                // the character to the baked NavMesh surface (walkable floor).
-                // This prevents sinking through the ground without needing raycasts.
-                Vector3 lerpedPos = Vector3.Lerp(prevPos, remote.TargetPos, Time.deltaTime * 10f);
-
+                // NavMeshAgent.Move(delta) — moves the agent on the NavMesh surface
+                // WITHOUT any pathfinding. Same smooth interpolation as our old Lerp,
+                // but Unity constrains movement to the walkable floor automatically.
                 if (remote.NavAgent != null && remote.NavAgent.isOnNavMesh)
                 {
-                    remote.NavAgent.Warp(lerpedPos);
-                    // Warp constrains to NavMesh — actual position may differ in Y
+                    float distToTarget = Vector3.Distance(prevPos, remote.TargetPos);
+                    if (distToTarget > 5f)
+                    {
+                        // Large distance — teleport (floor change, etc.)
+                        remote.NavAgent.Warp(remote.TargetPos);
+                    }
+                    else if (distToTarget > 0.01f)
+                    {
+                        // Smooth move toward target — 10x/s interpolation speed, no pathfinding
+                        Vector3 step = (remote.TargetPos - prevPos) * Mathf.Min(1f, Time.deltaTime * 10f);
+                        remote.NavAgent.Move(step);
+                    }
                 }
                 else
                 {
-                    // Fallback: raycast down to snap Y to ground surface
-                    if (Physics.Raycast(new Vector3(lerpedPos.x, lerpedPos.y + 1f, lerpedPos.z), Vector3.down, out RaycastHit hit, 3f))
-                    {
-                        lerpedPos.y = hit.point.y;
-                    }
+                    // Fallback for characters without NavMeshAgent (capsule etc.)
+                    Vector3 lerpedPos = Vector3.Lerp(prevPos, remote.TargetPos, Time.deltaTime * 10f);
                     remote.GO.transform.position = lerpedPos;
                 }
+
+                // Handle rotation ourselves (NavMeshAgent.updateRotation is off)
                 var euler = remote.GO.transform.eulerAngles;
                 euler.y = Mathf.LerpAngle(euler.y, remote.TargetRotY, Time.deltaTime * 10f);
                 remote.GO.transform.eulerAngles = euler;
@@ -2842,8 +2834,10 @@ public class MultiplayerBridge
             var spawnPos = new Vector3(data.X, data.Y, data.Z);
             go.transform.position = spawnPos;
 
-            // Configure NavMeshAgent for ground-snapping only (no pathfinding)
-            // Unity's NavMesh system keeps the character on the baked walkable surface automatically.
+            // Configure NavMeshAgent for Move()-based movement — we calculate the
+            // delta ourselves (like Lerp) and call Move(delta) each frame.
+            // The agent constrains movement to the NavMesh surface (ground-snapping)
+            // with ZERO pathfinding overhead.
             UnityEngine.AI.NavMeshAgent nav = null;
             var navCheck = go.GetComponent<UnityEngine.AI.NavMeshAgent>();
             if (navCheck != null)
@@ -2851,15 +2845,15 @@ public class MultiplayerBridge
                 nav = navCheck;
                 nav.updateRotation = false;      // we handle rotation via TargetRotY
                 nav.updateUpAxis = false;
-                nav.isStopped = true;            // don't auto-pathfind
-                nav.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance; // don't dodge anything
+                nav.isStopped = true;            // no autonomous movement — we drive via Move()
+                nav.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
                 nav.autoTraverseOffMeshLink = false;
                 nav.autoBraking = false;
-                CrashLog.Log($"[MP Render] NavMeshAgent kept alive for ground-snapping: enabled={nav.enabled} radius={nav.radius:F2} height={nav.height:F2}");
+                CrashLog.Log($"[MP Render] NavMeshAgent configured for Move(): enabled={nav.enabled} radius={nav.radius:F2} height={nav.height:F2}");
             }
             else
             {
-                CrashLog.Log("[MP Render] No NavMeshAgent on prefab — will use NavMesh.SamplePosition fallback");
+                CrashLog.Log("[MP Render] No NavMeshAgent on prefab — will use direct position fallback");
             }
 
             // Disable gameplay scripts, keep UMA + Animator + Renderer alive
@@ -2895,31 +2889,24 @@ public class MultiplayerBridge
                 try { UnityEngine.Object.Destroy(rb); } catch { }
             }
 
+            // Disable NavMeshAgent BEFORE activation so it doesn't auto-snap to the
+            // nearest NavMesh surface (which could be the roof instead of the floor).
+            if (nav != null) nav.enabled = false;
+
             // Now activate — UMA's DynamicCharacterAvatar.Start() will fire
             // and queue the character for mesh generation (gameplay scripts are disabled)
             go.SetActive(true);
 
             CrashLog.Log($"[MP Render] GO active={go.activeSelf}, pos=({go.transform.position.x:F1}, {go.transform.position.y:F1}, {go.transform.position.z:F1})");
 
-            // Initial ground snap via NavMeshAgent.Warp() — places character on NavMesh surface
-            if (nav != null && nav.isOnNavMesh)
+            // Now enable NavMeshAgent — transform.position is already at the correct
+            // network position, so the agent will find the right NavMesh surface (the
+            // floor the sender is standing on, not the roof).
+            if (nav != null)
             {
+                nav.enabled = true;
                 nav.Warp(spawnPos);
-                CrashLog.Log($"[MP Render] NavMesh Warp snap: Y={go.transform.position.y:F2} (from {spawnPos.y:F2})");
-            }
-            else if (nav != null)
-            {
-                // Agent not on NavMesh yet, try raycast fallback for ground snap
-                if (Physics.Raycast(new Vector3(spawnPos.x, spawnPos.y + 2f, spawnPos.z), Vector3.down, out RaycastHit spawnHit, 5f))
-                {
-                    var snapped = new Vector3(spawnPos.x, spawnHit.point.y, spawnPos.z);
-                    go.transform.position = snapped;
-                    CrashLog.Log($"[MP Render] Raycast ground snap: Y={spawnHit.point.y:F2} (from {spawnPos.y:F2})");
-                }
-                else
-                {
-                    CrashLog.Log($"[MP Render] WARNING: No ground found near spawn pos — character may float/sink");
-                }
+                CrashLog.Log($"[MP Render] NavMesh Warp snap: Y={go.transform.position.y:F2} (from {spawnPos.y:F2}) isOnNavMesh={nav.isOnNavMesh}");
             }
 
             // Log DynamicCharacterAvatar state
