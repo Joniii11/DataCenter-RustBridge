@@ -4,6 +4,7 @@ use dc_api::Vec3;
 
 use crate::net;
 use crate::player::{PlayerStateSnapshot, PlayerTracker};
+use crate::world::WorldSyncState;
 use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Mutex;
@@ -86,6 +87,8 @@ pub struct MultiplayerState {
     pub player_state_heartbeat_timer: f32,
 
     pub default_spawn: Option<Vec3>,
+
+    pub world_sync: WorldSyncState,
 }
 
 impl MultiplayerState {
@@ -126,6 +129,8 @@ impl MultiplayerState {
             player_state_heartbeat_timer: 0.0,
 
             default_spawn: None,
+
+            world_sync: WorldSyncState::new(),
         }
     }
 }

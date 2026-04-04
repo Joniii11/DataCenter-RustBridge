@@ -411,6 +411,61 @@ fn handle_message(api: &Api, sender: u64, target: u64, msg: Message) {
                 }
             });
         }
+
+        Message::WorldActionMsg {
+            seq,
+            action: _action,
+        } => {
+            // TODO Phase 2: Host validates action, sends ACK, broadcasts to others
+            dc_api::crash_log(&format!(
+                "[MP] Received WorldActionMsg seq={} from {} (not yet implemented)",
+                seq, sender
+            ));
+        }
+
+        Message::WorldActionAck { seq, accepted } => {
+            // TODO Phase 2: Client removes pending action; if rejected, rollback
+            dc_api::crash_log(&format!(
+                "[MP] Received WorldActionAck seq={} accepted={} (not yet implemented)",
+                seq, accepted
+            ));
+        }
+
+        Message::WorldActionBroadcast { action: _action } => {
+            // TODO Phase 2: Client executes authoritative action via FFI
+            dc_api::crash_log(&format!(
+                "[MP] Received WorldActionBroadcast from {} (not yet implemented)",
+                sender
+            ));
+        }
+
+        Message::WorldHashCheck { hashes } => {
+            // TODO Phase 4: Client compares hashes, requests resync for mismatches
+            dc_api::crash_log(&format!(
+                "[MP] Received WorldHashCheck with {} hashes (not yet implemented)",
+                hashes.len()
+            ));
+        }
+
+        Message::WorldResyncRequest { object_id } => {
+            // TODO Phase 4: Host sends full object state back
+            dc_api::crash_log(&format!(
+                "[MP] Received WorldResyncRequest for '{}' (not yet implemented)",
+                object_id
+            ));
+        }
+
+        Message::WorldResyncResponse {
+            object_id,
+            object_type,
+            data,
+        } => {
+            // TODO Phase 4: Client applies authoritative object state
+            dc_api::crash_log(&format!(
+                "[MP] Received WorldResyncResponse for '{}' type={} ({} bytes) (not yet implemented)",
+                object_id, object_type, data.len()
+            ));
+        }
     }
 }
 
@@ -450,6 +505,7 @@ pub fn do_disconnect_cleanup() -> Vec<u32> {
         s.join_state = JoinState::Idle;
         s.last_sent_player_state = crate::player::PlayerStateSnapshot::default();
         s.player_state_heartbeat_timer = 0.0;
+        s.world_sync.reset();
 
         entity_ids
     })

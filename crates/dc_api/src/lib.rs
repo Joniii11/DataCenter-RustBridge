@@ -201,6 +201,15 @@ impl ModInfo {
     }
 }
 
+/// object has ffi between rust and c#
+#[repr(C)]
+pub struct ObjectHashFFI {
+    pub object_id: [u8; 64],
+    pub object_id_len: u32,
+    pub object_type: u8,
+    pub hash: u32,
+}
+
 // function pointer table from C#, append-only
 #[repr(C)]
 pub struct GameAPI {
@@ -357,6 +366,64 @@ pub struct GameAPI {
         rot_y: f32,
         rot_z: f32,
     ),
+
+    pub world_get_object_count: extern "C" fn() -> u32,
+    pub world_get_object_hashes: extern "C" fn(buf: *mut ObjectHashFFI, max_count: u32) -> u32,
+    pub world_get_object_state:
+        extern "C" fn(id: *const u8, id_len: u32, buf: *mut u8, buf_max: u32) -> u32,
+    pub world_spawn_object: extern "C" fn(
+        object_type: u8,
+        prefab_id: i32,
+        x: f32,
+        y: f32,
+        z: f32,
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        rot_w: f32,
+        out_id: *mut u8,
+        out_max: u32,
+    ) -> i32,
+    pub world_destroy_object: extern "C" fn(id: *const u8, id_len: u32) -> i32,
+    pub world_place_in_rack: extern "C" fn(id: *const u8, id_len: u32, rack_uid: i32) -> i32,
+    pub world_remove_from_rack: extern "C" fn(id: *const u8, id_len: u32) -> i32,
+    pub world_set_power: extern "C" fn(id: *const u8, id_len: u32, is_on: u8) -> i32,
+    pub world_set_property: extern "C" fn(
+        id: *const u8,
+        id_len: u32,
+        key: *const u8,
+        key_len: u32,
+        val: *const u8,
+        val_len: u32,
+    ) -> i32,
+    pub world_connect_cable: extern "C" fn(
+        cable_id: i32,
+        start_type: u8,
+        sx: f32,
+        sy: f32,
+        sz: f32,
+        start_device: *const u8,
+        start_device_len: u32,
+        end_type: u8,
+        ex: f32,
+        ey: f32,
+        ez: f32,
+        end_device: *const u8,
+        end_device_len: u32,
+    ) -> i32,
+    pub world_disconnect_cable: extern "C" fn(cable_id: i32) -> i32,
+    pub world_pickup_object: extern "C" fn(id: *const u8, id_len: u32) -> i32,
+    pub world_drop_object: extern "C" fn(
+        id: *const u8,
+        id_len: u32,
+        x: f32,
+        y: f32,
+        z: f32,
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        rot_w: f32,
+    ) -> i32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -1225,6 +1292,206 @@ impl Api {
                 entity_id, pos.x, pos.y, pos.z, rot.x, rot.y, rot.z,
             );
         }
+    }
+
+    /// Get the total count of syncable world objects
+    pub fn world_get_object_count(&self) -> u32 {
+        if self.version() < 13 {
+            return 0;
+        }
+        (self.raw.world_get_object_count)()
+    }
+
+    /// Fill a buffer with object hashes for desync detection
+    pub fn world_get_object_hashes(&self, buf: &mut [ObjectHashFFI]) -> u32 {
+        if self.version() < 13 {
+            return 0;
+        }
+        (self.raw.world_get_object_hashes)(buf.as_mut_ptr(), buf.len() as u32)
+    }
+
+    /// Get the full serialized state of a single object
+    pub fn world_get_object_state(&self, object_id: &str, buf: &mut [u8]) -> u32 {
+        if self.version() < 13 {
+            return 0;
+        }
+        (self.raw.world_get_object_state)(
+            object_id.as_ptr(),
+            object_id.len() as u32,
+            buf.as_mut_ptr(),
+            buf.len() as u32,
+        )
+    }
+
+    /// Spawn a new object at a position. Returns the object ID string if successful
+    pub fn world_spawn_object(
+        &self,
+        object_type: u8,
+        prefab_id: i32,
+        x: f32,
+        y: f32,
+        z: f32,
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        rot_w: f32,
+    ) -> Option<String> {
+        if self.version() < 13 {
+            return None;
+        }
+        let mut out_buf = [0u8; 128];
+        let result = (self.raw.world_spawn_object)(
+            object_type,
+            prefab_id,
+            x,
+            y,
+            z,
+            rot_x,
+            rot_y,
+            rot_z,
+            rot_w,
+            out_buf.as_mut_ptr(),
+            out_buf.len() as u32,
+        );
+        if result > 0 {
+            let len = out_buf
+                .iter()
+                .position(|&b| b == 0)
+                .unwrap_or(out_buf.len());
+            String::from_utf8(out_buf[..len].to_vec()).ok()
+        } else {
+            None
+        }
+    }
+
+    /// Permanently destroy/remove an object from the world
+    pub fn world_destroy_object(&self, object_id: &str) -> bool {
+        if self.version() < 13 {
+            return false;
+        }
+        (self.raw.world_destroy_object)(object_id.as_ptr(), object_id.len() as u32) == 1
+    }
+
+    /// Install an object into a rack slot
+    pub fn world_place_in_rack(&self, object_id: &str, rack_uid: i32) -> bool {
+        if self.version() < 13 {
+            return false;
+        }
+        (self.raw.world_place_in_rack)(object_id.as_ptr(), object_id.len() as u32, rack_uid) == 1
+    }
+
+    /// Remove an object from its rack slot
+    pub fn world_remove_from_rack(&self, object_id: &str) -> bool {
+        if self.version() < 13 {
+            return false;
+        }
+        (self.raw.world_remove_from_rack)(object_id.as_ptr(), object_id.len() as u32) == 1
+    }
+
+    /// Set power state on a server/switch
+    pub fn world_set_power(&self, object_id: &str, is_on: bool) -> bool {
+        if self.version() < 13 {
+            return false;
+        }
+        (self.raw.world_set_power)(
+            object_id.as_ptr(),
+            object_id.len() as u32,
+            if is_on { 1 } else { 0 },
+        ) == 1
+    }
+
+    /// Set a named property on an object
+    pub fn world_set_property(&self, object_id: &str, key: &str, value: &str) -> bool {
+        if self.version() < 13 {
+            return false;
+        }
+        (self.raw.world_set_property)(
+            object_id.as_ptr(),
+            object_id.len() as u32,
+            key.as_ptr(),
+            key.len() as u32,
+            value.as_ptr(),
+            value.len() as u32,
+        ) == 1
+    }
+
+    /// Connect a cable between two endpoints
+    pub fn world_connect_cable(
+        &self,
+        cable_id: i32,
+        start_type: u8,
+        sx: f32,
+        sy: f32,
+        sz: f32,
+        start_device_id: &str,
+        end_type: u8,
+        ex: f32,
+        ey: f32,
+        ez: f32,
+        end_device_id: &str,
+    ) -> bool {
+        if self.version() < 13 {
+            return false;
+        }
+        (self.raw.world_connect_cable)(
+            cable_id,
+            start_type,
+            sx,
+            sy,
+            sz,
+            start_device_id.as_ptr(),
+            start_device_id.len() as u32,
+            end_type,
+            ex,
+            ey,
+            ez,
+            end_device_id.as_ptr(),
+            end_device_id.len() as u32,
+        ) == 1
+    }
+
+    /// Disconnect/remove a cable
+    pub fn world_disconnect_cable(&self, cable_id: i32) -> bool {
+        if self.version() < 13 {
+            return false;
+        }
+        (self.raw.world_disconnect_cable)(cable_id) == 1
+    }
+
+    /// Remove an object from the world
+    pub fn world_pickup_object(&self, object_id: &str) -> bool {
+        if self.version() < 13 {
+            return false;
+        }
+        (self.raw.world_pickup_object)(object_id.as_ptr(), object_id.len() as u32) == 1
+    }
+
+    /// Place an object back into the world at a position
+    pub fn world_drop_object(
+        &self,
+        object_id: &str,
+        x: f32,
+        y: f32,
+        z: f32,
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        rot_w: f32,
+    ) -> bool {
+        if self.version() < 13 {
+            return false;
+        }
+        (self.raw.world_drop_object)(
+            object_id.as_ptr(),
+            object_id.len() as u32,
+            x,
+            y,
+            z,
+            rot_x,
+            rot_y,
+            rot_z,
+            rot_w,
+        ) == 1
     }
 }
 

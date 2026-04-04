@@ -24,7 +24,7 @@ Reference this file in any thread to continue development.
 ```
 Game (Data Center — Unity 6, IL2CPP, SINGLEPLAYER)
   └── MelonLoader v0.7.2
-        └── DataCenterModLoader.dll (C# MelonMod)
+        └── RustBridge.dll (C# MelonMod)
               ├── Core.cs             — Entry point, loads Rust mods
               ├── FFIBridge.cs        — Loads native DLLs from Mods/native/
               ├── GameAPI.cs          — Function pointer table (v5, append-only)

@@ -8,6 +8,7 @@ mod protocol;
 mod save;
 mod state;
 mod tick;
+mod world;
 
 use dc_api::*;
 

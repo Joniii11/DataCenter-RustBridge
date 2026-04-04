@@ -302,6 +302,11 @@ public class MultiplayerBridge
                 if (TryInitialize())
                 {
                     CrashLog.Log("[MP Bridge] dc_multiplayer.dll detected and initialized.");
+
+                    if (_currentSceneName == "MainMenu" && _menuButton == null)
+                    {
+                        InjectMainMenuButton();
+                    }
                 }
                 else
                 {
@@ -1828,31 +1833,45 @@ public class MultiplayerBridge
     {
         try
         {
-            // Guard: don't inject twice if the scene reloads
+            if (!_initialized) return;
             if (_menuButton != null) return;
 
-            // Find the "Settings" text among all TextMeshProUGUI components (including inactive)
-            var allTexts = Resources.FindObjectsOfTypeAll<TextMeshProUGUI>();
+            Transform templateButton = ModConfigSystem.SettingsButtonTransform;
 
-            Transform templateButton = null;
 
-            foreach (var tmp in allTexts)
+            if (templateButton == null)
             {
-                if (tmp.text == "Settings")
+                var allButtons = Resources.FindObjectsOfTypeAll<ButtonExtended>();
+                if (allButtons != null)
                 {
-                    // text.transform.parent = the Button GameObject
-                    templateButton = tmp.transform.parent;
-                    break;
+                    foreach (var btn in allButtons)
+                    {
+                        try
+                        {
+                            var onClick = btn.onClick;
+                            if (onClick == null) continue;
+                            int count = onClick.GetPersistentEventCount();
+                            for (int i = 0; i < count; i++)
+                            {
+                                if (onClick.GetPersistentMethodName(i) == "Settings")
+                                {
+                                    templateButton = btn.transform;
+                                    break;
+                                }
+                            }
+                            if (templateButton != null) break;
+                        }
+                        catch { }
+                    }
                 }
             }
 
             if (templateButton == null)
             {
-                _logger.Warning("[MP Bridge] Could not find 'Settings' button for menu injection.");
+                _logger.Warning("[MP Bridge] Could not find Settings button (not cached by ModConfigSystem and no persistent 'Settings' listener found).");
                 return;
             }
 
-            // The button GO's parent is the panel/layout that holds all menu buttons
             var buttonPanel = templateButton.parent;
             int siblingIndex = templateButton.GetSiblingIndex();
 

@@ -5,7 +5,7 @@
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
-    <AssemblyName>DataCenterModLoader</AssemblyName>
+    <AssemblyName>RustBridge</AssemblyName>
     <RootNamespace>DataCenterModLoader</RootNamespace>
     <Description>MelonLoader mod that provides a Rust FFI bridge for Data Center</Description>
     <!-- Suppress warnings about version conflicts with Il2Cpp assemblies -->

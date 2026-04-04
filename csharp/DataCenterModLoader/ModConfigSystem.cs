@@ -76,6 +76,8 @@ public static class ModConfigSystem
     private static bool _showSettingsChoice;
     private static Il2Cpp.MainMenu _mainMenuRef;
 
+    public static Transform SettingsButtonTransform { get; private set; }
+
     private static bool _pendingSettingsIntercept;
     private static float _settingsInterceptTimer;
     private static bool _deferredOpenGameSettings;
@@ -359,26 +361,41 @@ public static class ModConfigSystem
     {
         try
         {
-            // Find the "Settings" label among all TMP texts (same approach as MultiplayerBridge)
-            var allTexts = Resources.FindObjectsOfTypeAll<Il2CppTMPro.TextMeshProUGUI>();
+
+            var allButtons = Resources.FindObjectsOfTypeAll<ButtonExtended>();
             Transform settingsBtn = null;
 
-            foreach (var tmp in allTexts)
+            if (allButtons != null)
             {
-                if (tmp.text == "Settings")
+                foreach (var btn in allButtons)
                 {
-                    settingsBtn = tmp.transform.parent;
-                    break;
+                    try
+                    {
+                        var onClick = btn.onClick;
+                        if (onClick == null) continue;
+                        int count = onClick.GetPersistentEventCount();
+                        for (int i = 0; i < count; i++)
+                        {
+                            if (onClick.GetPersistentMethodName(i) == "Settings")
+                            {
+                                settingsBtn = btn.transform;
+                                break;
+                            }
+                        }
+                        if (settingsBtn != null) break;
+                    }
+                    catch { }
                 }
             }
 
             if (settingsBtn == null)
             {
-                CrashLog.Log("ModConfig: could not find 'Settings' button for interception.");
+                CrashLog.Log("ModConfig: could not find Settings button (no ButtonExtended with persistent 'Settings' listener).");
                 return;
             }
 
-            // Capture the MainMenu component so we can call Settings() later
+            SettingsButtonTransform = settingsBtn;
+
             var menus = Resources.FindObjectsOfTypeAll<Il2Cpp.MainMenu>();
             if (menus != null && menus.Count > 0)
             {

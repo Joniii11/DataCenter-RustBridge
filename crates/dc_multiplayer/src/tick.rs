@@ -274,33 +274,19 @@ fn roof_safety_check(api: &Api, dt: f32) {
     }
 }
 
-/// Returns (local_position, local_rotation_euler) for a carry visual parented to entity ROOT.
-/// Coordinates: Y = height above feet, Z = forward (character facing), X = right.
-/// These are approximate positions to make items appear held at chest/waist height.
 fn carry_offsets(object_type: u8, _has_hand_bone: bool) -> (Vec3, Vec3) {
-    // All offsets are relative to entity root (feet).
-    // Y = height above ground, Z = forward from center, X = right from center.
-    // Rotation is Euler degrees applied to the carry visual's localRotation.
+    use crate::protocol::object_types;
+
     match object_type {
-        // Server1U — small flat 1U server, held at chest height
-        1 => (Vec3::new(0.0, 1.3, 0.35), Vec3::new(0.0, 0.0, 0.0)),
-        // Server2U — medium 2U server
-        2 => (Vec3::new(0.0, 1.4, 0.35), Vec3::new(0.0, 0.0, 0.0)),
-        // Server3U — larger 3U server, held slightly lower
-        3 => (Vec3::new(0.0, 1.35, 0.35), Vec3::new(0.0, 0.0, 0.0)),
-        // Switch — similar to 1U, flat network switch
-        4 => (Vec3::new(0.0, 1.3, 0.35), Vec3::new(0.0, 0.0, 0.0)),
-        // Rack — large packed rack box, held lower with both arms
-        5 => (Vec3::new(0.0, 1.3, 0.45), Vec3::new(0.0, 0.0, 0.0)),
-        // CableSpinner — small handheld item
-        6 => (Vec3::new(0.15, 1.1, 0.30), Vec3::new(0.0, 0.0, 0.0)),
-        // PatchPanel — flat panel similar to switch
-        7 => (Vec3::new(0.0, 1.3, 0.05), Vec3::new(0.0, 0.0, 0.0)),
-        // SFPModule — tiny module held in one hand
-        8 => (Vec3::new(0.15, 1.3, 0.4), Vec3::new(0.0, 0.0, 0.0)),
-        // SFPBox — small box
-        9 => (Vec3::new(0.10, 1.3, 0.30), Vec3::new(0.0, 0.0, 0.0)),
-        // Unknown — generic position at chest
+        object_types::SERVER_1U => (Vec3::new(0.0, 1.3, 0.35), Vec3::new(0.0, 0.0, 0.0)),
+        object_types::SERVER_7U => (Vec3::new(0.0, 1.4, 0.35), Vec3::new(0.0, 0.0, 0.0)),
+        object_types::SERVER_3U => (Vec3::new(0.0, 1.35, 0.35), Vec3::new(0.0, 0.0, 0.0)),
+        object_types::SWITCH => (Vec3::new(0.0, 1.3, 0.35), Vec3::new(0.0, 0.0, 0.0)),
+        object_types::RACK => (Vec3::new(0.0, 1.3, 0.45), Vec3::new(0.0, 0.0, 0.0)),
+        object_types::CABLE_SPINNER => (Vec3::new(0.15, 1.1, 0.30), Vec3::new(0.0, 0.0, 0.0)),
+        object_types::PATCH_PANEL => (Vec3::new(0.0, 1.3, 0.05), Vec3::new(0.0, 0.0, 0.0)),
+        object_types::SFP_MODULE => (Vec3::new(0.15, 1.3, 0.4), Vec3::new(0.0, 0.0, 0.0)),
+        object_types::SFP_BOX => (Vec3::new(0.10, 1.3, 0.30), Vec3::new(0.0, 0.0, 0.0)),
         _ => (Vec3::new(0.0, 0.95, 0.35), Vec3::new(0.0, 0.0, 0.0)),
     }
 }

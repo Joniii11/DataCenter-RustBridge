@@ -141,7 +141,7 @@ Rust mods register config entries through the FFI bridge automatically via the `
 ```
 Game (Data Center — Unity 6, IL2CPP)
   └── MelonLoader v0.7.2
-        └── DataCenterModLoader.dll (C# MelonMod)
+        └── RustBridge.dll (C# MelonMod)
               ├── Harmony patches on game methods → Event System
               ├── GameAPI function pointer table  → Polling API (v1/v2)
               └── FFI Bridge

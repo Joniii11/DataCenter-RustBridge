@@ -454,6 +454,7 @@ function Build-Projects {
     }
 
     $csprojPath = Join-Path $ProjectRoot "csharp\DataCenterModLoader\DataCenterModLoader.csproj"
+    # Note: AssemblyName in csproj is "RustBridge", output DLL is RustBridge.dll
     if (-not (Test-Path $csprojPath)) {
         Write-Warn ("C# project not found at: " + $csprojPath)
         return $success
@@ -507,14 +508,14 @@ function Deploy-ModFiles {
     $deployed = 0
 
     # Copy C# MelonLoader plugin
-    $csharpDll = Join-Path $ProjectRoot "csharp\DataCenterModLoader\bin\Release\net6.0\DataCenterModLoader.dll"
+    $csharpDll = Join-Path $ProjectRoot "csharp\DataCenterModLoader\bin\Release\net6.0\RustBridge.dll"
     if (Test-Path $csharpDll) {
         Copy-Item $csharpDll -Destination $modsDir -Force
-        Write-Ok "  Mods/DataCenterModLoader.dll"
+        Write-Ok "  Mods/RustBridge.dll"
         $deployed++
     }
     else {
-        Write-Warn "  DataCenterModLoader.dll not found (C# not built yet)."
+        Write-Warn "  RustBridge.dll not found (C# not built yet)."
     }
 
     # Copy Rust mod DLLs from target/release that match dc_* pattern
@@ -615,7 +616,7 @@ else {
     Write-Info "MelonLoader:     Not found"
 }
 
-$csharpCheckPath = Join-Path $resolvedGamePath "Mods\DataCenterModLoader.dll"
+$csharpCheckPath = Join-Path $resolvedGamePath "Mods\RustBridge.dll"
 if (Test-Path $csharpCheckPath) {
     Write-Info "C# Plugin:       Deployed"
 }
