@@ -6,8 +6,8 @@ members = [
     "crates/dc_multiplayer",
     "crates/dc_netwatch",
     "crates/dc_relay_proto",
-    "crates/dc_relay",
 ]
+#   cargo build -p dc_relay --manifest-path crates/dc_relay/Cargo.toml
 resolver = "2"
 
 [workspace.package]
