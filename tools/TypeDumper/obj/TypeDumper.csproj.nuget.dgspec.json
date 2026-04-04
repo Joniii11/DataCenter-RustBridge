@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\rust\\data center modloader\\tools\\typedumper\\TypeDumper.csproj": {}
+    "E:\\rust\\data center modloader\\tools\\TypeDumper\\TypeDumper.csproj": {}
   },
   "projects": {
-    "E:\\rust\\data center modloader\\tools\\typedumper\\TypeDumper.csproj": {
+    "E:\\rust\\data center modloader\\tools\\TypeDumper\\TypeDumper.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\rust\\data center modloader\\tools\\typedumper\\TypeDumper.csproj",
+        "projectUniqueName": "E:\\rust\\data center modloader\\tools\\TypeDumper\\TypeDumper.csproj",
         "projectName": "TypeDumper",
-        "projectPath": "E:\\rust\\data center modloader\\tools\\typedumper\\TypeDumper.csproj",
+        "projectPath": "E:\\rust\\data center modloader\\tools\\TypeDumper\\TypeDumper.csproj",
         "packagesPath": "C:\\Users\\Jonas\\.nuget\\packages\\",
-        "outputPath": "E:\\rust\\data center modloader\\tools\\typedumper\\obj\\",
+        "outputPath": "E:\\rust\\data center modloader\\tools\\TypeDumper\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Jonas\\AppData\\Roaming\\NuGet\\NuGet.Config",
