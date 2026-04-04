@@ -8,6 +8,10 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Il2Cpp;
 using Il2CppTMPro;
+using Il2CppUMA;
+using Il2CppUMA.CharacterSystem;
+using UnityEngine.AI;
+
 
 namespace DataCenterModLoader;
 
@@ -77,6 +81,18 @@ public class MultiplayerBridge
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void MpSkipNextSaveRequestDelegate();
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void MpSetLocalSaveHashDelegate(IntPtr data, uint len);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate float MpGetSaveTransferProgressDelegate();
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint MpGetSaveTransferTotalBytesDelegate();
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint MpIsSaveUpToDateDelegate();
+
     // ═══════════════════════════════════════════════════════════════════════
     //  Structs & Inner Types
     // ═══════════════════════════════════════════════════════════════════════
@@ -98,6 +114,18 @@ public class MultiplayerBridge
         public ulong SteamId;
         public Vector3 TargetPos;
         public float TargetRotY;
+        public Animator Animator;
+        public Vector3 LastPos;
+        public int SpeedParamHash;
+        public int WalkingParamHash;
+        public bool HasSpeedParam;
+        public bool HasWalkingParam;
+        public bool AnimParamsLogged;
+        public UnityEngine.AI.NavMeshAgent NavAgent;
+        // UMA deferred mesh generation: prefab was instantiated with UMA scripts
+        // left alive so the mesh can be built. Once renderers appear we strip scripts.
+        public bool WaitingForUMA;
+        public float UMAWaitStart;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -121,7 +149,14 @@ public class MultiplayerBridge
     private MpGetSaveDataDelegate _getSaveData;
     private MpSaveLoadCompleteDelegate _saveLoadComplete;
     private MpSkipNextSaveRequestDelegate _skipNextSaveRequest;
+    private MpSetLocalSaveHashDelegate _setLocalSaveHash;
+    private MpGetSaveTransferProgressDelegate _getSaveTransferProgress;
+    private MpGetSaveTransferTotalBytesDelegate _getSaveTransferTotalBytes;
+    private MpIsSaveUpToDateDelegate _isSaveUpToDate;
     private readonly Dictionary<ulong, RemotePlayerGO> _remotePlayers = new();
+    private bool _gameTextRefLogged = false;
+    private float _refCanvasScale = 0f;
+    private float _refFontSize = 0f;
     private bool _initialized = false;
     private float _initTimer = 0f;
     private bool _isHosting = false;
@@ -176,6 +211,8 @@ public class MultiplayerBridge
     private bool _stylesInitialized;
     private GUIStyle _windowStyle, _buttonStyle, _labelStyle, _textFieldStyle, _titleStyle, _statusStyle, _stopHostButtonStyle, _fieldFocusedStyle;
     private Texture2D _windowBg, _buttonBg, _buttonHoverBg, _fieldBg, _stopBtnBg, _stopBtnHoverBg, _fieldActiveBg;
+    private Texture2D _overlayBg;
+    private GUIStyle _overlayTextStyle;
 
     // Custom text field state (GUI.TextField doesn't work with new Input System)
     private bool _roomCodeFieldFocused;
@@ -253,6 +290,26 @@ public class MultiplayerBridge
         var skipNextSaveRequestPtr = GetProcAddress(handle, "mp_skip_next_save_request");
         _skipNextSaveRequest = skipNextSaveRequestPtr != IntPtr.Zero
             ? Marshal.GetDelegateForFunctionPointer<MpSkipNextSaveRequestDelegate>(skipNextSaveRequestPtr)
+            : null;
+
+        var setLocalSaveHashPtr = GetProcAddress(handle, "mp_set_local_save_hash");
+        _setLocalSaveHash = setLocalSaveHashPtr != IntPtr.Zero
+            ? Marshal.GetDelegateForFunctionPointer<MpSetLocalSaveHashDelegate>(setLocalSaveHashPtr)
+            : null;
+
+        var getSaveTransferProgressPtr = GetProcAddress(handle, "mp_get_save_transfer_progress");
+        _getSaveTransferProgress = getSaveTransferProgressPtr != IntPtr.Zero
+            ? Marshal.GetDelegateForFunctionPointer<MpGetSaveTransferProgressDelegate>(getSaveTransferProgressPtr)
+            : null;
+
+        var getSaveTransferTotalBytesPtr = GetProcAddress(handle, "mp_get_save_transfer_total_bytes");
+        _getSaveTransferTotalBytes = getSaveTransferTotalBytesPtr != IntPtr.Zero
+            ? Marshal.GetDelegateForFunctionPointer<MpGetSaveTransferTotalBytesDelegate>(getSaveTransferTotalBytesPtr)
+            : null;
+
+        var isSaveUpToDatePtr = GetProcAddress(handle, "mp_is_save_up_to_date");
+        _isSaveUpToDate = isSaveUpToDatePtr != IntPtr.Zero
+            ? Marshal.GetDelegateForFunctionPointer<MpIsSaveUpToDateDelegate>(isSaveUpToDatePtr)
             : null;
 
         _initialized = true;
@@ -442,6 +499,38 @@ public class MultiplayerBridge
                                 CrashLog.Log("[MP Join] Reconnect complete — state → Loaded");
                                 _joinState = ClientJoinState.Loaded;
                                 _skipSaveOnReconnect = false;
+                            }
+                            break;
+                        }
+                        // Check if save versioning determined we already have the current save
+                        if (_isSaveUpToDate != null && _isSaveUpToDate() != 0)
+                        {
+                            CrashLog.Log("[MP Join] Save is up to date — no download needed!");
+                            try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField("Multiplayer: Save is up to date!"); } catch { }
+
+                            // We still need to load the save from disk
+                            string savePath = DiscoverSaveFile();
+                            if (savePath != null)
+                            {
+                                _pendingSaveName = Path.GetFileNameWithoutExtension(savePath);
+                                _pendingSaveFullPath = savePath;
+
+                                if (IsInMainMenu())
+                                {
+                                    CrashLog.Log("[MP Join] In MainMenu with up-to-date save — initiating scene transition");
+                                    InitiateSceneTransition();
+                                }
+                                else
+                                {
+                                    CrashLog.Log("[MP Join] In-game with up-to-date save — transitioning to Loaded");
+                                    _joinState = ClientJoinState.Loaded;
+                                    _logger.Msg("[MP Join] Save up to date, already in-game!");
+                                }
+                            }
+                            else
+                            {
+                                CrashLog.Log("[MP Join] Save up to date but couldn't find local file — falling back to download");
+                                // Don't break — fall through to normal download path
                             }
                             break;
                         }
@@ -784,6 +873,38 @@ public class MultiplayerBridge
         // Reset join state for a fresh attempt
         ResetJoinState();
 
+        // Compute local save hash for save versioning
+        if (_setLocalSaveHash != null)
+        {
+            try
+            {
+                string savePath = DiscoverSaveFile();
+                if (savePath != null && File.Exists(savePath))
+                {
+                    byte[] localSave = File.ReadAllBytes(savePath);
+                    IntPtr hashPtr = Marshal.AllocHGlobal(localSave.Length);
+                    try
+                    {
+                        Marshal.Copy(localSave, 0, hashPtr, localSave.Length);
+                        _setLocalSaveHash(hashPtr, (uint)localSave.Length);
+                        CrashLog.Log($"[MP Join] Local save hash computed from {savePath} ({localSave.Length} bytes)");
+                    }
+                    finally
+                    {
+                        Marshal.FreeHGlobal(hashPtr);
+                    }
+                }
+                else
+                {
+                    CrashLog.Log("[MP Join] No local save found — hash not set");
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[MP Join] Error computing local save hash: {ex.Message}");
+            }
+        }
+
         byte[] codeBytes = System.Text.Encoding.UTF8.GetBytes(code);
         IntPtr codePtr = Marshal.AllocHGlobal(codeBytes.Length);
         try
@@ -798,6 +919,7 @@ public class MultiplayerBridge
                 _logger.Msg($"[MP Bridge] Joining room {code}...");
                 CrashLog.Log($"[MP Join] State → WaitingForSave");
                 try { var ui = StaticUIElements.instance; if (ui != null) ui.AddMeesageInField($"Multiplayer: Joining room {code}..."); } catch { }
+                HideMultiplayerPanel();
             }
             else
             {
@@ -826,6 +948,10 @@ public class MultiplayerBridge
         _discoveredSavePath = null;
         _cachedSaveData = null;
         _cachedSaveAge = 0f;
+
+        // Clean up MP save files and restore originals
+        CleanupMpSaveFiles();
+
         _logger.Msg("[MP Bridge] Disconnected.");
 
         try
@@ -852,6 +978,9 @@ public class MultiplayerBridge
         _discoveredSavePath = null;
         _cachedSaveData = null;
         _cachedSaveAge = 0f;
+
+        // Clean up MP save files (host might have _mp_temp leftovers)
+        CleanupMpSaveFiles();
         _logger.Msg("[MP Bridge] Stopped hosting.");
 
         try
@@ -984,6 +1113,60 @@ public class MultiplayerBridge
         {
             CrashLog.Log($"[MP Save] Could not delete temp file: {ex.Message}");
         }
+    }
+
+    /// Cleans up multiplayer save artifacts: _mp_sync files, .mp_backup files.
+    /// Restores original saves from backups so the player's own world is intact after disconnect.
+    private void CleanupMpSaveFiles()
+    {
+        string saveDir = DiscoverSaveDirectory();
+        if (saveDir == null)
+        {
+            CrashLog.Log("[MP Cleanup] No save directory found — skipping cleanup");
+            return;
+        }
+
+        int cleaned = 0;
+
+        try
+        {
+            // Delete _mp_sync.* and _mp_temp.* files
+            foreach (var file in Directory.GetFiles(saveDir))
+            {
+                string name = Path.GetFileNameWithoutExtension(file).ToLower();
+                if (name == "_mp_sync" || name == "_mp_temp")
+                {
+                    TryDeleteFile(file);
+                    cleaned++;
+                }
+            }
+
+            // Restore .mp_backup files → undo the overwrite from WriteSaveToDisk
+            foreach (var backupFile in Directory.GetFiles(saveDir, "*.mp_backup"))
+            {
+                string originalPath = backupFile.Substring(0, backupFile.Length - ".mp_backup".Length);
+                try
+                {
+                    File.Copy(backupFile, originalPath, true);
+                    File.Delete(backupFile);
+                    CrashLog.Log($"[MP Cleanup] Restored original save: {Path.GetFileName(originalPath)}");
+                    cleaned++;
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[MP Cleanup] Failed to restore {Path.GetFileName(backupFile)}: {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP Cleanup] Error during cleanup: {ex.Message}");
+        }
+
+        if (cleaned > 0)
+            CrashLog.Log($"[MP Cleanup] Cleaned up {cleaned} multiplayer save file(s)");
+        else
+            CrashLog.Log("[MP Cleanup] No multiplayer save files to clean up");
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1849,6 +2032,12 @@ public class MultiplayerBridge
     /// </summary>
     public void DrawGUI()
     {
+        // Show join progress overlay even when panel is hidden
+        if (_joinState != ClientJoinState.Idle && _joinState != ClientJoinState.Loaded)
+        {
+            DrawJoinOverlay();
+        }
+
         if (!_showPanel) return;
 
         if (!_stylesInitialized)
@@ -2077,6 +2266,52 @@ public class MultiplayerBridge
             HideMultiplayerPanel();
     }
 
+    private void DrawJoinOverlay()
+    {
+        if (!_stylesInitialized) InitStyles();
+
+        // Semi-transparent dark background strip
+        float stripH = 60f;
+        float stripY = Screen.height * 0.4f;
+
+        if (_overlayBg == null)
+            _overlayBg = MakeTex(1, 1, new Color(0f, 0f, 0f, 0.75f));
+
+        GUI.DrawTexture(new Rect(0, stripY, Screen.width, stripH), _overlayBg);
+
+        // Build progress text
+        string text;
+        float progress = _getSaveTransferProgress != null ? _getSaveTransferProgress() : -1f;
+        uint totalBytes = _getSaveTransferTotalBytes != null ? _getSaveTransferTotalBytes() : 0;
+
+        if (_joinState == ClientJoinState.WaitingForSave)
+        {
+            if (progress >= 0f && totalBytes >= 1_000_000)
+            {
+                int pct = (int)(progress * 100f);
+                text = $"Loading Game {pct}%";
+            }
+            else if (progress >= 0f)
+            {
+                text = "Loading Game...";
+            }
+            else
+            {
+                text = "Connecting...";
+            }
+        }
+        else if (_joinState == ClientJoinState.SaveReceived)
+        {
+            text = "Processing save...";
+        }
+        else
+        {
+            text = "Loading Game...";
+        }
+
+        GUI.Label(new Rect(0, stripY, Screen.width, stripH), text, _overlayTextStyle);
+    }
+
     /// <summary>
     /// Draws a labeled section separator line: ─── LABEL ───
     /// </summary>
@@ -2222,6 +2457,13 @@ public class MultiplayerBridge
         _textFieldStyle.padding.top = 6; _textFieldStyle.padding.bottom = 6;
         _textFieldStyle.clipping = TextClipping.Clip;
 
+        _overlayTextStyle = new GUIStyle();
+        _overlayTextStyle.font = defaultFont;
+        _overlayTextStyle.fontSize = 24;
+        _overlayTextStyle.fontStyle = FontStyle.Bold;
+        _overlayTextStyle.alignment = TextAnchor.MiddleCenter;
+        _overlayTextStyle.normal.textColor = Color.white;
+
         _stylesInitialized = true;
     }
 
@@ -2240,8 +2482,96 @@ public class MultiplayerBridge
     //  Remote Player Rendering
     // ═══════════════════════════════════════════════════════════════════════
 
+    private void InspectGameWorldText()
+    {
+        if (_gameTextRefLogged) return;
+        _gameTextRefLogged = true;
+
+        try
+        {
+            // Inspect Server canvas (the small screen on each server in racks)
+            var servers = Resources.FindObjectsOfTypeAll<Server>();
+            if (servers != null && servers.Count > 0)
+            {
+                foreach (var srv in servers)
+                {
+                    if (srv == null || srv.canvas == null) continue;
+                    var canvasComp = srv.canvas.GetComponent<Canvas>();
+                    if (canvasComp == null) continue;
+
+                    var ct = srv.canvas.transform;
+                    var cRect = srv.canvas.GetComponent<RectTransform>();
+                    CrashLog.Log($"[MP TextRef] Server canvas: renderMode={canvasComp.renderMode} localScale=({ct.localScale.x}, {ct.localScale.y}, {ct.localScale.z})");
+                    if (cRect != null)
+                        CrashLog.Log($"[MP TextRef] Server canvas rect: sizeDelta=({cRect.sizeDelta.x}, {cRect.sizeDelta.y})");
+
+                    // Log the lossyScale (world scale) for absolute reference
+                    CrashLog.Log($"[MP TextRef] Server canvas lossyScale=({ct.lossyScale.x}, {ct.lossyScale.y}, {ct.lossyScale.z})");
+
+                    // Cache the scale for our nametag reference
+                    if (_refCanvasScale == 0f)
+                        _refCanvasScale = ct.lossyScale.x;
+
+                    if (srv.txtServerScreen != null)
+                    {
+                        CrashLog.Log($"[MP TextRef] Server txtServerScreen: fontSize={srv.txtServerScreen.fontSize} text=\"{srv.txtServerScreen.text}\"");
+                        var tRect = srv.txtServerScreen.GetComponent<RectTransform>();
+                        if (tRect != null)
+                            CrashLog.Log($"[MP TextRef] Server txtServerScreen rect: sizeDelta=({tRect.sizeDelta.x}, {tRect.sizeDelta.y})");
+                        if (_refFontSize == 0f)
+                            _refFontSize = srv.txtServerScreen.fontSize;
+                    }
+                    if (srv.txtIP != null)
+                    {
+                        CrashLog.Log($"[MP TextRef] Server txtIP: fontSize={srv.txtIP.fontSize}");
+                    }
+
+                    // One server is enough
+                    break;
+                }
+            }
+            else
+            {
+                CrashLog.Log("[MP TextRef] No Server objects found in scene");
+            }
+
+            // Also inspect NetworkSwitch canvas
+            var switches = Resources.FindObjectsOfTypeAll<NetworkSwitch>();
+            if (switches != null && switches.Count > 0)
+            {
+                foreach (var sw in switches)
+                {
+                    if (sw == null || sw.canvas == null) continue;
+                    var canvasComp = sw.canvas.GetComponent<Canvas>();
+                    if (canvasComp == null) continue;
+
+                    var ct = sw.canvas.transform;
+                    CrashLog.Log($"[MP TextRef] Switch canvas: renderMode={canvasComp.renderMode} localScale=({ct.localScale.x}, {ct.localScale.y}, {ct.localScale.z}) lossyScale=({ct.lossyScale.x}, {ct.lossyScale.y}, {ct.lossyScale.z})");
+
+                    if (sw.txtScreen != null)
+                    {
+                        CrashLog.Log($"[MP TextRef] Switch txtScreen: fontSize={sw.txtScreen.fontSize}");
+                        var tRect = sw.txtScreen.GetComponent<RectTransform>();
+                        if (tRect != null)
+                            CrashLog.Log($"[MP TextRef] Switch txtScreen rect: sizeDelta=({tRect.sizeDelta.x}, {tRect.sizeDelta.y})");
+                    }
+                    break;
+                }
+            }
+
+            CrashLog.Log($"[MP TextRef] Cached reference: canvasScale={_refCanvasScale} fontSize={_refFontSize}");
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[MP TextRef] Inspection failed: {ex.Message}");
+        }
+    }
+
     private void UpdateRemotePlayers()
     {
+        // Inspect game text on first call to get reference sizes
+        InspectGameWorldText();
+
         int structSize = Marshal.SizeOf<RemotePlayerData>();
         IntPtr buf = Marshal.AllocHGlobal(structSize * MAX_REMOTE_PLAYERS);
 
@@ -2258,28 +2588,200 @@ public class MultiplayerBridge
 
                 activeIds.Add(data.SteamId);
 
+                // Skip spawn if position is still 0,0,0 (no position update received yet)
+                bool hasValidPos = data.X != 0f || data.Y != 0f || data.Z != 0f;
+
                 if (!_remotePlayers.TryGetValue(data.SteamId, out var remote))
                 {
+                    if (!hasValidPos) continue; // wait for first real position
+
                     remote = SpawnRemotePlayer(data);
                     if (remote != null)
                         _remotePlayers[data.SteamId] = remote;
                 }
 
-                if (remote != null)
-                {
-                    remote.TargetPos = new Vector3(data.X, data.Y, data.Z);
-                    remote.TargetRotY = data.RotY;
+                if (remote == null) continue;
 
-                    // Smooth interpolation towards target position/rotation
-                    if (remote.GO != null)
+                // Check if Unity destroyed our GO (Technician.Start self-destruct etc.)
+                if (remote.GO == null)
+                {
+                    if (!remote.AnimParamsLogged)
                     {
-                        remote.GO.transform.position = Vector3.Lerp(
-                            remote.GO.transform.position, remote.TargetPos, Time.deltaTime * 10f);
-                        var euler = remote.GO.transform.eulerAngles;
-                        euler.y = Mathf.LerpAngle(euler.y, remote.TargetRotY, Time.deltaTime * 10f);
-                        remote.GO.transform.eulerAngles = euler;
+                        CrashLog.Log($"[MP Render] GO for {data.SteamId} was destroyed by Unity! Re-spawning via UMA.");
+                        remote.AnimParamsLogged = true; // reuse flag to avoid log spam
+                    }
+                    _remotePlayers.Remove(data.SteamId);
+                    // Re-spawn as a fresh UMA character (falls back to capsule only if no prefabs)
+                    if (hasValidPos)
+                    {
+                        var respawned = SpawnRemotePlayer(data);
+                        if (respawned != null)
+                            _remotePlayers[data.SteamId] = respawned;
+                    }
+                    continue;
+                }
+
+                // ── UMA deferred mesh generation: check if mesh has appeared ──
+                if (remote.WaitingForUMA)
+                {
+                    var umaData = remote.GO.GetComponentInChildren<UMAData>(true);
+                    bool meshReady = false;
+                    int umaRendererCount = 0;
+
+                    // ONLY trust isOfficiallyCreated — the prefab may have empty
+                    // SkinnedMeshRenderer components that haven't been populated by
+                    // UMA yet.  Do NOT use GetComponentsInChildren<SkinnedMeshRenderer>
+                    // as a fallback — that caused a false-positive on frame 1 which
+                    // stripped all UMA scripts before DCA.Start() could fire.
+                    if (umaData != null && umaData.isOfficiallyCreated)
+                    {
+                        try
+                        {
+                            var rends = umaData.GetRenderers();
+                            if (rends != null)
+                            {
+                                for (int r = 0; r < rends.Length; r++)
+                                {
+                                    var smr = rends[r];
+                                    if (smr != null && smr.sharedMesh != null)
+                                    {
+                                        umaRendererCount++;
+                                        CrashLog.Log($"[MP Render]   renderer[{r}] '{smr.gameObject.name}' mesh='{smr.sharedMesh.name}' verts={smr.sharedMesh.vertexCount}");
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            CrashLog.Log($"[MP Render] UMAData.GetRenderers() error: {ex.Message}");
+                        }
+                        meshReady = umaRendererCount > 0;
+                    }
+
+                    if (meshReady)
+                    {
+                        // Mesh generated! Disable remaining UMA scripts now.
+                        CrashLog.Log($"[MP Render] UMA mesh ready for {data.SteamId} after {Time.time - remote.UMAWaitStart:F1}s — {umaRendererCount} renderer(s). Stripping UMA scripts.");
+                        foreach (var mb in remote.GO.GetComponentsInChildren<MonoBehaviour>(true))
+                        {
+                            if (mb == null) continue;
+                            string typeName = mb.GetIl2CppType().Name;
+                            if (typeName == "Animator" || typeName.Contains("Renderer")) continue;
+                            try { mb.enabled = false; } catch { }
+                        }
+                        remote.WaitingForUMA = false;
+
+                        // Now set up animator if we don't have one yet
+                        if (remote.Animator == null)
+                        {
+                            remote.Animator = remote.GO.GetComponentInChildren<Animator>();
+                            if (remote.Animator != null)
+                            {
+                                remote.Animator.applyRootMotion = false;
+                                CrashLog.Log($"[MP Render] Late animator setup for {data.SteamId} rootMotion=OFF");
+                                try
+                                {
+                                    foreach (var param in remote.Animator.parameters)
+                                    {
+                                        string lower = param.name.ToLower();
+                                        if (!remote.HasSpeedParam && param.type == AnimatorControllerParameterType.Float &&
+                                            (lower.Contains("speed") || lower.Contains("velocity") || lower.Contains("move") || lower.Contains("forward")))
+                                        {
+                                            remote.SpeedParamHash = param.nameHash;
+                                            remote.HasSpeedParam = true;
+                                        }
+                                        if (!remote.HasWalkingParam && param.type == AnimatorControllerParameterType.Bool &&
+                                            (lower.Contains("walk") || lower.Contains("moving") || lower.Contains("run")))
+                                        {
+                                            remote.WalkingParamHash = param.nameHash;
+                                            remote.HasWalkingParam = true;
+                                        }
+                                    }
+                                }
+                                catch (Exception ex)
+                                {
+                                    CrashLog.Log($"[MP Render] Late animator param error: {ex.Message}");
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Periodic status logging every ~3 seconds so we can see what UMA is doing
+                        float waited = Time.time - remote.UMAWaitStart;
+                        if (waited > 0.5f && ((int)(waited * 10) % 30 == 0)) // roughly every 3s
+                        {
+                            bool hasUmaData = umaData != null;
+                            bool created = hasUmaData && umaData.isOfficiallyCreated;
+                            bool dirty = hasUmaData && umaData.dirty;
+                            var dca = remote.GO.GetComponentInChildren<DynamicCharacterAvatar>(true);
+                            bool dcaEnabled = dca != null && dca.enabled;
+                            CrashLog.Log($"[MP Render] UMA waiting {waited:F1}s for {data.SteamId}: UMAData={hasUmaData} created={created} dirty={dirty} DCA.enabled={dcaEnabled}");
+                        }
+                    }
+
+                    if (!meshReady && Time.time - remote.UMAWaitStart > 15f)
+                    {
+                        // Timeout — UMA didn't generate a mesh in 15 seconds.
+                        // Try once more with a fresh UMA prefab; SpawnRemotePlayer
+                        // will fall through to capsule only if no prefabs exist.
+                        CrashLog.Log($"[MP Render] UMA timeout for {data.SteamId} after 15s — retrying UMA spawn");
+                        UnityEngine.Object.Destroy(remote.GO);
+                        _remotePlayers.Remove(data.SteamId);
+                        var retry = SpawnRemotePlayer(data);
+                        if (retry != null)
+                            _remotePlayers[data.SteamId] = retry;
+                        continue;
                     }
                 }
+
+                remote.TargetPos = new Vector3(data.X, data.Y, data.Z);
+                remote.TargetRotY = data.RotY;
+
+                // Measure movement speed before interpolating
+                Vector3 prevPos = remote.GO.transform.position;
+
+                // Smooth interpolation towards target position/rotation
+                // Use NavMeshAgent.Warp() if available — Unity automatically snaps
+                // the character to the baked NavMesh surface (walkable floor).
+                // This prevents sinking through the ground without needing raycasts.
+                Vector3 lerpedPos = Vector3.Lerp(prevPos, remote.TargetPos, Time.deltaTime * 10f);
+
+                if (remote.NavAgent != null && remote.NavAgent.isOnNavMesh)
+                {
+                    remote.NavAgent.Warp(lerpedPos);
+                    // Warp constrains to NavMesh — actual position may differ in Y
+                }
+                else
+                {
+                    // Fallback: raycast down to snap Y to ground surface
+                    if (Physics.Raycast(new Vector3(lerpedPos.x, lerpedPos.y + 1f, lerpedPos.z), Vector3.down, out RaycastHit hit, 3f))
+                    {
+                        lerpedPos.y = hit.point.y;
+                    }
+                    remote.GO.transform.position = lerpedPos;
+                }
+                var euler = remote.GO.transform.eulerAngles;
+                euler.y = Mathf.LerpAngle(euler.y, remote.TargetRotY, Time.deltaTime * 10f);
+                remote.GO.transform.eulerAngles = euler;
+
+                // Drive animator from movement speed
+                if (remote.Animator != null)
+                {
+                    try
+                    {
+                        float dist = Vector3.Distance(remote.GO.transform.position, remote.LastPos);
+                        float speed = dist / Mathf.Max(Time.deltaTime, 0.001f);
+                        bool isMoving = speed > 0.05f;
+
+                        if (remote.HasSpeedParam)
+                            remote.Animator.SetFloat(remote.SpeedParamHash, speed);
+                        if (remote.HasWalkingParam)
+                            remote.Animator.SetBool(remote.WalkingParamHash, isMoving);
+                    }
+                    catch { }
+                }
+                remote.LastPos = remote.GO.transform.position;
             }
 
             // Destroy players no longer in the list
@@ -2304,40 +2806,177 @@ public class MultiplayerBridge
 
     private RemotePlayerGO SpawnRemotePlayer(RemotePlayerData data)
     {
+        string playerName = GetPlayerName(data);
+        CrashLog.Log($"[MP Render] SpawnRemotePlayer: {playerName} ({data.SteamId}) at ({data.X:F1}, {data.Y:F1}, {data.Z:F1})");
+
         try
         {
-            // Try to clone a technician prefab for the visual
+            // ── Strategy: instantiate a UMA prefab and let UMA generate the mesh ──
+            // No cloning of live technicians — we always create a fresh UMA character.
+            // DynamicCharacterAvatar.Start() fires after we re-activate the GO and
+            // the UMA generator builds the mesh within 1-3 frames.
+            GameObject go = null;
+
             var mgr = MainGameManager.instance;
-            if (mgr == null || mgr.techniciansPrefabs == null || mgr.techniciansPrefabs.Length == 0)
+            if (mgr != null && mgr.techniciansPrefabs != null && mgr.techniciansPrefabs.Length > 0)
             {
-                _logger.Warning("[MP Bridge] No technician prefabs available, using capsule fallback");
+                // Pick a prefab — cycle through available prefabs per player for variety
+                int prefabIdx = (int)(data.SteamId % (ulong)mgr.techniciansPrefabs.Length);
+                var prefab = mgr.techniciansPrefabs[prefabIdx];
+                CrashLog.Log($"[MP Render] Instantiating UMA prefab [{prefabIdx}] '{prefab.name}' ({mgr.techniciansPrefabs.Length} prefabs available)");
+                go = UnityEngine.Object.Instantiate(prefab);
+            }
+            else
+            {
+                CrashLog.Log("[MP Render] No UMA prefabs available — capsule fallback");
                 return SpawnCapsuleFallback(data);
             }
 
-            var prefab = mgr.techniciansPrefabs[0];
-            var go = UnityEngine.Object.Instantiate(prefab);
+            // Immediately deactivate so Start() doesn't fire yet.
+            // Note: Awake() already ran during Instantiate() — only Start() is deferred.
+            // This prevents Technician.Start() from self-destructing or path-finding.
+            go.SetActive(false);
 
-            // Strip AI/pathfinding so it's just a visual
-            var nav = go.GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (nav != null) UnityEngine.Object.Destroy(nav);
-
-            var tech = go.GetComponent<Technician>();
-            if (tech != null) UnityEngine.Object.Destroy(tech);
-
-            go.transform.position = new Vector3(data.X, data.Y, data.Z);
             go.name = $"RemotePlayer_{data.SteamId}";
 
-            string playerName = GetPlayerName(data);
+            var spawnPos = new Vector3(data.X, data.Y, data.Z);
+            go.transform.position = spawnPos;
+
+            // Configure NavMeshAgent for ground-snapping only (no pathfinding)
+            // Unity's NavMesh system keeps the character on the baked walkable surface automatically.
+            UnityEngine.AI.NavMeshAgent nav = null;
+            var navCheck = go.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (navCheck != null)
+            {
+                nav = navCheck;
+                nav.updateRotation = false;      // we handle rotation via TargetRotY
+                nav.updateUpAxis = false;
+                nav.isStopped = true;            // don't auto-pathfind
+                nav.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance; // don't dodge anything
+                nav.autoTraverseOffMeshLink = false;
+                nav.autoBraking = false;
+                CrashLog.Log($"[MP Render] NavMeshAgent kept alive for ground-snapping: enabled={nav.enabled} radius={nav.radius:F2} height={nav.height:F2}");
+            }
+            else
+            {
+                CrashLog.Log("[MP Render] No NavMeshAgent on prefab — will use NavMesh.SamplePosition fallback");
+            }
+
+            // Disable gameplay scripts, keep UMA + Animator + Renderer alive
+            // so UMA's DynamicCharacterAvatar.Start() can fire and generate the mesh
+            int disabledCount = 0;
+            int keptCount = 0;
+            foreach (var mb in go.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (mb == null) continue;
+                string typeName = mb.GetIl2CppType().Name;
+                // Keep: UMA/DynamicCharacter scripts (mesh generation), Animator, Renderers
+                if (typeName.Contains("UMA") || typeName.Contains("DynamicCharacter") ||
+                    typeName.Contains("Avatar") || typeName.Contains("Generator") ||
+                    typeName == "Animator" || typeName.Contains("Renderer"))
+                {
+                    keptCount++;
+                    continue;
+                }
+                // Disable: Technician, AI, ThirdPerson, IK, etc.
+                try { mb.enabled = false; disabledCount++; } catch { }
+            }
+            CrashLog.Log($"[MP Render] Scripts: {keptCount} kept (UMA/Animator/Renderer), {disabledCount} disabled (gameplay)");
+
+            // Strip colliders so remote players don't block the local player
+            foreach (var col in go.GetComponentsInChildren<Collider>(true))
+            {
+                try { UnityEngine.Object.Destroy(col); } catch { }
+            }
+
+            // Strip rigidbody to prevent physics
+            foreach (var rb in go.GetComponentsInChildren<Rigidbody>(true))
+            {
+                try { UnityEngine.Object.Destroy(rb); } catch { }
+            }
+
+            // Now activate — UMA's DynamicCharacterAvatar.Start() will fire
+            // and queue the character for mesh generation (gameplay scripts are disabled)
+            go.SetActive(true);
+
+            CrashLog.Log($"[MP Render] GO active={go.activeSelf}, pos=({go.transform.position.x:F1}, {go.transform.position.y:F1}, {go.transform.position.z:F1})");
+
+            // Initial ground snap via NavMeshAgent.Warp() — places character on NavMesh surface
+            if (nav != null && nav.isOnNavMesh)
+            {
+                nav.Warp(spawnPos);
+                CrashLog.Log($"[MP Render] NavMesh Warp snap: Y={go.transform.position.y:F2} (from {spawnPos.y:F2})");
+            }
+            else if (nav != null)
+            {
+                // Agent not on NavMesh yet, try raycast fallback for ground snap
+                if (Physics.Raycast(new Vector3(spawnPos.x, spawnPos.y + 2f, spawnPos.z), Vector3.down, out RaycastHit spawnHit, 5f))
+                {
+                    var snapped = new Vector3(spawnPos.x, spawnHit.point.y, spawnPos.z);
+                    go.transform.position = snapped;
+                    CrashLog.Log($"[MP Render] Raycast ground snap: Y={spawnHit.point.y:F2} (from {spawnPos.y:F2})");
+                }
+                else
+                {
+                    CrashLog.Log($"[MP Render] WARNING: No ground found near spawn pos — character may float/sink");
+                }
+            }
+
+            // Log DynamicCharacterAvatar state
+            var avatar = go.GetComponentInChildren<DynamicCharacterAvatar>(true);
+            if (avatar != null)
+            {
+                CrashLog.Log($"[MP Render] DynamicCharacterAvatar: '{avatar.gameObject.name}' enabled={avatar.enabled} BuildCharacterEnabled={avatar.BuildCharacterEnabled}");
+            }
+            else
+            {
+                CrashLog.Log("[MP Render] WARNING: No DynamicCharacterAvatar on prefab!");
+            }
+
+            // Log UMAData state (may not exist yet — DCA.Start() creates it)
+            var umaData = go.GetComponentInChildren<UMAData>(true);
+            if (umaData != null)
+            {
+                CrashLog.Log($"[MP Render] UMAData: isOfficiallyCreated={umaData.isOfficiallyCreated} dirty={umaData.dirty} firstBake={umaData.firstBake}");
+            }
+            else
+            {
+                CrashLog.Log("[MP Render] No UMAData yet (will be created by DynamicCharacterAvatar.Start())");
+            }
+
             AddNameTag(go, playerName);
 
-            _logger.Msg($"[MP Bridge] Spawned remote player: {playerName} ({data.SteamId})");
+            // Animator may not exist yet — UMA creates/configures it during generation.
+            // We'll pick it up in UpdateRemotePlayers once the mesh is ready.
+            Animator animator = go.GetComponentInChildren<Animator>();
+            if (animator != null)
+            {
+                animator.applyRootMotion = false;
+                CrashLog.Log($"[MP Render] Animator found early: enabled={animator.enabled} hasController={animator.runtimeAnimatorController != null} rootMotion=OFF");
+            }
+            else
+            {
+                CrashLog.Log("[MP Render] No Animator yet (expected — UMA creates it during generation)");
+            }
+
+            _logger.Msg($"[MP Bridge] Spawned remote player (UMA): {playerName} ({data.SteamId})");
 
             return new RemotePlayerGO
             {
                 GO = go,
+                NavAgent = nav,
                 SteamId = data.SteamId,
                 TargetPos = new Vector3(data.X, data.Y, data.Z),
                 TargetRotY = data.RotY,
+                Animator = animator,
+                LastPos = new Vector3(data.X, data.Y, data.Z),
+                SpeedParamHash = 0,
+                WalkingParamHash = 0,
+                HasSpeedParam = false,
+                HasWalkingParam = false,
+                AnimParamsLogged = false,
+                WaitingForUMA = true,
+                UMAWaitStart = Time.time,
             };
         }
         catch (Exception ex)
@@ -2353,6 +2992,10 @@ public class MultiplayerBridge
         go.transform.position = new Vector3(data.X, data.Y, data.Z);
         go.name = $"RemotePlayer_{data.SteamId}";
 
+        // Strip collider on capsule too
+        var col = go.GetComponent<Collider>();
+        if (col != null) UnityEngine.Object.Destroy(col);
+
         string playerName = GetPlayerName(data);
         AddNameTag(go, playerName);
 
@@ -2362,6 +3005,7 @@ public class MultiplayerBridge
             SteamId = data.SteamId,
             TargetPos = new Vector3(data.X, data.Y, data.Z),
             TargetRotY = data.RotY,
+            LastPos = new Vector3(data.X, data.Y, data.Z),
         };
     }
 
@@ -2379,31 +3023,90 @@ public class MultiplayerBridge
     private void AddNameTag(GameObject parent, string name)
     {
         // World-space canvas above the player's head
+        // Game reference: Server canvas uses scale=0.01, rect=(38,11), fontSize=0.9
+        // We match that pattern exactly — scale 0.01, small rect, tiny fontSize
         try
         {
-            var canvasGO = new GameObject("NameTag");
-            canvasGO.transform.SetParent(parent.transform);
-            canvasGO.transform.localPosition = new Vector3(0, 2.2f, 0);
+            // Log parent scale so we can diagnose if the prefab has non-unit scale
+            var parentScale = parent.transform.lossyScale;
+            CrashLog.Log($"[MP NameTag] Parent '{parent.name}' lossyScale=({parentScale.x:F3}, {parentScale.y:F3}, {parentScale.z:F3})");
+
+            // Match the game's server canvas pattern:
+            //   Server: scale=0.01, rect=(38,11), fontSize=0.9-2.0
+            //   We want "a bit bigger than server labels"
+            float scale = 0.01f;    // same as game server canvases
+            float fontSize = 5f;    // bigger than server labels for readability
+            float rectW = 70f;      // wide enough for longer player names
+            float rectH = 10f;      // snug fit for text
+
+            // If parent has non-unit scale, compensate so nametag stays consistent
+            if (parentScale.x > 0.001f)
+            {
+                float compensate = 1f / parentScale.x;
+                scale *= compensate;
+                CrashLog.Log($"[MP NameTag] Compensating for parent scale: adjusted canvas scale={scale:F6}");
+            }
+
+            // Don't parent to the player GO — parent scale inheritance causes
+            // unpredictable sizing. Instead, we'll use a root-level GO and
+            // update its position in the billboard component.
+            var canvasGO = new GameObject($"NameTag_{parent.name}");
+            // Place at world position above the player
+            canvasGO.transform.position = parent.transform.position + new Vector3(0, 1.75f, 0);
 
             var canvas = canvasGO.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
-            canvasGO.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
 
+            // Set the canvas RectTransform to a small defined size
+            var canvasRect = canvasGO.GetComponent<RectTransform>();
+            if (canvasRect != null)
+                canvasRect.sizeDelta = new Vector2(rectW, rectH);
+
+            canvasGO.transform.localScale = new Vector3(scale, scale, scale);
+
+            // --- Semi-transparent background panel ---
+            var bgGO = new GameObject("Background");
+            bgGO.transform.SetParent(canvasGO.transform, false);
+
+            var bgImage = bgGO.AddComponent<UnityEngine.UI.Image>();
+            bgImage.color = new Color(0f, 0f, 0f, 0.45f); // dark, semi-transparent
+
+            var bgRect = bgGO.GetComponent<RectTransform>();
+            bgRect.anchorMin = new Vector2(0f, 0f);
+            bgRect.anchorMax = new Vector2(1f, 1f);
+            bgRect.offsetMin = Vector2.zero;
+            bgRect.offsetMax = Vector2.zero;
+
+            // --- Text on top of the background ---
             var textGO = new GameObject("Text");
-            textGO.transform.SetParent(canvasGO.transform);
-            textGO.transform.localPosition = Vector3.zero;
+            textGO.transform.SetParent(canvasGO.transform, false);
 
             var tmp = textGO.AddComponent<TextMeshProUGUI>();
             tmp.text = name;
-            tmp.fontSize = 36;
+            tmp.fontSize = fontSize;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = Color.white;
+            tmp.enableWordWrapping = false;
+            tmp.overflowMode = TextOverflowModes.Overflow;
+            tmp.outlineWidth = 0.2f;
+            tmp.outlineColor = new Color32(0, 0, 0, 200);
 
             var rect = textGO.GetComponent<RectTransform>();
-            rect.sizeDelta = new Vector2(300, 50);
+            rect.anchorMin = new Vector2(0f, 0f);
+            rect.anchorMax = new Vector2(1f, 1f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
 
-            // Billboard: always face camera
-            canvasGO.AddComponent<BillboardNameTag>();
+            // Log the actual world size for debugging
+            var lossyAfter = canvasGO.transform.lossyScale;
+            float worldWidth = rectW * lossyAfter.x;
+            float worldHeight = rectH * lossyAfter.y;
+            CrashLog.Log($"[MP NameTag] Created for '{name}': lossyScale=({lossyAfter.x:F6}, {lossyAfter.y:F6}, {lossyAfter.z:F6}) worldSize={worldWidth:F4}m x {worldHeight:F4}m, fontSize={fontSize:F1}");
+
+            // Billboard: follows parent and always faces camera
+            var bb = canvasGO.AddComponent<BillboardNameTag>();
+            bb.followTarget = parent.transform;
+            bb.offsetY = 1.85f;
         }
         catch (Exception ex)
         {
@@ -2436,6 +3139,7 @@ public class MultiplayerBridge
             catch { }
         }
 
+        CleanupMpSaveFiles();
         CleanupAll();
     }
 }
@@ -2449,8 +3153,42 @@ public class BillboardNameTag : MonoBehaviour
 {
     public BillboardNameTag(IntPtr ptr) : base(ptr) { }
 
+    public Transform followTarget;
+    public float offsetY = 2.05f;
+    private bool _loggedOnce = false;
+    private float _smoothY = float.NaN;
+
     void LateUpdate()
     {
+        if (!_loggedOnce)
+        {
+            _loggedOnce = true;
+            CrashLog.Log($"[MP Billboard] LateUpdate first run: followTarget={(followTarget != null ? followTarget.gameObject.name : "NULL")} offsetY={offsetY:F2} myPos=({transform.position.x:F1}, {transform.position.y:F1}, {transform.position.z:F1})");
+        }
+
+        // Follow the target (remote player GO) — nametag is NOT parented to avoid scale inheritance
+        // XZ follows instantly; Y is heavily smoothed to prevent micro-jitter that
+        // causes motion-blur fuzz on the text.
+        if (followTarget != null)
+        {
+            float desiredY = followTarget.position.y + offsetY;
+            if (float.IsNaN(_smoothY))
+                _smoothY = desiredY;                   // first frame: snap
+            else
+                _smoothY = Mathf.Lerp(_smoothY, desiredY, Time.deltaTime * 3f); // slow follow
+
+            transform.position = new Vector3(
+                followTarget.position.x,
+                _smoothY,
+                followTarget.position.z);
+        }
+        else
+        {
+            CrashLog.Log($"[MP Billboard] followTarget is NULL — destroying nametag '{gameObject.name}'");
+            UnityEngine.Object.Destroy(gameObject);
+            return;
+        }
+
         var cam = Camera.main;
         if (cam == null) return;
         transform.LookAt(transform.position + cam.transform.forward);

@@ -352,8 +352,7 @@ public static class ModConfigSystem
         _scrollOffset = 0f;
         _isDragging = false;
 
-        // Disable game's EventSystem so uGUI buttons behind us are not clickable
-        // Store the reference because EventSystem.current returns null once disabled
+        // disable to block all input from user
         try
         {
             var es = UnityEngine.EventSystems.EventSystem.current;

@@ -34,11 +34,14 @@ pub enum Message {
     SaveOffer {
         total_bytes: u32,
         chunk_count: u32,
+        save_hash: u64,
     },
     SaveChunk {
         index: u32,
         data: Vec<u8>,
     },
+    /// Client tells host "I already have this save, stop sending chunks"
+    SaveSkip,
 }
 
 const BINCODE_CONFIG: bincode::config::Configuration = bincode::config::standard();

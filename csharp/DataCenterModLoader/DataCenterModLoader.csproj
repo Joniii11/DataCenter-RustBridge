@@ -135,6 +135,18 @@
       <Private>false</Private>
     </Reference>
 
+    <!-- Animation Module (needed for Animator, AnimatorControllerParameterType on remote players) -->
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- UMA Core (needed for DynamicCharacterAvatar, UMAData, UMAGenerator on remote players) -->
+    <Reference Include="Il2CppUMA_Core">
+      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\Il2CppUMA_Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
   </ItemGroup>
 
 </Project>

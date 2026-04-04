@@ -61,6 +61,10 @@ struct MultiplayerState {
     save_loaded: bool,
     /// When true, the next Welcome won't trigger a RequestSave
     skip_next_save_request: bool,
+
+    // Save versioning
+    local_save_hash: u64, // client: hash of local save, computed by mp_set_local_save_hash
+    save_up_to_date: bool, // client: true when SaveOffer.save_hash == local_save_hash
 }
 
 impl MultiplayerState {
@@ -94,8 +98,19 @@ impl MultiplayerState {
             save_data_ready: None,
             save_loaded: false,
             skip_next_save_request: false,
+
+            // Save versioning
+            local_save_hash: 0,
+            save_up_to_date: false,
         }
     }
+}
+
+fn compute_save_hash(data: &[u8]) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    data.hash(&mut hasher);
+    hasher.finish()
 }
 
 fn with_state<F, R>(f: F) -> Option<R>
@@ -181,7 +196,7 @@ fn update(api: &Api, dt: f32) {
 
     if let Some(count) = retry_needed {
         let msg = Message::Hello {
-            player_name: "Player".to_string(),
+            player_name: get_my_steam_name(api),
             mod_version: "0.1.0".to_string(),
         };
         let ok = with_state(|s| {
@@ -302,7 +317,7 @@ fn process_relay_event(api: &Api, event: net::RelayEvent) {
 
             // Send Hello to the host (via relay broadcast)
             let msg = Message::Hello {
-                player_name: "Player".to_string(),
+                player_name: get_my_steam_name(api),
                 mod_version: "0.1.0".to_string(),
             };
             let ok = with_state(|s| {
@@ -372,6 +387,18 @@ fn process_relay_event(api: &Api, event: net::RelayEvent) {
     }
 }
 
+/// Resolve the local player's Steam display name, with fallback.
+fn get_my_steam_name(api: &Api) -> String {
+    if let Some(my_id) = api.steam_get_my_id() {
+        if let Some(name) = api.steam_get_friend_name(my_id) {
+            if !name.is_empty() {
+                return name;
+            }
+        }
+    }
+    "Player".to_string()
+}
+
 fn handle_message(api: &Api, sender: u64, msg: Message) {
     match msg {
         Message::Hello {
@@ -391,7 +418,7 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
             });
 
             // Send Welcome back via relay
-            let my_name = "Host".to_string(); // TODO: get actual steam name
+            let my_name = get_my_steam_name(api);
             let is_host = with_state(|s| s.is_host).unwrap_or(false);
             let welcome = Message::Welcome {
                 player_name: my_name,
@@ -448,8 +475,10 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
             with_state(|s| {
                 if !s.tracker.has_player(sender) {
                     // Got position from unknown player, auto-add them
-                    s.tracker
-                        .add_player(sender, format!("Player_{}", sender % 10000));
+                    let fallback_name = api
+                        .steam_get_friend_name(sender)
+                        .unwrap_or_else(|| format!("Player_{}", sender % 10000));
+                    s.tracker.add_player(sender, fallback_name);
                 }
                 s.tracker.update_position(sender, x, y, z, rot_y);
             });
@@ -497,13 +526,29 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
         Message::SaveOffer {
             total_bytes,
             chunk_count,
+            save_hash,
         } => {
             dc_api::crash_log(&format!(
-                "[MP] Received SaveOffer: {} bytes in {} chunks",
-                total_bytes, chunk_count
+                "[MP] Received SaveOffer: {} bytes in {} chunks (hash: {:016x})",
+                total_bytes, chunk_count, save_hash
             ));
             with_state(|s| {
                 if !s.is_host {
+                    // Check if our local save matches
+                    if s.local_save_hash != 0 && s.local_save_hash == save_hash {
+                        dc_api::crash_log(&format!(
+                            "[MP] Save hash match! Local save is up to date (hash: {:016x})",
+                            save_hash
+                        ));
+                        s.save_up_to_date = true;
+                        // Tell host to stop sending chunks
+                        if let Some(ref relay) = s.relay {
+                            relay.send_game_message(&Message::SaveSkip);
+                        }
+                        return;
+                    }
+
+                    s.save_up_to_date = false;
                     s.save_incoming_total = total_bytes;
                     s.save_incoming_chunk_count = chunk_count;
                     s.save_incoming_data = vec![0u8; total_bytes as usize];
@@ -515,7 +560,7 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
 
         Message::SaveChunk { index, data } => {
             with_state(|s| {
-                if s.is_host {
+                if s.is_host || s.save_up_to_date {
                     return;
                 }
                 if index as usize >= s.save_incoming_received.len() {
@@ -545,6 +590,20 @@ fn handle_message(api: &Api, sender: u64, msg: Message) {
                     let complete = std::mem::take(&mut s.save_incoming_data);
                     s.save_data_ready = Some(complete);
                     s.save_incoming_received.clear();
+                }
+            });
+        }
+
+        Message::SaveSkip => {
+            dc_api::crash_log(&format!(
+                "[MP] Peer {} says save is up to date, stopping chunks",
+                sender
+            ));
+            with_state(|s| {
+                if s.is_host {
+                    s.save_outgoing = None;
+                    s.save_send_index = 0;
+                    s.save_send_chunk_count = 0;
                 }
             });
         }
@@ -581,6 +640,8 @@ fn do_disconnect_cleanup() {
         s.save_data_ready = None;
         s.save_loaded = false;
         s.skip_next_save_request = false;
+        s.save_up_to_date = false;
+        // Don't reset local_save_hash — it persists across connections
     });
 }
 
@@ -764,6 +825,7 @@ pub extern "C" fn mp_connect(room_code: *const u8, room_code_len: u32) -> i32 {
         s.save_incoming_chunk_count = 0;
         s.save_incoming_data.clear();
         s.save_incoming_received.clear();
+        s.save_up_to_date = false;
     });
 
     dc_api::crash_log(&format!("[MP] Joining room {} via relay at {}", code, url));
@@ -823,6 +885,7 @@ pub extern "C" fn mp_disconnect() -> i32 {
         s.save_incoming_received.clear();
         s.save_data_ready = None;
         s.save_loaded = false;
+        s.save_up_to_date = false;
     });
     1
 }
@@ -853,16 +916,18 @@ pub extern "C" fn mp_send_save_data(data: *const u8, len: u32) -> i32 {
     let bytes = unsafe { std::slice::from_raw_parts(data, len as usize) }.to_vec();
     let total_bytes = bytes.len() as u32;
     let chunk_count = ((bytes.len() + SAVE_CHUNK_SIZE - 1) / SAVE_CHUNK_SIZE) as u32;
+    let save_hash = compute_save_hash(&bytes);
 
     dc_api::crash_log(&format!(
-        "[MP] Sending save data: {} bytes in {} chunks",
-        total_bytes, chunk_count
+        "[MP] Sending save data: {} bytes in {} chunks (hash: {:016x})",
+        total_bytes, chunk_count, save_hash
     ));
 
     // Send SaveOffer first
     let offer = Message::SaveOffer {
         total_bytes,
         chunk_count,
+        save_hash,
     };
     let sent = with_state(|s| {
         s.save_requested = false;
@@ -935,4 +1000,49 @@ pub extern "C" fn mp_save_load_complete() -> i32 {
         dc_api::crash_log("[MP] Save load complete, pending data cleared");
     });
     1
+}
+
+/// C# provides the local save file bytes so Rust can compute and store the hash.
+/// Call this before connecting to enable save versioning.
+#[no_mangle]
+pub extern "C" fn mp_set_local_save_hash(data: *const u8, len: u32) {
+    if data.is_null() || len == 0 {
+        with_state(|s| s.local_save_hash = 0);
+        return;
+    }
+    let bytes = unsafe { std::slice::from_raw_parts(data, len as usize) };
+    let hash = compute_save_hash(bytes);
+    dc_api::crash_log(&format!(
+        "[MP] Local save hash set: {:016x} ({} bytes)",
+        hash, len
+    ));
+    with_state(|s| s.local_save_hash = hash);
+}
+
+/// Returns 1 if the host's save matches our local save (no download needed).
+#[no_mangle]
+pub extern "C" fn mp_is_save_up_to_date() -> u32 {
+    with_state(|s| if s.save_up_to_date { 1u32 } else { 0u32 }).unwrap_or(0)
+}
+
+/// Returns save transfer progress: -1.0 if not transferring, 0.0..1.0 during transfer.
+#[no_mangle]
+pub extern "C" fn mp_get_save_transfer_progress() -> f32 {
+    with_state(|s| {
+        if s.save_up_to_date {
+            return 1.0f32;
+        }
+        if s.save_incoming_chunk_count == 0 {
+            return -1.0f32;
+        }
+        let received = s.save_incoming_received.iter().filter(|&&r| r).count() as f32;
+        received / s.save_incoming_chunk_count as f32
+    })
+    .unwrap_or(-1.0)
+}
+
+/// Returns total bytes of the current incoming save transfer (0 if not active).
+#[no_mangle]
+pub extern "C" fn mp_get_save_transfer_total_bytes() -> u32 {
+    with_state(|s| s.save_incoming_total).unwrap_or(0)
 }
