@@ -116,10 +116,14 @@ public struct GameAPITable
 
     public IntPtr GetDefaultSpawnPosition;
     public IntPtr WarpLocalPlayer;
+
+    public IntPtr GetEntityPosition;
+    public IntPtr AddEntityCollider;
+    public IntPtr SetEntityCarryTransform;
 }
 
 // delegates stored as fields to prevent GC collection while rust holds pointers
-public class GameAPIManager : IDisposable
+public partial class GameAPIManager : IDisposable
 {
     public const uint API_VERSION = 12;
 
@@ -183,6 +187,13 @@ public class GameAPIManager : IDisposable
     // v12 delegate types
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void GetDefaultSpawnPositionDelegate(IntPtr outX, IntPtr outY, IntPtr outZ);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate void WarpLocalPlayerDelegate(float x, float y, float z);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint GetEntityPositionDelegate(uint entityId, IntPtr outX, IntPtr outY, IntPtr outZ);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void AddEntityColliderDelegate(uint entityId);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void SetEntityCarryTransformDelegate(uint entityId, float posX, float posY, float posZ, float rotX, float rotY, float rotZ);
 
     [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr SteamAPI_SteamNetworking_v006();
@@ -297,6 +308,10 @@ public class GameAPIManager : IDisposable
     private readonly GetDefaultSpawnPositionDelegate _getDefaultSpawnPosition;
     private readonly WarpLocalPlayerDelegate _warpLocalPlayer;
 
+    GetEntityPositionDelegate _getEntityPosition;
+    AddEntityColliderDelegate _addEntityCollider;
+    SetEntityCarryTransformDelegate _setEntityCarryTransform;
+
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
     private IntPtr _friendNamePtr = IntPtr.Zero;
@@ -401,6 +416,9 @@ public class GameAPIManager : IDisposable
         _destroyEntityCarryVisual = DestroyEntityCarryVisualImpl;
         _getDefaultSpawnPosition = GetDefaultSpawnPositionImpl;
         _warpLocalPlayer = WarpLocalPlayerImpl;
+        _getEntityPosition = GetEntityPositionImpl;
+        _addEntityCollider = AddEntityColliderImpl;
+        _setEntityCarryTransform = SetEntityCarryTransformImpl;
 
         _table = new GameAPITable
         {
@@ -490,6 +508,9 @@ public class GameAPIManager : IDisposable
             DestroyEntityCarryVisual = Marshal.GetFunctionPointerForDelegate(_destroyEntityCarryVisual),
             GetDefaultSpawnPosition = Marshal.GetFunctionPointerForDelegate(_getDefaultSpawnPosition),
             WarpLocalPlayer = Marshal.GetFunctionPointerForDelegate(_warpLocalPlayer),
+            GetEntityPosition = Marshal.GetFunctionPointerForDelegate(_getEntityPosition),
+            AddEntityCollider = Marshal.GetFunctionPointerForDelegate(_addEntityCollider),
+            SetEntityCarryTransform = Marshal.GetFunctionPointerForDelegate(_setEntityCarryTransform),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -1076,10 +1097,10 @@ public class GameAPIManager : IDisposable
     {
         try
         {
-            if (outX != IntPtr.Zero) Marshal.Copy(new float[] { 0f }, 0, outX, 1);
+            if (outX != IntPtr.Zero) Marshal.Copy(new float[] { 5f }, 0, outX, 1);
             if (outY != IntPtr.Zero) Marshal.Copy(new float[] { 1f }, 0, outY, 1);
-            if (outZ != IntPtr.Zero) Marshal.Copy(new float[] { 0f }, 0, outZ, 1);
-            CrashLog.Log("[GameAPI] Default spawn: (0, 1, 0)");
+            if (outZ != IntPtr.Zero) Marshal.Copy(new float[] { -24f }, 0, outZ, 1);
+            CrashLog.Log("[GameAPI] Default spawn: (5, 1, -24)");
         }
         catch (Exception ex) { CrashLog.LogException("GetDefaultSpawnPosition", ex); }
     }
@@ -1097,6 +1118,33 @@ public class GameAPIManager : IDisposable
             CrashLog.Log($"[GameAPI] Warped local player to ({x:F1},{y:F1},{z:F1})");
         }
         catch (Exception ex) { CrashLog.LogException("WarpLocalPlayer", ex); }
+    }
+
+    private static uint GetEntityPositionImpl(uint entityId, IntPtr outX, IntPtr outY, IntPtr outZ)
+    {
+        try
+        {
+            var pos = EntityManager.GetEntityPosition(entityId);
+            if (pos == null) return 0;
+            var p = pos.Value;
+            if (outX != IntPtr.Zero) Marshal.Copy(new float[] { p.x }, 0, outX, 1);
+            if (outY != IntPtr.Zero) Marshal.Copy(new float[] { p.y }, 0, outY, 1);
+            if (outZ != IntPtr.Zero) Marshal.Copy(new float[] { p.z }, 0, outZ, 1);
+            return 1;
+        }
+        catch (Exception ex) { CrashLog.LogException("GetEntityPositionImpl", ex); return 0; }
+    }
+
+    private static void AddEntityColliderImpl(uint entityId)
+    {
+        try { EntityManager.AddEntityCollider(entityId); }
+        catch (Exception ex) { CrashLog.LogException("AddEntityColliderImpl", ex); }
+    }
+
+    private static void SetEntityCarryTransformImpl(uint entityId, float posX, float posY, float posZ, float rotX, float rotY, float rotZ)
+    {
+        try { EntityManager.SetEntityCarryTransform(entityId, posX, posY, posZ, rotX, rotY, rotZ); }
+        catch (Exception ex) { CrashLog.LogException("SetEntityCarryTransformImpl", ex); }
     }
 
     public void Dispose()

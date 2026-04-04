@@ -344,6 +344,19 @@ pub struct GameAPI {
     pub get_default_spawn_position:
         extern "C" fn(out_x: *mut f32, out_y: *mut f32, out_z: *mut f32),
     pub warp_local_player: extern "C" fn(x: f32, y: f32, z: f32),
+
+    pub get_entity_position:
+        extern "C" fn(entity_id: u32, out_x: *mut f32, out_y: *mut f32, out_z: *mut f32) -> u32,
+    pub add_entity_collider: extern "C" fn(entity_id: u32),
+    pub set_entity_carry_transform: extern "C" fn(
+        entity_id: u32,
+        pos_x: f32,
+        pos_y: f32,
+        pos_z: f32,
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+    ),
 }
 
 unsafe impl Send for GameAPI {}
@@ -1181,6 +1194,36 @@ impl Api {
     pub fn warp_local_player(&self, x: f32, y: f32, z: f32) {
         if self.version() >= 12 {
             (self.raw.warp_local_player)(x, y, z);
+        }
+    }
+
+    /// Get entity world position
+    pub fn get_entity_position(&self, entity_id: u32) -> Option<Vec3> {
+        if self.version() < 12 {
+            return None;
+        }
+        let (mut x, mut y, mut z) = (0.0f32, 0.0f32, 0.0f32);
+        let found = (self.raw.get_entity_position)(entity_id, &mut x, &mut y, &mut z);
+        if found != 0 {
+            Some((x, y, z).into())
+        } else {
+            None
+        }
+    }
+
+    /// Add a capsule collider to a remote entity
+    pub fn add_entity_collider(&self, entity_id: u32) {
+        if self.version() >= 12 {
+            (self.raw.add_entity_collider)(entity_id);
+        }
+    }
+
+    /// Set the local position and rotation of an entitys vis
+    pub fn set_entity_carry_transform(&self, entity_id: u32, pos: Vec3, rot: Vec3) {
+        if self.version() >= 12 {
+            (self.raw.set_entity_carry_transform)(
+                entity_id, pos.x, pos.y, pos.z, rot.x, rot.y, rot.z,
+            );
         }
     }
 }

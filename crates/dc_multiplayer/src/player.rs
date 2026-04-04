@@ -72,6 +72,12 @@ pub struct RemotePlayer {
     pub player_state: PlayerStateSnapshot,
     pub last_applied_carry_type: u8,
     pub use_default_spawn: bool,
+    /// uma spawn timeout
+    pub spawn_time: Option<Instant>,
+    /// When UMA became ready
+    pub uma_ready_time: Option<Instant>,
+    /// Whether collider has been added to the entity
+    pub collider_added: bool,
 }
 
 impl RemotePlayer {
@@ -89,6 +95,9 @@ impl RemotePlayer {
             player_state: PlayerStateSnapshot::default(),
             last_applied_carry_type: 0,
             use_default_spawn: true,
+            spawn_time: None,
+            uma_ready_time: None,
+            collider_added: false,
         }
     }
 
@@ -215,6 +224,11 @@ impl PlayerTracker {
     /// Remove a player and return their entity ID
     pub fn remove_player_with_entity(&mut self, steam_id: u64) -> Option<u32> {
         self.players.remove(&steam_id).and_then(|p| p.entity_id)
+    }
+
+    /// Get a mut reference to a specific player
+    pub fn get_player_mut(&mut self, steam_id: u64) -> Option<&mut RemotePlayer> {
+        self.players.get_mut(&steam_id)
     }
 
     /// Iterate mutably over all players

@@ -6,6 +6,18 @@ use crate::player::PlayerStateSnapshot;
 use crate::protocol::Message;
 use crate::state::*;
 use dc_api::{Api, Vec3};
+use std::time::Instant;
+
+/// Interval between roof safety checks
+const ROOF_CHECK_INTERVAL: f32 = 2.0;
+/// Y threshold above which the player is considered stuck on the roof
+const ROOF_Y_THRESHOLD: f32 = 3.5;
+/// Seconds after UMA ready before collider can be added
+const COLLIDER_DELAY_SECS: f32 = 3.0;
+/// Minimum horizontal double distance from origin 0,0 for collider eligibility
+const COLLIDER_SPAWN_DIST_SQ: f32 = 4.0;
+/// Seconds before UMA mesh is considered timed out and entity is retried
+const UMA_RETRY_TIMEOUT_SECS: f32 = 15.0;
 
 /// Called every frame by the mod loader.
 pub fn update(api: &Api, dt: f32) {
@@ -228,6 +240,164 @@ pub fn update(api: &Api, dt: f32) {
     }
 
     update_entities(api, dt);
+
+    // Roof safety net if local player is above Y threshold
+    roof_safety_check(api, dt);
+
+    // Entity lifecycle UMA retry, collider addition
+    entity_lifecycle(api);
+}
+
+static mut ROOF_CHECK_TIMER: f32 = 0.0;
+
+fn roof_safety_check(api: &Api, dt: f32) {
+    let has_entities = with_state(|s| s.tracker.player_count() > 0).unwrap_or(false);
+    if !has_entities {
+        return;
+    }
+
+    // Safety: single-threaded access from game thread only
+    unsafe { ROOF_CHECK_TIMER += dt };
+    if unsafe { ROOF_CHECK_TIMER } < ROOF_CHECK_INTERVAL {
+        return;
+    }
+    unsafe { ROOF_CHECK_TIMER = 0.0 };
+
+    if let Some((_, y, _, _)) = api.get_player_position() {
+        if y > ROOF_Y_THRESHOLD {
+            dc_api::crash_log(&format!(
+                "[MP] Roof safety net: player Y={:.2}, warping to (5, 1, -24)",
+                y
+            ));
+            api.warp_local_player(5.0, 1.0, -24.0);
+        }
+    }
+}
+
+/// Returns (local_position, local_rotation_euler) for a carry visual parented to entity ROOT.
+/// Coordinates: Y = height above feet, Z = forward (character facing), X = right.
+/// These are approximate positions to make items appear held at chest/waist height.
+fn carry_offsets(object_type: u8, _has_hand_bone: bool) -> (Vec3, Vec3) {
+    // All offsets are relative to entity root (feet).
+    // Y = height above ground, Z = forward from center, X = right from center.
+    // Rotation is Euler degrees applied to the carry visual's localRotation.
+    match object_type {
+        // Server1U — small flat 1U server, held at chest height
+        1 => (Vec3::new(0.0, 1.3, 0.35), Vec3::new(0.0, 0.0, 0.0)),
+        // Server2U — medium 2U server
+        2 => (Vec3::new(0.0, 1.4, 0.35), Vec3::new(0.0, 0.0, 0.0)),
+        // Server3U — larger 3U server, held slightly lower
+        3 => (Vec3::new(0.0, 1.35, 0.35), Vec3::new(0.0, 0.0, 0.0)),
+        // Switch — similar to 1U, flat network switch
+        4 => (Vec3::new(0.0, 1.3, 0.35), Vec3::new(0.0, 0.0, 0.0)),
+        // Rack — large packed rack box, held lower with both arms
+        5 => (Vec3::new(0.0, 1.3, 0.45), Vec3::new(0.0, 0.0, 0.0)),
+        // CableSpinner — small handheld item
+        6 => (Vec3::new(0.15, 1.1, 0.30), Vec3::new(0.0, 0.0, 0.0)),
+        // PatchPanel — flat panel similar to switch
+        7 => (Vec3::new(0.0, 1.3, 0.05), Vec3::new(0.0, 0.0, 0.0)),
+        // SFPModule — tiny module held in one hand
+        8 => (Vec3::new(0.15, 1.3, 0.4), Vec3::new(0.0, 0.0, 0.0)),
+        // SFPBox — small box
+        9 => (Vec3::new(0.10, 1.3, 0.30), Vec3::new(0.0, 0.0, 0.0)),
+        // Unknown — generic position at chest
+        _ => (Vec3::new(0.0, 0.95, 0.35), Vec3::new(0.0, 0.0, 0.0)),
+    }
+}
+
+struct LifecycleAction {
+    steam_id: u64,
+    entity_id: u32,
+    action: LifecycleKind,
+}
+
+enum LifecycleKind {
+    UmaRetry,
+    AddCollider,
+}
+
+fn entity_lifecycle(api: &Api) {
+    let now = Instant::now();
+
+    let actions: Vec<LifecycleAction> = with_state(|s| {
+        let mut out = Vec::new();
+
+        s.tracker.for_each_player_mut(|player| {
+            let eid = match player.entity_id {
+                Some(id) => id,
+                None => return,
+            };
+
+            let is_ready = api.is_entity_ready(eid).unwrap_or(false);
+
+            if !is_ready {
+                if let Some(st) = player.spawn_time {
+                    if now.duration_since(st).as_secs_f32() > UMA_RETRY_TIMEOUT_SECS {
+                        dc_api::crash_log(&format!(
+                            "[MP] UMA timeout for entity {} (player {}), will retry",
+                            eid, player.steam_id
+                        ));
+                        out.push(LifecycleAction {
+                            steam_id: player.steam_id,
+                            entity_id: eid,
+                            action: LifecycleKind::UmaRetry,
+                        });
+                    }
+                }
+                return;
+            }
+
+            if player.uma_ready_time.is_none() {
+                player.uma_ready_time = Some(now);
+            }
+
+            if !player.collider_added {
+                if let Some(ready_time) = player.uma_ready_time {
+                    if now.duration_since(ready_time).as_secs_f32() > COLLIDER_DELAY_SECS {
+                        if let Some(ep) = api.get_entity_position(eid) {
+                            let dx = ep.x - 5.0;
+                            let dz = ep.z - (-24.0);
+                            let dist_sq = dx * dx + dz * dz;
+                            if dist_sq >= COLLIDER_SPAWN_DIST_SQ {
+                                out.push(LifecycleAction {
+                                    steam_id: player.steam_id,
+                                    entity_id: eid,
+                                    action: LifecycleKind::AddCollider,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        out
+    })
+    .unwrap_or_default();
+
+    for action in actions {
+        match action.action {
+            LifecycleKind::UmaRetry => {
+                api.destroy_entity(action.entity_id);
+                with_state(|s| {
+                    if let Some(player) = s.tracker.get_player_mut(action.steam_id) {
+                        player.entity_id = None;
+                        player.spawn_time = None;
+                        player.uma_ready_time = None;
+                        player.collider_added = false;
+                    }
+                });
+            }
+            LifecycleKind::AddCollider => {
+                api.add_entity_collider(action.entity_id);
+                with_state(|s| {
+                    if let Some(player) = s.tracker.get_player_mut(action.steam_id) {
+                        player.collider_added = true;
+                    }
+                });
+            }
+        }
+    }
 }
 
 struct SpawnInfo {
@@ -319,6 +489,12 @@ fn update_entities(api: &Api, _dt: f32) {
 
             with_state(|s| {
                 s.tracker.set_entity_id(info.steam_id, eid);
+
+                if let Some(player) = s.tracker.get_player_mut(info.steam_id) {
+                    player.spawn_time = Some(Instant::now());
+                    player.uma_ready_time = None;
+                    player.collider_added = false;
+                }
             });
         }
     }
@@ -334,14 +510,16 @@ fn update_entities(api: &Api, _dt: f32) {
                 api.destroy_entity_carry_visual(info.entity_id);
             }
 
-            if info.player_state.object_in_hand != 0 {
-                api.create_entity_carry_visual(
-                    info.entity_id,
-                    info.player_state.object_in_hand as u32,
-                );
+            let obj_type = info.player_state.object_in_hand;
+            if obj_type != 0 {
+                api.create_entity_carry_visual(info.entity_id, obj_type as u32);
+
+                // TODO: has_hand_bone is assumed true here could track per entity if needed
+                let (pos, rot) = carry_offsets(obj_type, true);
+                api.set_entity_carry_transform(info.entity_id, pos, rot);
             }
 
-            api.set_entity_carry_anim(info.entity_id, info.player_state.object_in_hand != 0);
+            api.set_entity_carry_anim(info.entity_id, obj_type != 0);
         }
         api.set_entity_crouching(info.entity_id, info.player_state.is_crouching);
         api.set_entity_sitting(info.entity_id, info.player_state.is_sitting);

@@ -37,12 +37,11 @@ public static class EntityManager
         public Transform HandBone;
         public bool HandBoneSearched;
         public bool ColliderAdded;
-        public float ColliderEligibleTime;
     }
 
     private static readonly Dictionary<uint, ManagedEntity> _entities = new();
     private static uint _nextId = 1;
-    private static float _lastRoofCheckTime = 0f;
+    private static bool _gameOffsetsLogged = false;
 
     public static uint SpawnCharacter(uint prefabIdx, float x, float y, float z, float rotY, string name)
     {
@@ -200,12 +199,14 @@ public static class EntityManager
         catch { }
     }
 
-    /// <summary>Create a visual proxy from real game prefab, parented to hand bone</summary>
+    /// <summary>Create a visual proxy from real game prefab, parented to entity root</summary>
     public static void CreateCarryVisual(uint entityId, uint objectInHandType)
     {
         if (!_entities.TryGetValue(entityId, out var entity)) return;
         try
         {
+            LogGameItemOffsets();
+
             // Destroy existing proxy if any
             if (entity.CarryProxyGO != null)
             {
@@ -231,52 +232,19 @@ public static class EntityManager
 
             if (proxy != null)
             {
-                Transform parent = entity.HandBone ?? entity.GO?.transform;
+                Transform parent = entity.GO?.transform;
                 if (parent != null)
                 {
                     proxy.transform.SetParent(parent, false);
-                    var (pos, rot) = GetCarryOffsets(objectInHandType, entity.HandBone != null);
-                    proxy.transform.localPosition = pos;
-                    proxy.transform.localRotation = rot;
+                    proxy.transform.localPosition = Vector3.zero;
+                    proxy.transform.localRotation = Quaternion.identity;
                 }
                 entity.CarryProxyGO = proxy;
             }
 
-            CrashLog.Log($"[EntityManager] Created carry visual type={objectInHandType} prefab={proxy != null} for entity {entity.Id} bone={entity.HandBone?.name ?? "none"} parent={proxy?.transform.parent?.name ?? "none"}");
+            CrashLog.Log($"[EntityManager] Created carry visual type={objectInHandType} prefab={proxy != null} for entity {entity.Id} parent={proxy?.transform.parent?.name ?? "none"} (using entity root)");
         }
         catch (Exception ex) { CrashLog.LogException("EntityManager.CreateCarryVisual", ex); }
-    }
-
-    private static (Vector3 position, Quaternion rotation) GetCarryOffsets(uint objectInHandType, bool hasHandBone)
-    {
-        if (!hasHandBone)
-        {
-            return (new Vector3(0.3f, 0.8f, 0.3f), Quaternion.identity);
-        }
-
-        switch (objectInHandType)
-        {
-            case 1: // Server1U — flat server unit
-                return (new Vector3(0.5f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
-            case 2: // Server2U — taller server
-                return (new Vector3(0.5f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
-            case 3: // Server3U — tallest server
-                return (new Vector3(0.5f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
-            case 4: // Switch — flat network switch
-                return (new Vector3(0.5f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
-            case 5: // Rack — large item
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
-            case 6: // CableSpinner — round spool
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 0f, 0f));
-            case 7: // PatchPanel — flat panel
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 90f, 0f));
-            case 8: // SFPModule — tiny module
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 0f, 0f));
-            case 9: // SFPBox — small box
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 0f, 0f));
-            default:
-                return (new Vector3(0.0f, 0.0f, 0.0f), Quaternion.Euler(0f, 0f, 0f));
-        }
     }
 
     /// <summary>Destroy the carry visual proxy</summary>
@@ -288,6 +256,98 @@ public static class EntityManager
             UnityEngine.Object.Destroy(entity.CarryProxyGO);
             entity.CarryProxyGO = null;
         }
+    }
+
+    private static void LogGameItemOffsets()
+    {
+        if (_gameOffsetsLogged) return;
+        _gameOffsetsLogged = true;
+        try
+        {
+            // Log moveItemPosition from PlayerManager
+            var pm = PlayerManager.instance;
+            if (pm != null && pm.moveItemPosition != null)
+            {
+                var mip = pm.moveItemPosition;
+                CrashLog.Log($"[CarryDebug] moveItemPosition localPos=({mip.localPosition.x:F3},{mip.localPosition.y:F3},{mip.localPosition.z:F3}) localRot=({mip.localEulerAngles.x:F1},{mip.localEulerAngles.y:F1},{mip.localEulerAngles.z:F1})");
+            }
+
+            // Log objectInHandGO array
+            if (pm != null && pm.objectInHandGO != null)
+            {
+                CrashLog.Log($"[CarryDebug] objectInHandGO.Length={pm.objectInHandGO.Length}");
+                for (int i = 0; i < pm.objectInHandGO.Length; i++)
+                {
+                    var go = pm.objectInHandGO[i];
+                    if (go != null)
+                        CrashLog.Log($"[CarryDebug]   [{i}] name='{go.name}' active={go.activeSelf} localPos=({go.transform.localPosition.x:F3},{go.transform.localPosition.y:F3},{go.transform.localPosition.z:F3}) localRot=({go.transform.localEulerAngles.x:F1},{go.transform.localEulerAngles.y:F1},{go.transform.localEulerAngles.z:F1}) localScale=({go.transform.localScale.x:F3},{go.transform.localScale.y:F3},{go.transform.localScale.z:F3})");
+                    else
+                        CrashLog.Log($"[CarryDebug]   [{i}] null");
+                }
+            }
+
+            // Find all UsableObject instances and log their offsets
+            var usableObjects = UnityEngine.Object.FindObjectsOfType<UsableObject>();
+            if (usableObjects != null)
+            {
+                CrashLog.Log($"[CarryDebug] Found {usableObjects.Length} UsableObject instances in scene");
+                // Log just a few unique types to avoid spam
+                var loggedTypes = new HashSet<int>();
+                foreach (var uo in usableObjects)
+                {
+                    if (uo == null) continue;
+                    int typeVal = (int)uo.objectInHandType;
+                    if (loggedTypes.Contains(typeVal)) continue;
+                    loggedTypes.Add(typeVal);
+                    try
+                    {
+                        CrashLog.Log($"[CarryDebug] UsableObject type={typeVal} ({uo.objectInHandType}) name='{uo.gameObject.name}' offsetPivotPos=({uo.offsetPivotPosition.x:F3},{uo.offsetPivotPosition.y:F3},{uo.offsetPivotPosition.z:F3}) offsetPivotRot=({uo.offsetPivotRotation.x:F1},{uo.offsetPivotRotation.y:F1},{uo.offsetPivotRotation.z:F1})");
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[CarryDebug] Failed to read UsableObject type={typeVal}: {ex.Message}");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("[CarryDebug] LogGameItemOffsets", ex);
+        }
+    }
+
+    public static Vector3? GetEntityPosition(uint entityId)
+    {
+        if (!_entities.TryGetValue(entityId, out var entity)) return null;
+        if (entity.GO == null) return null;
+        return entity.GO.transform.position;
+    }
+
+    public static void AddEntityCollider(uint entityId)
+    {
+        if (!_entities.TryGetValue(entityId, out var entity)) return;
+        if (entity.ColliderAdded || entity.GO == null) return;
+        try
+        {
+            var capsule = entity.GO.AddComponent<CapsuleCollider>();
+            capsule.center = new Vector3(0f, 0.9f, 0f);
+            capsule.radius = 0.3f;
+            capsule.height = 1.8f;
+            entity.ColliderAdded = true;
+            CrashLog.Log($"[EntityManager] Added collision capsule to entity {entity.Id}");
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException($"[EntityManager] Failed to add collider to entity {entity.Id}", ex);
+        }
+    }
+
+    public static void SetEntityCarryTransform(uint entityId, float posX, float posY, float posZ, float rotX, float rotY, float rotZ)
+    {
+        if (!_entities.TryGetValue(entityId, out var entity)) return;
+        if (entity.CarryProxyGO == null) return;
+        entity.CarryProxyGO.transform.localPosition = new Vector3(posX, posY, posZ);
+        entity.CarryProxyGO.transform.localRotation = Quaternion.Euler(rotX, rotY, rotZ);
     }
 
     /// <summary>Find the right hand bone in a humanoid UMA rig</summary>
@@ -560,30 +620,6 @@ public static class EntityManager
 
     public static void Update()
     {
-        try
-        {
-            if (_entities.Count > 0 && Time.time - _lastRoofCheckTime >= 2.0f)
-            {
-                _lastRoofCheckTime = Time.time;
-                var pm = PlayerManager.instance;
-                if (pm != null && pm.playerGO != null && pm.playerClass != null)
-                {
-                    float playerY = pm.playerGO.transform.position.y;
-                    if (playerY > 3.5f)
-                    {
-                        CrashLog.Log($"[EntityManager] Roof safety net triggered — player Y={playerY:F2}, warping to origin.");
-                        pm.playerClass.WarpPlayer(new Vector3(0f, 1f, 0f), pm.playerGO.transform.rotation);
-                    }
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            CrashLog.LogException("[EntityManager] Roof safety net error", ex);
-        }
-
-        // Check UMA mesh status for all waiting entities
-        var toRetry = new List<uint>();
         foreach (var kvp in _entities)
         {
             var entity = kvp.Value;
@@ -628,13 +664,10 @@ public static class EntityManager
                     try { mb.enabled = false; } catch { }
                 }
                 entity.WaitingForUMA = false;
-                entity.ColliderEligibleTime = Time.time + 3.0f; // wait 3s for position to settle
 
                 // Disable NavMeshAgent — remote entities don't need pathfinding
                 if (entity.NavAgent != null && entity.NavAgent.enabled)
                     entity.NavAgent.enabled = false;
-
-
 
                 if (!entity.AnimParamsDiscovered)
                 {
@@ -687,61 +720,6 @@ public static class EntityManager
                     }
                     entity.AnimParamsDiscovered = true;
                 }
-            }
-            else if (Time.time - entity.UMAWaitStart > 15f)
-            {
-                // retry
-                toRetry.Add(entity.Id);
-            }
-
-            if (!entity.ColliderAdded && !entity.WaitingForUMA && entity.GO != null && Time.time >= entity.ColliderEligibleTime)
-            {
-                try
-                {
-                    var ep = entity.GO.transform.position;
-
-                    // Don't add collider until entity has moved away from default spawn (0,1,0)
-                    float dx = ep.x;
-                    float dz = ep.z;
-                    bool farEnough = (dx * dx + dz * dz) >= 4.0f; // >= 2m from origin
-
-                    if (farEnough)
-                    {
-                        var capsule = entity.GO.AddComponent<CapsuleCollider>();
-                        capsule.center = new Vector3(0f, 0.9f, 0f);
-                        capsule.radius = 0.3f;
-                        capsule.height = 1.8f;
-                        entity.ColliderAdded = true;
-                        CrashLog.Log($"[EntityManager] Added collision capsule to entity {entity.Id}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    CrashLog.LogException($"[EntityManager] Failed to add collision capsule to entity {entity.Id}", ex);
-                }
-            }
-        }
-
-        // Handle retries
-        foreach (var id in toRetry)
-        {
-            if (_entities.TryGetValue(id, out var entity))
-            {
-                CrashLog.Log($"[EntityManager] UMA timeout for entity {id}, retrying");
-                var pos = entity.GO != null ? entity.GO.transform.position : Vector3.zero;
-                var rotY = entity.GO != null ? entity.GO.transform.eulerAngles.y : 0f;
-                string entityName = "Entity";
-                if (entity.NameTagGO != null)
-                {
-                    var tmp = entity.NameTagGO.GetComponentInChildren<TextMeshProUGUI>();
-                    if (tmp != null) entityName = tmp.text;
-                }
-
-                if (entity.NameTagGO != null) UnityEngine.Object.Destroy(entity.NameTagGO);
-                if (entity.GO != null) UnityEngine.Object.Destroy(entity.GO);
-                _entities.Remove(id);
-
-                CrashLog.Log($"[EntityManager] Entity {id} destroyed due to UMA timeout");
             }
         }
     }
