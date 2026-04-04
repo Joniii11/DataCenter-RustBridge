@@ -192,7 +192,7 @@ fn io_loop(
 
         while let Ok(packet) = packet_rx.try_recv() {
             if let Some(data) = dc_relay_proto::encode_ws(&packet) {
-                if let Err(e) = ws.send(tungstenite::Message::Binary(data)) {
+                if let Err(e) = ws.send(tungstenite::Message::Binary(data.into())) {
                     dc_api::crash_log(&format!("[NET] WebSocket write error: {}", e));
                     let _ = event_tx.send(RelayEvent::Disconnected);
                     write_failed = true;
@@ -210,7 +210,7 @@ fn io_loop(
             last_send = Instant::now();
         } else if last_send.elapsed() >= heartbeat_interval {
             if let Some(data) = dc_relay_proto::encode_ws(&RelayPacket::Heartbeat) {
-                if let Err(e) = ws.send(tungstenite::Message::Binary(data)) {
+                if let Err(e) = ws.send(tungstenite::Message::Binary(data.into())) {
                     dc_api::crash_log(&format!("[NET] Heartbeat write error: {}", e));
                     break;
                 }
