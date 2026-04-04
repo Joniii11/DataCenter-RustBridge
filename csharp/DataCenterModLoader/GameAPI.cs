@@ -41,7 +41,7 @@ public struct GameAPITable
     public IntPtr IsNetWatchEnabled;
     public IntPtr GetNetWatchStats;
 
-    // v4 — Device & Technician management primitives
+    // v4
     public IntPtr GetBrokenServerCount;
     public IntPtr GetBrokenSwitchCount;
     public IntPtr GetEolServerCount;
@@ -53,13 +53,13 @@ public struct GameAPITable
     public IntPtr DispatchReplaceServer;
     public IntPtr DispatchReplaceSwitch;
 
-    // v5 — Custom Employee system (mod-registered employees in HR panel)
+    // v5
     public IntPtr RegisterCustomEmployee;
     public IntPtr IsCustomEmployeeHired;
     public IntPtr FireCustomEmployee;
     public IntPtr RegisterSalary;
 
-    // v6 — Notifications, rates, pause, difficulty, save
+    // v6
     public IntPtr ShowNotification;
     public IntPtr GetMoneyPerSecond;
     public IntPtr GetExpensesPerSecond;
@@ -69,7 +69,7 @@ public struct GameAPITable
     public IntPtr GetDifficulty;
     public IntPtr TriggerSave;
 
-    // v7 — Steam / Multiplayer
+    // v7 - Steam / Multiplayer
     public IntPtr SteamGetMyId;
     public IntPtr SteamGetFriendName;
     public IntPtr SteamCreateLobby;
@@ -88,7 +88,7 @@ public struct GameAPITable
     public IntPtr SteamPollEvent;
     public IntPtr GetPlayerPosition;
 
-    // v8 — Mod Configuration
+    // v8 - Mod Configuration
     public IntPtr ConfigRegisterBool;
     public IntPtr ConfigRegisterInt;
     public IntPtr ConfigRegisterFloat;
@@ -97,7 +97,7 @@ public struct GameAPITable
     public IntPtr ConfigGetFloat;
 }
 
-// manages the api table, delegates stored as fields to prevent GC
+// delegates stored as fields to prevent GC collection while rust holds pointers
 public class GameAPIManager : IDisposable
 {
     public const uint API_VERSION = 8;
@@ -139,7 +139,7 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate int ConfigGetIntDelegate(IntPtr modId, IntPtr key);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)] private delegate float ConfigGetFloatDelegate(IntPtr modId, IntPtr key);
 
-    // Steam native API imports (old ISteamNetworking — NAT traversal, works for any game)
+    // ISteamNetworking - old NAT-traversal P2P, works for any Steam game
     [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr SteamAPI_SteamNetworking_v006();
 
@@ -184,7 +184,7 @@ public class GameAPIManager : IDisposable
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void SetGamePausedDelegate(uint paused);
 
-    // prevent GC while rust holds these
+    // prevent GC while rust holds pointers
     private readonly LogDelegate _logInfo, _logWarning, _logError;
     private readonly GetDoubleDelegate _getPlayerMoney, _getPlayerXP, _getPlayerReputation;
     private readonly SetDoubleDelegate _setPlayerMoney, _setPlayerXP, _setPlayerReputation;
@@ -240,7 +240,6 @@ public class GameAPIManager : IDisposable
     private IntPtr _friendNamePtr = IntPtr.Zero;
     private IntPtr _lobbyDataPtr = IntPtr.Zero;
 
-    // Steam interface cache
     private IntPtr _steamNetworking = IntPtr.Zero;
     private IntPtr _steamUser = IntPtr.Zero;
     private IntPtr _steamFriends = IntPtr.Zero;
@@ -495,7 +494,7 @@ public class GameAPIManager : IDisposable
     private uint GetSwitchCountImpl() { try { return GameHooks.GetSwitchCount(); } catch { return 0; } }
     private uint GetSatisfiedCustomerCountImpl() { try { return (uint)Math.Max(0, GameHooks.GetSatisfiedCustomerCount()); } catch { return 0; } }
 
-    // v3 — standalone state (logic moved to Rust mods)
+    // v3 - standalone state (logic moved to Rust mods)
     private static bool _netWatchEnabled;
 
     private void SetNetWatchEnabledImpl(uint value)
@@ -654,9 +653,6 @@ public class GameAPIManager : IDisposable
         catch (Exception ex) { CrashLog.LogException("TriggerSave", ex); return 0; }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  v7 — Steam / Multiplayer (old ISteamNetworking P2P — NAT traversal)
-    // ═══════════════════════════════════════════════════════════════════════
 
     private IntPtr GetSteamNetworking()
     {
@@ -701,7 +697,7 @@ public class GameAPIManager : IDisposable
         catch (Exception ex) { CrashLog.LogException("SteamGetFriendName", ex); return IntPtr.Zero; }
     }
 
-    // Lobby stubs (Phase 1b — not yet implemented)
+    // Lobby stubs (Phase 1b - not yet implemented)
     private int SteamCreateLobbyImpl(uint lobbyType, uint maxPlayers) { return 0; }
     private int SteamJoinLobbyImpl(ulong lobbyId) { return 0; }
     private void SteamLeaveLobbyImpl() { }
@@ -711,8 +707,6 @@ public class GameAPIManager : IDisposable
     private ulong SteamGetLobbyMemberByIndexImpl(uint index) { return 0; }
     private int SteamSetLobbyDataImpl(IntPtr key, IntPtr value) { return 0; }
     private IntPtr SteamGetLobbyDataImpl(IntPtr key) { return IntPtr.Zero; }
-
-    // ── P2P via old ISteamNetworking (NAT traversal, works for any Steam game) ──
 
     private int SteamSendP2PImpl(ulong target, IntPtr data, uint len, uint reliable)
     {
@@ -812,7 +806,6 @@ public class GameAPIManager : IDisposable
         catch (Exception ex) { CrashLog.LogException("GetPlayerPosition", ex); }
     }
 
-    // ── v8 — Mod Configuration ──────────────────────────────────────────
     private static uint ConfigRegisterBoolImpl(IntPtr modId, IntPtr key, IntPtr displayName, uint defaultValue, IntPtr description)
     {
         try

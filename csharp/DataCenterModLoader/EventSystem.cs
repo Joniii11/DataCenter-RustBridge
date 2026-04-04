@@ -142,7 +142,6 @@ public struct CustomEmployeeEventData
     }
 }
 
-// dispatches events to rust mods
 public static class EventDispatcher
 {
     private static FFIBridge _bridge;

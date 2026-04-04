@@ -5,7 +5,6 @@ using UnityEngine;
 
 namespace DataCenterModLoader;
 
-// Manages 7 extra hireable technician employees via CustomEmployeeManager.
 public static class TechnicianHiring
 {
     private readonly struct TechDef
@@ -45,7 +44,7 @@ public static class TechnicianHiring
 
     private static bool _initialized = false;
 
-    // Registers all 7 technician definitions. Safe to call multiple times.
+    // Safe to call multiple times.
     public static void Initialize()
     {
         if (_initialized) return;
@@ -67,7 +66,7 @@ public static class TechnicianHiring
                         requiresConfirmation: true
                     );
 
-                    CrashLog.Log($"TechnicianHiring: registered '{def.Id}' ({def.Name}) — result={result}");
+                    CrashLog.Log($"TechnicianHiring: registered '{def.Id}' ({def.Name}) result={result}");
                     Core.Instance?.LoggerInstance.Msg(
                         $"[TechnicianHiring] Registered: {def.Name} (salary={def.Salary}/h, rep={def.RequiredRep})");
                 }
@@ -86,7 +85,6 @@ public static class TechnicianHiring
         }
     }
 
-    // Handles hiring: clones an existing in-game technician if employeeId is one of ours.
     public static void OnEmployeeHired(string employeeId)
     {
         try
@@ -99,7 +97,7 @@ public static class TechnicianHiring
             var tm = TechnicianManager.instance;
             if (tm == null)
             {
-                CrashLog.Log("TechnicianHiring.OnEmployeeHired: TechnicianManager.instance is null — aborting");
+                CrashLog.Log("TechnicianHiring.OnEmployeeHired: TechnicianManager.instance is null aborting");
                 Core.Instance?.LoggerInstance.Error("[TechnicianHiring] TechnicianManager not available");
                 return;
             }
@@ -114,7 +112,6 @@ public static class TechnicianHiring
 
             int existingCount = existing.Count;
 
-            // Cycle through existing technicians to pick a model
             int sourceIndex = _spawnedTechIds.Count % existingCount;
             var source = existing[sourceIndex];
             if (source == null)
@@ -140,7 +137,6 @@ public static class TechnicianHiring
                 return;
             }
 
-            // Assign unique ID and name
             int newId = _nextTechId++;
             tech.technicianID = newId;
             tech.technicianName = "Mod Tech " + newId;
@@ -148,12 +144,10 @@ public static class TechnicianHiring
             // Salary handled by CustomEmployeeManager, zero it out here
             tech.salary = 0;
 
-            // Wire up shared transforms
             tech.transformContainer = tm.transformContainer;
             tech.transformDumpster = tm.transformDumpster;
             tech.transformDeviceSpawnPosition = tm.transformDeviceSpawnPosition;
 
-            // Assign idle position (cycle through available transforms)
             if (tm.transformIdle != null && tm.transformIdle.Length > 0)
             {
                 int idleIndex = _spawnedTechIds.Count % tm.transformIdle.Length;
@@ -177,7 +171,6 @@ public static class TechnicianHiring
         }
     }
 
-    // Handles firing: pops the most recently spawned technician (LIFO).
     public static void OnEmployeeFired(string employeeId)
     {
         try
@@ -189,7 +182,7 @@ public static class TechnicianHiring
 
             if (_spawnedTechIds.Count == 0)
             {
-                CrashLog.Log("TechnicianHiring.OnEmployeeFired: no spawned technicians to remove — ignoring");
+                CrashLog.Log("TechnicianHiring.OnEmployeeFired: no spawned technicians to remove ignoring");
                 Core.Instance?.LoggerInstance.Warning("[TechnicianHiring] No spawned technicians to fire");
                 return;
             }
@@ -210,7 +203,6 @@ public static class TechnicianHiring
         }
     }
 
-    // Re-spawns previously hired technicians after a save is loaded.
     public static void RestoreOnLoad()
     {
         try
@@ -226,7 +218,7 @@ public static class TechnicianHiring
                 {
                     if (CustomEmployeeManager.IsHired(def.Id))
                     {
-                        CrashLog.Log($"TechnicianHiring.RestoreOnLoad: '{def.Id}' is hired — re-spawning");
+                        CrashLog.Log($"TechnicianHiring.RestoreOnLoad: '{def.Id}' is hired re-spawning");
                         OnEmployeeHired(def.Id);
                         restored++;
                     }

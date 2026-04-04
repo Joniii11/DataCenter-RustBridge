@@ -146,6 +146,9 @@ impl RelayConnection {
 impl Drop for RelayConnection {
     fn drop(&mut self) {
         self.alive.store(false, Ordering::Relaxed);
+        if let Some(handle) = self._io_thread.take() {
+            let _ = handle.join();
+        }
     }
 }
 

@@ -12,17 +12,8 @@ using Il2CppTMPro;
 
 namespace DataCenterModLoader;
 
-/// <summary>
-/// Mod configuration system that allows Rust mods (loaded via FFI) to register
-/// configuration entries (bools, ints, floats). Persists configs to JSON files
-/// and provides an IMGUI panel where users can toggle/adjust settings.
-/// </summary>
 public static class ModConfigSystem
 {
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Config Entry Types
-    // ═══════════════════════════════════════════════════════════════════════
-
     private enum ConfigEntryType
     {
         Bool,
@@ -60,57 +51,39 @@ public static class ModConfigSystem
         public string Author = "";
         public string Version = "";
         public Dictionary<string, ConfigEntry> Entries = new();
-        public List<string> EntryOrder = new(); // preserve insertion order for display
+        public List<string> EntryOrder = new();
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Fields: Core
-    // ═══════════════════════════════════════════════════════════════════════
 
     private static MelonLogger.Instance _logger;
     private static string _configDir;
     private static readonly Dictionary<string, ModConfig> _mods = new();
-    private static readonly List<string> _modOrder = new(); // preserve order for sidebar
+    private static readonly List<string> _modOrder = new();
     private static bool _initialized;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Fields: UI State
-    // ═══════════════════════════════════════════════════════════════════════
 
     private static bool _showPanel;
     private static string _selectedModId;
-    private static float _scrollOffset; // vertical scroll offset for entries
+    private static float _scrollOffset;
     private static bool _stylesInitialized;
 
-    // Dragging
     private static bool _isDragging;
     private static Vector2 _dragOffset;
-    private static float _panelX = -1f; // -1 = not yet positioned (center on first draw)
+    private static float _panelX = -1f;
     private static float _panelY = -1f;
 
-    // EventSystem blocking
     private static UnityEngine.EventSystems.EventSystem _disabledEventSystem;
-    private static int _reenableEventSystemCountdown;  // frames to wait before re-enabling
+    private static int _reenableEventSystemCountdown;
 
-    // Settings choice popup
     private static bool _showSettingsChoice;
     private static Il2Cpp.MainMenu _mainMenuRef;
 
-    // UI-level Settings button interception (replaces broken Harmony passthrough)
     private static bool _pendingSettingsIntercept;
     private static float _settingsInterceptTimer;
     private static bool _deferredOpenGameSettings;
 
-    // Pause-menu "Mod Settings" button injection
     private static bool _pendingPauseMenuInject;
     private static float _pauseMenuInjectTimer;
     private static GameObject _pauseMenuModButton;
 
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Fields: GUIStyles & Textures
-    // ═══════════════════════════════════════════════════════════════════════
 
     private static GUIStyle _windowStyle;
     private static GUIStyle _titleStyle;
@@ -139,15 +112,7 @@ public static class ModConfigSystem
     private static Texture2D _modListSelectedBg;
     private static Texture2D _sidebarBg;
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Public Properties
-    // ═══════════════════════════════════════════════════════════════════════
-
     public static bool IsPanelVisible => _showPanel;
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Lifecycle
-    // ═══════════════════════════════════════════════════════════════════════
 
     public static void Initialize(MelonLogger.Instance logger)
     {
@@ -173,7 +138,6 @@ public static class ModConfigSystem
 
     public static void OnUpdate(float dt)
     {
-        // --- Settings button interception (deferred after MainMenu scene load) ---
         if (_pendingSettingsIntercept)
         {
             _settingsInterceptTimer -= dt;
@@ -184,7 +148,6 @@ public static class ModConfigSystem
             }
         }
 
-        // --- Pause-menu button injection (deferred after game scene load) ---
         if (_pendingPauseMenuInject)
         {
             _pauseMenuInjectTimer -= dt;
@@ -195,7 +158,7 @@ public static class ModConfigSystem
             }
         }
 
-        // --- Deferred EventSystem re-enable (wait N frames so the closing click doesn't pass through) ---
+        // Wait N frames so the closing click doesn't pass through to the game
         if (_reenableEventSystemCountdown > 0)
         {
             _reenableEventSystemCountdown--;
@@ -213,12 +176,12 @@ public static class ModConfigSystem
             }
         }
 
-        // --- Deferred game-settings open (set from IMGUI, executed here) ---
+        // Deferred from IMGUI - must run outside OnGUI
         if (_deferredOpenGameSettings)
         {
             _deferredOpenGameSettings = false;
 
-            // Game settings need EventSystem immediately — cancel any deferred countdown
+            // Game settings need EventSystem immediately - cancel any deferred countdown
             _reenableEventSystemCountdown = 0;
             try
             {
@@ -239,7 +202,7 @@ public static class ModConfigSystem
                 }
                 else
                 {
-                    CrashLog.Log("ModConfig: _mainMenuRef was null — cannot open game settings.");
+                    CrashLog.Log("ModConfig: _mainMenuRef was null - cannot open game settings.");
                 }
             }
             catch (Exception ex)
@@ -248,7 +211,7 @@ public static class ModConfigSystem
             }
         }
 
-        // F8 hotkey to toggle panel, ESC to close (uses new Input System — legacy Input throws in this game)
+        // F8 hotkey to toggle panel, ESC to close (uses new Input System - legacy Input throws in this game)
         try
         {
             var kb = Keyboard.current;
@@ -312,7 +275,7 @@ public static class ModConfigSystem
             }
             else
             {
-                // Game scene — inject "Mod Settings" button into the pause menu
+                // Game scene - inject "Mod Settings" button into the pause menu
                 _pendingPauseMenuInject = true;
                 _pauseMenuInjectTimer = 1.0f;
                 _pauseMenuModButton = null;
@@ -329,7 +292,6 @@ public static class ModConfigSystem
     {
         try
         {
-            // Save all configs on shutdown
             foreach (var kvp in _mods)
             {
                 SaveModConfig(kvp.Value);
@@ -342,17 +304,12 @@ public static class ModConfigSystem
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Public UI Methods
-    // ═══════════════════════════════════════════════════════════════════════
-
     public static void ShowPanel()
     {
         _showPanel = true;
         _scrollOffset = 0f;
         _isDragging = false;
 
-        // disable to block all input from user
         try
         {
             var es = UnityEngine.EventSystems.EventSystem.current;
@@ -379,10 +336,6 @@ public static class ModConfigSystem
         CrashLog.Log("ModConfig: panel hidden.");
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Settings Choice Popup
-    // ═══════════════════════════════════════════════════════════════════════
-
     public static void ShowSettingsChoice()
     {
         _showSettingsChoice = true;
@@ -401,12 +354,7 @@ public static class ModConfigSystem
         CrashLog.Log("ModConfig: settings choice popup shown.");
     }
 
-    /// <summary>
-    /// Finds the Settings button in the main menu UI and rewires its onClick
-    /// to show our Settings-choice popup instead of opening game settings directly.
-    /// This replaces the Harmony prefix approach which had static-field visibility
-    /// issues in MelonLoader's Il2Cpp Harmony.
-    /// </summary>
+    // Replaces the Harmony prefix approach which had static-field visibility issues in Il2Cpp Harmony.
     private static void InterceptSettingsButton()
     {
         try
@@ -439,10 +387,9 @@ public static class ModConfigSystem
             }
             else
             {
-                CrashLog.Log("ModConfig: WARNING — no MainMenu instance found.");
+                CrashLog.Log("ModConfig: WARNING - no MainMenu instance found.");
             }
 
-            // Rewire the button's onClick to show our popup instead
             var btnExt = settingsBtn.GetComponent<ButtonExtended>();
             if (btnExt != null)
             {
@@ -472,23 +419,17 @@ public static class ModConfigSystem
         }
     }
 
-    /// <summary>
-    /// Injects a "Mod Settings" button into the in-game pause menu by cloning
-    /// an existing button and rewiring it.
-    /// Uses the PauseMenu component hierarchy instead of text matching because
-    /// LocalisedText hasn't set button labels yet when the UI is inactive.
-    /// </summary>
+    // Uses component hierarchy - LocalisedText hasn't set button labels yet when UI is inactive.
     private static void InjectPauseMenuButton()
     {
         try
         {
             if (_pauseMenuModButton != null) return;
 
-            // ── Step 1: Find the PauseMenu instance ──
             var pauseMenus = Resources.FindObjectsOfTypeAll<PauseMenu>();
             if (pauseMenus == null || pauseMenus.Count == 0)
             {
-                CrashLog.Log("ModConfig: no PauseMenu instance found — cannot inject button.");
+                CrashLog.Log("ModConfig: no PauseMenu instance found - cannot inject button.");
                 return;
             }
 
@@ -502,7 +443,6 @@ public static class ModConfigSystem
 
             CrashLog.Log($"ModConfig: found PauseMenu, pauseMenuUI = '{pmUI.name}'.");
 
-            // ── Step 2: Find a ButtonExtended to use as template ──
             // The pause menu has two kinds of ButtonExtended:
             //   - Settings tab buttons (System, Audio, etc.) which ALSO have PauseMenu_TabButton
             //   - Action buttons (Resume, Save Game, etc.) which do NOT have PauseMenu_TabButton
@@ -514,7 +454,7 @@ public static class ModConfigSystem
                 return;
             }
 
-            // Filter out tab buttons — keep only pure action buttons
+            // Filter out tab buttons - keep only pure action buttons
             var actionButtons = new System.Collections.Generic.List<ButtonExtended>();
             foreach (var be in allButtons)
             {
@@ -530,8 +470,6 @@ public static class ModConfigSystem
                 return;
             }
 
-            // Find the panel that holds the action buttons by looking for a parent
-            // with multiple action-button children
             Transform templateBtn = null;
             Transform buttonPanel = null;
 
@@ -540,8 +478,7 @@ public static class ModConfigSystem
                 var parent = be.transform.parent;
                 if (parent == null) continue;
 
-                // Count how many action buttons (non-tab) this parent has
-                // and collect them in order so we can skip the first (Resume is oversized)
+                // Collect action buttons; skip Resume (first) since it's oversized
                 var panelActionBtns = new System.Collections.Generic.List<Transform>();
                 for (int i = 0; i < parent.childCount; i++)
                 {
@@ -553,8 +490,6 @@ public static class ModConfigSystem
 
                 if (panelActionBtns.Count >= 4)
                 {
-                    // Skip the first button (Resume) — it's oversized.
-                    // Use the second one (Save Game) which has normal sizing.
                     templateBtn = panelActionBtns.Count > 1 ? panelActionBtns[1] : panelActionBtns[0];
                     buttonPanel = parent;
                     CrashLog.Log($"ModConfig: using action button panel '{parent.name}' ({panelActionBtns.Count} action buttons), template='{templateBtn.name}'.");
@@ -567,26 +502,24 @@ public static class ModConfigSystem
                 // Fallback: just use the first action button and its parent
                 templateBtn = actionButtons[0].transform;
                 buttonPanel = templateBtn.parent;
-                CrashLog.Log($"ModConfig: fallback — using first action button in '{buttonPanel?.name}'.");
+                CrashLog.Log($"ModConfig: fallback - using first action button in '{buttonPanel?.name}'.");
             }
 
             if (buttonPanel == null)
             {
-                CrashLog.Log("ModConfig: button panel is null — cannot inject.");
+                CrashLog.Log("ModConfig: button panel is null - cannot inject.");
                 return;
             }
 
-            // ── Step 3: Clone the template button ──
             var clone = UnityEngine.Object.Instantiate(templateBtn.gameObject, buttonPanel);
             clone.name = "ModSettingsButton";
 
-            // Place it as second-to-last (before "Quit to desktop")
-            // The last two buttons are typically "Exit to Main Menu" and "Quit to desktop"
+            // Place before "Quit to desktop"
             int childCount = buttonPanel.childCount;
             if (childCount >= 3)
                 clone.transform.SetSiblingIndex(childCount - 3);
 
-            // ── Step 4: Destroy LocalisedText so our label sticks ──
+            // Destroy LocalisedText so our label sticks
             var locTexts = clone.GetComponentsInChildren<LocalisedText>(true);
             if (locTexts != null)
             {
@@ -594,7 +527,6 @@ public static class ModConfigSystem
                     UnityEngine.Object.Destroy(lt);
             }
 
-            // ── Step 5: Set the button label ──
             var cloneTexts = clone.GetComponentsInChildren<Il2CppTMPro.TextMeshProUGUI>(true);
             if (cloneTexts != null)
             {
@@ -606,7 +538,6 @@ public static class ModConfigSystem
                 }
             }
 
-            // ── Step 6: Rewire onClick ──
             var btnExt = clone.GetComponent<ButtonExtended>();
             if (btnExt != null)
             {
@@ -656,42 +587,33 @@ public static class ModConfigSystem
         float popY = (Screen.height - popH) / 2f;
         var popRect = new Rect(popX, popY, popW, popH);
 
-        // Background
         GUI.DrawTexture(popRect, _windowBg);
 
         float pad = 24f;
         float btnH = 48f;
         float btnW = popW - pad * 2;
 
-        // Title
         GUI.Label(new Rect(popX + pad, popY + pad, btnW, 28f), "SETTINGS", _titleStyle);
-
-        // Separator
         GUI.DrawTexture(new Rect(popX + pad, popY + pad + 34f, btnW, 1f), _fieldBg);
 
         float y = popY + pad + 48f;
 
-        // Game Settings button — defer the actual call to OnUpdate so it runs
-        // outside the IMGUI render pass. No Harmony patch is involved anymore,
-        // so _mainMenuRef.Settings() will call the original game method directly.
         if (GUI.Button(new Rect(popX + pad, y, btnW, btnH), "Game Settings", _closeButtonStyle))
         {
-            CrashLog.Log("ModConfig: 'Game Settings' clicked — deferring to next frame.");
+            CrashLog.Log("ModConfig: 'Game Settings' clicked - deferring to next frame.");
             HideSettingsChoice();
             _deferredOpenGameSettings = true;
         }
 
         y += btnH + 12f;
 
-        // Mod Settings button
         if (GUI.Button(new Rect(popX + pad, y, btnW, btnH), "Mod Settings", _closeButtonStyle))
         {
             _showSettingsChoice = false;
-            // EventSystem stays disabled — ShowPanel expects it
+            // EventSystem stays disabled - ShowPanel expects it
             ShowPanel();
         }
 
-        // Click outside to close
         var evt = Event.current;
         if (evt.type == EventType.MouseDown && evt.button == 0 && !popRect.Contains(evt.mousePosition))
         {
@@ -700,9 +622,6 @@ public static class ModConfigSystem
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Registration API
-    // ═══════════════════════════════════════════════════════════════════════
     public static uint RegisterBool(string modId, string key, string displayName, bool defaultValue, string description)
     {
         try
@@ -725,7 +644,6 @@ public static class ModConfigSystem
                 BoolValue = defaultValue
             };
 
-            // Check for persisted value
             var persisted = LoadPersistedValue(modId, key);
             if (persisted != null && persisted.Type == ConfigEntryType.Bool)
             {
@@ -770,7 +688,6 @@ public static class ModConfigSystem
                 IntMax = max
             };
 
-            // Check for persisted value
             var persisted = LoadPersistedValue(modId, key);
             if (persisted != null && persisted.Type == ConfigEntryType.Int)
             {
@@ -815,7 +732,6 @@ public static class ModConfigSystem
                 FloatMax = max
             };
 
-            // Check for persisted value
             var persisted = LoadPersistedValue(modId, key);
             if (persisted != null && persisted.Type == ConfigEntryType.Float)
             {
@@ -835,10 +751,6 @@ public static class ModConfigSystem
             return 0;
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Getter API
-    // ═══════════════════════════════════════════════════════════════════════
 
     public static uint GetBool(string modId, string key)
     {
@@ -910,23 +822,15 @@ public static class ModConfigSystem
         }
     }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  C# Mod API — friendly wrappers for MelonLoader mods
-    // ═══════════════════════════════════════════════════════════════════════
-
-    /// <summary>Register a boolean option. Returns true if newly registered, false if already exists.</summary>
     public static bool RegisterBoolOption(string modId, string key, string displayName, bool defaultValue, string description = "")
         => RegisterBool(modId, key, displayName, defaultValue, description) == 1;
 
-    /// <summary>Register an integer option. Returns true if newly registered.</summary>
     public static bool RegisterIntOption(string modId, string key, string displayName, int defaultValue, int min, int max, string description = "")
         => RegisterInt(modId, key, displayName, defaultValue, min, max, description) == 1;
 
-    /// <summary>Register a float option. Returns true if newly registered.</summary>
     public static bool RegisterFloatOption(string modId, string key, string displayName, float defaultValue, float min, float max, string description = "")
         => RegisterFloat(modId, key, displayName, defaultValue, min, max, description) == 1;
 
-    /// <summary>Get a boolean value. Returns the value, or defaultValue if not found.</summary>
     public static bool GetBoolValue(string modId, string key, bool defaultValue = false)
     {
         uint raw = GetBool(modId, key);
@@ -934,7 +838,6 @@ public static class ModConfigSystem
         return raw == 1;
     }
 
-    /// <summary>Get an integer value. Returns the value, or defaultValue if not found.</summary>
     public static int GetIntValue(string modId, string key, int defaultValue = 0)
     {
         try
@@ -949,7 +852,6 @@ public static class ModConfigSystem
         catch { return defaultValue; }
     }
 
-    /// <summary>Get a float value. Returns the value, or defaultValue if not found.</summary>
     public static float GetFloatValue(string modId, string key, float defaultValue = 0f)
     {
         try
@@ -964,7 +866,6 @@ public static class ModConfigSystem
         catch { return defaultValue; }
     }
 
-    /// <summary>Set a boolean value programmatically and save to disk.</summary>
     public static bool SetBoolValue(string modId, string key, bool value)
     {
         try
@@ -987,7 +888,6 @@ public static class ModConfigSystem
         }
     }
 
-    /// <summary>Set an integer value programmatically and save to disk.</summary>
     public static bool SetIntValue(string modId, string key, int value)
     {
         try
@@ -1010,7 +910,6 @@ public static class ModConfigSystem
         }
     }
 
-    /// <summary>Set a float value programmatically and save to disk.</summary>
     public static bool SetFloatValue(string modId, string key, float value)
     {
         try
@@ -1033,21 +932,13 @@ public static class ModConfigSystem
         }
     }
 
-    /// <summary>Check whether a config key exists for a given mod.</summary>
     public static bool HasOption(string modId, string key)
     {
         return _mods.TryGetValue(modId, out var mod) && mod.Entries.ContainsKey(key);
     }
 
-    /// <summary>Show the Mod Settings panel programmatically.</summary>
     public static void OpenPanel() => ShowPanel();
-
-    /// <summary>Hide the Mod Settings panel programmatically.</summary>
     public static void ClosePanel() => HidePanel();
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Internal: Mod Management
-    // ═══════════════════════════════════════════════════════════════════════
 
     private static ModConfig GetOrCreateMod(string modId)
     {
@@ -1057,7 +948,6 @@ public static class ModConfigSystem
             _mods[modId] = mod;
             _modOrder.Add(modId);
 
-            // Auto-select the first mod registered
             if (_selectedModId == null)
                 _selectedModId = modId;
 
@@ -1065,10 +955,6 @@ public static class ModConfigSystem
         }
         return mod;
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  JSON Persistence — Manual Serializer/Deserializer
-    // ═══════════════════════════════════════════════════════════════════════
 
     private static string GetConfigPath(string modId)
     {
@@ -1126,10 +1012,6 @@ public static class ModConfigSystem
         }
     }
 
-    /// <summary>
-    /// Loads a single persisted value from the mod's config file on disk.
-    /// Returns null if no persisted value found.
-    /// </summary>
     private static ConfigEntry LoadPersistedValue(string modId, string key)
     {
         try
@@ -1151,10 +1033,6 @@ public static class ModConfigSystem
         return null;
     }
 
-    /// <summary>
-    /// Simple JSON parser that handles our exact config format.
-    /// Returns a dictionary of key -> ConfigEntry with just Type and value fields populated.
-    /// </summary>
     private static Dictionary<string, ConfigEntry> ParseConfigJson(string json)
     {
         var result = new Dictionary<string, ConfigEntry>();
@@ -1263,10 +1141,6 @@ public static class ModConfigSystem
         return -1;
     }
 
-    /// <summary>
-    /// Extracts the string value for a given key in a JSON-like body.
-    /// e.g. for body = '"type": "bool", "value": true' and key = "type", returns "bool".
-    /// </summary>
     private static string ExtractJsonStringValue(string body, string key)
     {
         string pattern = "\"" + key + "\"";
@@ -1286,10 +1160,6 @@ public static class ModConfigSystem
         return body.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
     }
 
-    /// <summary>
-    /// Extracts the raw value (as a string) for a given key.
-    /// Works for booleans, ints, and floats (non-quoted values).
-    /// </summary>
     private static string ExtractJsonRawValue(string body, string key)
     {
         string pattern = "\"" + key + "\"";
@@ -1338,11 +1208,6 @@ public static class ModConfigSystem
     }
 
 
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  IMGUI Panel Drawing
-    // ═══════════════════════════════════════════════════════════════════════
-
     private static bool IsShiftHeld()
     {
         try
@@ -1358,14 +1223,12 @@ public static class ModConfigSystem
     {
         float w = 700f, h = 740f;
 
-        // Initialize panel position to center on first draw
         if (_panelX < 0f || _panelY < 0f)
         {
             _panelX = (Screen.width - w) / 2f;
             _panelY = (Screen.height - h) / 2f;
         }
 
-        // Clamp to screen bounds
         _panelX = Mathf.Clamp(_panelX, 0f, Screen.width - w);
         _panelY = Mathf.Clamp(_panelY, 0f, Screen.height - h);
 
@@ -1398,7 +1261,7 @@ public static class ModConfigSystem
         // ── Consume all mouse events inside the panel so nothing clicks through ──
         if (evt.isMouse && panelRect.Contains(evt.mousePosition))
         {
-            // Don't Use() the event here — let our own controls process it first.
+            // Don't Use() the event here - let our own controls process it first.
             // But for any unhandled mouse-down, mark it used at the end.
         }
 
@@ -1408,21 +1271,17 @@ public static class ModConfigSystem
         float closeHeight = 36f;
         float bottomPad = 12f;
 
-        // ── Dark background ──
         GUI.DrawTexture(panelRect, _windowBg);
 
-        // ── X close button (top-right) ──
         if (GUI.Button(new Rect(px + w - 38f, py + 6f, 30f, 30f), "X", _buttonStyle))
             HidePanel();
 
-        // ── Title ──
         GUI.Label(new Rect(px + pad, py + pad, w - pad * 2 - 35f, 30f), "MOD SETTINGS", _titleStyle);
 
         float contentTop = py + pad + titleHeight;
         float contentBottom = py + h - bottomPad - closeHeight - bottomPad;
         float contentHeight = contentBottom - contentTop;
 
-        // ── Left sidebar background ──
         var sidebarRect = new Rect(px, contentTop, sidebarWidth + pad, contentHeight);
         GUI.DrawTexture(sidebarRect, _sidebarBg);
 
@@ -1445,7 +1304,6 @@ public static class ModConfigSystem
                 bool isSelected = modId == _selectedModId;
                 var style = isSelected ? _modListSelectedStyle : _modListButtonStyle;
 
-                // Truncate long mod names for display
                 string displayName = modId;
                 if (displayName.Length > 16) displayName = displayName.Substring(0, 14) + "..";
 
@@ -1497,7 +1355,6 @@ public static class ModConfigSystem
         if (GUI.Button(new Rect(closeBtnX, closeBtnY, closeBtnW, closeHeight), "Close", _closeButtonStyle))
             HidePanel();
 
-        // ── Close if clicking outside the panel ──
         if (evt.type == EventType.MouseDown && evt.button == 0 && !panelRect.Contains(evt.mousePosition))
         {
             HidePanel();
@@ -1511,11 +1368,9 @@ public static class ModConfigSystem
         float visibleTop = top;
         float visibleBottom = bottom;
 
-        // Mod name header
         GUI.Label(new Rect(x, y, width, 28f), mod.ModId, _titleStyle);
         y += 30f;
 
-        // Author & version info
         string metaLine = "";
         if (!string.IsNullOrEmpty(mod.Version)) metaLine += "v" + mod.Version;
         if (!string.IsNullOrEmpty(mod.Author))
@@ -1529,11 +1384,9 @@ public static class ModConfigSystem
             y += 22f;
         }
 
-        // Separator line
         GUI.DrawTexture(new Rect(x, y, width, 1f), _fieldBg);
         y += 8f;
 
-        // If mod has no config entries, show a message
         if (mod.EntryOrder.Count == 0)
         {
             GUI.Label(new Rect(x, y + 8f, width, 40f), "No configurable options available.", _descriptionStyle);
@@ -1566,7 +1419,6 @@ public static class ModConfigSystem
         float totalContentHeight = y - entryStartY + _scrollOffset;
         float viewHeight = visibleBottom - visibleTop - 42f; // minus header
 
-        // Scroll with mouse wheel when hovering over the content area
         if (totalContentHeight > viewHeight)
         {
             var contentRect = new Rect(x, visibleTop, width, visibleBottom - visibleTop);
@@ -1580,7 +1432,6 @@ public static class ModConfigSystem
                 }
             }
 
-            // Clamp scroll bounds
             _scrollOffset = Mathf.Clamp(_scrollOffset, 0f, Mathf.Max(0f, totalContentHeight - viewHeight));
         }
         else
@@ -1591,10 +1442,8 @@ public static class ModConfigSystem
 
     private static void DrawBoolEntry(ModConfig mod, ConfigEntry entry, float x, ref float y, float width)
     {
-        // Display name
         GUI.Label(new Rect(x, y, width - 70f, 22f), entry.DisplayName, _labelStyle);
 
-        // Toggle button
         float toggleW = 56f;
         float toggleH = 24f;
         float toggleX = x + width - toggleW;
@@ -1611,7 +1460,6 @@ public static class ModConfigSystem
 
         y += 26f;
 
-        // Description (if present)
         if (!string.IsNullOrEmpty(entry.Description))
         {
             GUI.Label(new Rect(x + 4f, y, width - 4f, 18f), entry.Description, _descriptionStyle);
@@ -1621,11 +1469,9 @@ public static class ModConfigSystem
 
     private static void DrawIntEntry(ModConfig mod, ConfigEntry entry, float x, ref float y, float width)
     {
-        // Display name
         GUI.Label(new Rect(x, y, width, 22f), entry.DisplayName, _labelStyle);
         y += 24f;
 
-        // [-] value [+] and range
         float btnW = 32f;
         float btnH = 26f;
         float valueW = 60f;
@@ -1633,7 +1479,6 @@ public static class ModConfigSystem
 
         float cx = x;
 
-        // [-] button
         if (GUI.Button(new Rect(cx, y, btnW, btnH), "-", _smallButtonStyle))
         {
             int step = IsShiftHeld() ? 10 : 1;
@@ -1643,11 +1488,9 @@ public static class ModConfigSystem
         }
         cx += btnW + 4f;
 
-        // Current value
         GUI.Label(new Rect(cx, y, valueW, btnH), entry.IntValue.ToString(), _valueStyle);
         cx += valueW + 4f;
 
-        // [+] button
         if (GUI.Button(new Rect(cx, y, btnW, btnH), "+", _smallButtonStyle))
         {
             int step = IsShiftHeld() ? 10 : 1;
@@ -1657,12 +1500,10 @@ public static class ModConfigSystem
         }
         cx += btnW + 10f;
 
-        // Range label
         GUI.Label(new Rect(cx, y, rangeW, btnH), $"{entry.IntMin} - {entry.IntMax}", _rangeLabelStyle);
 
         y += btnH + 2f;
 
-        // Description
         if (!string.IsNullOrEmpty(entry.Description))
         {
             GUI.Label(new Rect(x + 4f, y, width - 4f, 18f), entry.Description, _descriptionStyle);
@@ -1672,11 +1513,9 @@ public static class ModConfigSystem
 
     private static void DrawFloatEntry(ModConfig mod, ConfigEntry entry, float x, ref float y, float width)
     {
-        // Display name
         GUI.Label(new Rect(x, y, width, 22f), entry.DisplayName, _labelStyle);
         y += 24f;
 
-        // [-] value [+] and range
         float btnW = 32f;
         float btnH = 26f;
         float valueW = 70f;
@@ -1684,7 +1523,6 @@ public static class ModConfigSystem
 
         float cx = x;
 
-        // [-] button
         if (GUI.Button(new Rect(cx, y, btnW, btnH), "-", _smallButtonStyle))
         {
             float step = IsShiftHeld() ? 1.0f : 0.1f;
@@ -1695,11 +1533,9 @@ public static class ModConfigSystem
         }
         cx += btnW + 4f;
 
-        // Current value
         GUI.Label(new Rect(cx, y, valueW, btnH), entry.FloatValue.ToString("F1"), _valueStyle);
         cx += valueW + 4f;
 
-        // [+] button
         if (GUI.Button(new Rect(cx, y, btnW, btnH), "+", _smallButtonStyle))
         {
             float step = IsShiftHeld() ? 1.0f : 0.1f;
@@ -1710,22 +1546,16 @@ public static class ModConfigSystem
         }
         cx += btnW + 10f;
 
-        // Range label
         GUI.Label(new Rect(cx, y, rangeW, btnH), $"{entry.FloatMin:F1} - {entry.FloatMax:F1}", _rangeLabelStyle);
 
         y += btnH + 2f;
 
-        // Description
         if (!string.IsNullOrEmpty(entry.Description))
         {
             GUI.Label(new Rect(x + 4f, y, width - 4f, 18f), entry.Description, _descriptionStyle);
             y += 20f;
         }
     }
-
-    // ═══════════════════════════════════════════════════════════════════════
-    //  IMGUI Style Initialization
-    // ═══════════════════════════════════════════════════════════════════════
 
     private static void InitStyles()
     {

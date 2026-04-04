@@ -1,13 +1,10 @@
 //! Shared relay protocol for Data Center Multiplayer.
-//!
-//! Wire format: [u32 LE payload_length][bincode-encoded RelayPacket]
 
 use bincode::{Decode, Encode};
 
 /// Packets exchanged between relay clients and the relay server.
 #[derive(Encode, Decode, Debug, Clone)]
 pub enum RelayPacket {
-    // ── Client → Server ──
     /// Create a new room. Server responds with RoomCreated.
     CreateRoom { steam_id: u64 },
     /// Join an existing room by code. Server responds with JoinOk, RoomNotFound, or RoomFull.
@@ -19,7 +16,6 @@ pub enum RelayPacket {
     /// Keep-alive ping from client.
     Heartbeat,
 
-    // ── Server → Client ──
     /// Room created successfully. Contains the room code to share.
     RoomCreated { room_code: String },
     /// Successfully joined a room.
@@ -58,21 +54,16 @@ pub fn encode_packet(packet: &RelayPacket) -> Option<Vec<u8>> {
     Some(buf)
 }
 
-/// Encode a packet for WebSocket transport (bincode only, no length prefix).
-/// WebSocket frames provide their own length framing, so the 4-byte length
-/// prefix used in raw TCP mode is unnecessary.
 pub fn encode_ws(packet: &RelayPacket) -> Option<Vec<u8>> {
     bincode::encode_to_vec(packet, BINCODE_CONFIG).ok()
 }
 
-/// Decode a packet from raw bincode bytes (without the 4-byte length prefix).
 pub fn decode_packet(data: &[u8]) -> Option<RelayPacket> {
     bincode::decode_from_slice(data, BINCODE_CONFIG)
         .ok()
         .map(|(pkt, _)| pkt)
 }
 
-/// Read one length-prefixed packet from a `Read` stream.
 pub fn read_packet(reader: &mut impl std::io::Read) -> std::io::Result<RelayPacket> {
     let mut len_buf = [0u8; 4];
     reader.read_exact(&mut len_buf)?;
@@ -93,7 +84,6 @@ pub fn read_packet(reader: &mut impl std::io::Read) -> std::io::Result<RelayPack
     })
 }
 
-/// Write one length-prefixed packet to a `Write` stream.
 pub fn write_packet(writer: &mut impl std::io::Write, packet: &RelayPacket) -> std::io::Result<()> {
     let buf = encode_packet(packet).ok_or_else(|| {
         std::io::Error::new(std::io::ErrorKind::InvalidData, "failed to encode packet")
@@ -102,7 +92,6 @@ pub fn write_packet(writer: &mut impl std::io::Write, packet: &RelayPacket) -> s
     writer.flush()
 }
 
-/// Generate a random room code: 6 uppercase alphanumeric chars (no I/O/0/1 to avoid confusion).
 pub fn generate_room_code() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
     let seed = SystemTime::now()
@@ -110,7 +99,6 @@ pub fn generate_room_code() -> String {
         .unwrap_or_default()
         .as_nanos() as u64;
 
-    // Mix in thread id for uniqueness when called rapidly
     let thread_id = std::thread::current().id();
     let extra = format!("{:?}", thread_id);
     let extra_hash: u64 = extra

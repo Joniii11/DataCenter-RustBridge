@@ -22,7 +22,6 @@ public class CustomEmployeeEntry
     public bool RequiresConfirmation;
 }
 
-// Manages mod-registered custom employees: registration, state, and HR UI injection.
 public static class CustomEmployeeManager
 {
     private static readonly List<CustomEmployeeEntry> _employees = new();
@@ -157,7 +156,6 @@ public static class CustomEmployeeManager
     private static bool _scrollViewInjected = false;
 #pragma warning restore CS0414
 
-    // Wraps the HR Grid in a ScrollRect for vertical scrolling of employee cards.
     private static Transform EnsureScrollView(Transform hrTransform, Transform grid)
     {
         var existingScroll = hrTransform.Find("ModScrollView");
@@ -173,7 +171,6 @@ public static class CustomEmployeeManager
 
         CrashLog.Log("CustomEmployee: Creating ScrollView wrapper for Grid");
 
-        // Capture Grid's RectTransform so the scroll view takes its place
         var gridRect = grid.GetComponent<RectTransform>();
         var gridParent = grid.parent;
 
@@ -186,7 +183,6 @@ public static class CustomEmployeeManager
         var anchoredPos = gridRect.anchoredPosition;
         int siblingIndex = grid.GetSiblingIndex();
 
-        // Create ScrollView container
         var scrollGO = new GameObject("ModScrollView");
         scrollGO.AddComponent<RectTransform>();
         scrollGO.transform.SetParent(gridParent, false);
@@ -201,7 +197,6 @@ public static class CustomEmployeeManager
         scrollRect_rt.sizeDelta = sizeDelta;
         scrollRect_rt.anchoredPosition = anchoredPos;
 
-        // Create Viewport with mask
         var viewportGO = new GameObject("Viewport");
         viewportGO.AddComponent<RectTransform>();
         viewportGO.AddComponent<RectMask2D>();
@@ -220,7 +215,6 @@ public static class CustomEmployeeManager
         viewportImage.color = new Color(0, 0, 0, 0);
         viewportImage.raycastTarget = true;
 
-        // Create Content container
         var contentGO = new GameObject("Content");
         contentGO.AddComponent<RectTransform>();
         contentGO.AddComponent<ContentSizeFitter>();
@@ -238,7 +232,6 @@ public static class CustomEmployeeManager
         fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        // Copy layout from original Grid onto Content
         var srcLayout = grid.GetComponent<GridLayoutGroup>();
         if (srcLayout != null)
         {
@@ -274,7 +267,6 @@ public static class CustomEmployeeManager
             }
         }
 
-        // Move all children from Grid to Content
         var childrenToMove = new System.Collections.Generic.List<Transform>();
         for (int i = 0; i < grid.childCount; i++)
             childrenToMove.Add(grid.GetChild(i));
@@ -284,7 +276,6 @@ public static class CustomEmployeeManager
 
         CrashLog.Log($"CustomEmployee: Moved {childrenToMove.Count} children from Grid to Content");
 
-        // Add ScrollRect component
         var scrollComp = scrollGO.AddComponent<ScrollRect>();
         scrollComp.content = contentRect;
         scrollComp.viewport = viewportRect;
@@ -295,7 +286,6 @@ public static class CustomEmployeeManager
         scrollComp.inertia = true;
         scrollComp.decelerationRate = 0.1f;
 
-        // Hide the now-empty original Grid
         grid.gameObject.SetActive(false);
 
         _scrollViewInjected = true;
@@ -327,7 +317,6 @@ public static class CustomEmployeeManager
 
             CrashLog.Log($"CustomEmployee: Using content grid '{contentGrid.name}' with {contentGrid.childCount} children");
 
-            // Find a template card from the content grid
             Transform templateCard = null;
             for (int i = contentGrid.childCount - 1; i >= 0; i--)
             {
@@ -582,19 +571,14 @@ public static class CustomEmployeeManager
         catch (Exception ex) { CrashLog.LogException("LoadState", ex); }
     }
 
-    // Re-registers salaries for hired custom employees once BalanceSheet is available.
-    // Safe to call multiple times; only acts once after LoadState sets the flag.
+    // Deferred until BalanceSheet is available. Only acts once after LoadState sets the flag.
     public static void ReregisterSalariesIfNeeded()
     {
         if (!_salariesNeedReregistration) return;
 
         try
         {
-            if (BalanceSheet.instance == null)
-            {
-                CrashLog.Log("ReregisterSalariesIfNeeded: BalanceSheet.instance is null, skipping (will retry later)");
-                return;
-            }
+            if (BalanceSheet.instance == null) return;
 
             int count = 0;
             foreach (var e in _employees)
@@ -613,7 +597,7 @@ public static class CustomEmployeeManager
         catch (Exception ex) { CrashLog.LogException("ReregisterSalariesIfNeeded", ex); }
     }
 
-    // Wires a click handler onto ButtonExtended (Selectable subclass with its own onClick), falling back to Button.
+    // ButtonExtended is a Selectable subclass with its own onClick; falls back to standard Button.
     private static void WireButtonExtendedClick(Transform buttonTransform, System.Action callback)
     {
         if (buttonTransform == null) return;
@@ -667,7 +651,6 @@ public static class CustomEmployeeManager
             var portraitTransform = card.Find("Image");
             if (portraitTransform == null) return;
 
-            // Try loading a custom portrait from disk (jpg first, then png)
             string assetsDir = Path.Combine(MelonEnvironment.UserDataDirectory, "ModAssets");
             string imagePath = null;
             foreach (var ext in new[] { ".jpg", ".png" })

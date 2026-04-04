@@ -159,7 +159,6 @@ public class FFIBridge : IDisposable
             _logger.Warning($"  '{fileName}' has no mod_init() export.");
         }
 
-        // Pass mod metadata to config system so it can display author/version
         if (!string.IsNullOrEmpty(mod.Id) && mod.Id != "unknown")
         {
             ModConfigSystem.SetModInfo(mod.Id, mod.Author, mod.Version);

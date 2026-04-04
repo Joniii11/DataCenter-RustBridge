@@ -375,7 +375,7 @@ public static class GameHooks
                     try { server = dict[key]; } catch { continue; }
                     if (server == null) continue;
                     if (server.isBroken) continue;
-                    if (server.eolTime > 0) continue; // not yet EOL
+                    if (server.eolTime > 0) continue;
 
                     if (tm.IsDeviceAlreadyAssigned(null, server)) continue;
 

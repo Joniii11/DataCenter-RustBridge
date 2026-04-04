@@ -122,15 +122,14 @@ public class MultiplayerBridge
         public bool HasWalkingParam;
         public bool AnimParamsLogged;
         public UnityEngine.AI.NavMeshAgent NavAgent;
-        // UMA deferred mesh generation: prefab was instantiated with UMA scripts
-        // left alive so the mesh can be built. Once renderers appear we strip scripts.
         public bool WaitingForUMA;
         public float UMAWaitStart;
-    }
 
-    // ═══════════════════════════════════════════════════════════════════════
-    //  Fields: DLL / FFI
-    // ═══════════════════════════════════════════════════════════════════════
+        public Vector3 PrevTargetPos;
+        public float PrevTargetRotY;
+        public float LastNetworkUpdate;
+        const float NetworkInterval = 0.05f;
+    }
 
     private readonly MelonLogger.Instance _logger;
     private MpGetRemotePlayersDelegate _getRemotePlayers;
@@ -204,6 +203,8 @@ public class MultiplayerBridge
     // ═══════════════════════════════════════════════════════════════════════
 
     private bool _showPanel;
+    private UnityEngine.EventSystems.EventSystem _mpDisabledEventSystem;
+    private int _mpReenableCountdown;
     private bool _pendingMenuInjection;
     private float _menuInjectionTimer;
     private GameObject _menuButton;
@@ -325,10 +326,19 @@ public class MultiplayerBridge
 
     public void OnUpdate(float dt)
     {
-        // --- Decrement reconnect cooldown ---
+        if (_mpReenableCountdown > 0)
+        {
+            _mpReenableCountdown--;
+            if (_mpReenableCountdown <= 0 && _mpDisabledEventSystem != null)
+            {
+                _mpDisabledEventSystem.enabled = true;
+                _mpDisabledEventSystem = null;
+            }
+        }
+
         if (_reconnectCooldown > 0f) _reconnectCooldown -= dt;
 
-        // --- Handle pending main-menu button injection ---
+
         if (_pendingMenuInjection)
         {
             _menuInjectionTimer -= dt;
@@ -2006,11 +2016,23 @@ public class MultiplayerBridge
     public void ShowMultiplayerPanel()
     {
         _showPanel = true;
+        try
+        {
+            var es = UnityEngine.EventSystems.EventSystem.current;
+            if (es != null)
+            {
+                _mpDisabledEventSystem = es;
+                es.enabled = false;
+            }
+        }
+        catch { }
     }
 
     public void HideMultiplayerPanel()
     {
         _showPanel = false;
+        if (_mpDisabledEventSystem != null)
+            _mpReenableCountdown = 2;
     }
 
     /// <summary>
@@ -2632,7 +2654,6 @@ public class MultiplayerBridge
                                     if (smr != null && smr.sharedMesh != null)
                                     {
                                         umaRendererCount++;
-                                        CrashLog.Log($"[MP Render]   renderer[{r}] '{smr.gameObject.name}' mesh='{smr.sharedMesh.name}' verts={smr.sharedMesh.vertexCount}");
                                     }
                                 }
                             }
@@ -2647,7 +2668,7 @@ public class MultiplayerBridge
                     if (meshReady)
                     {
                         // Mesh generated! Disable remaining UMA scripts now.
-                        CrashLog.Log($"[MP Render] UMA mesh ready for {data.SteamId} after {Time.time - remote.UMAWaitStart:F1}s — {umaRendererCount} renderer(s). Stripping UMA scripts.");
+                        CrashLog.Log($"[MP Render] UMA mesh ready for {data.SteamId} {umaRendererCount} renderer(s)");
                         foreach (var mb in remote.GO.GetComponentsInChildren<MonoBehaviour>(true))
                         {
                             if (mb == null) continue;
@@ -2664,7 +2685,6 @@ public class MultiplayerBridge
                             if (remote.Animator != null)
                             {
                                 remote.Animator.applyRootMotion = false;
-                                CrashLog.Log($"[MP Render] Late animator setup for {data.SteamId} rootMotion=OFF");
                                 try
                                 {
                                     foreach (var param in remote.Animator.parameters)
@@ -2691,27 +2711,12 @@ public class MultiplayerBridge
                             }
                         }
                     }
-                    else
-                    {
-                        // Periodic status logging every ~3 seconds so we can see what UMA is doing
-                        float waited = Time.time - remote.UMAWaitStart;
-                        if (waited > 0.5f && ((int)(waited * 10) % 30 == 0)) // roughly every 3s
-                        {
-                            bool hasUmaData = umaData != null;
-                            bool created = hasUmaData && umaData.isOfficiallyCreated;
-                            bool dirty = hasUmaData && umaData.dirty;
-                            var dca = remote.GO.GetComponentInChildren<DynamicCharacterAvatar>(true);
-                            bool dcaEnabled = dca != null && dca.enabled;
-                            CrashLog.Log($"[MP Render] UMA waiting {waited:F1}s for {data.SteamId}: UMAData={hasUmaData} created={created} dirty={dirty} DCA.enabled={dcaEnabled}");
-                        }
-                    }
+
 
                     if (!meshReady && Time.time - remote.UMAWaitStart > 15f)
                     {
-                        // Timeout — UMA didn't generate a mesh in 15 seconds.
-                        // Try once more with a fresh UMA prefab; SpawnRemotePlayer
-                        // will fall through to capsule only if no prefabs exist.
-                        CrashLog.Log($"[MP Render] UMA timeout for {data.SteamId} after 15s — retrying UMA spawn");
+                        // UMA didn't generate a mesh in 15 seconds why tho?
+                        CrashLog.Log($"[MP Render] UMA timeout for {data.SteamId} retrying");
                         UnityEngine.Object.Destroy(remote.GO);
                         _remotePlayers.Remove(data.SteamId);
                         var retry = SpawnRemotePlayer(data);
@@ -2721,40 +2726,42 @@ public class MultiplayerBridge
                     }
                 }
 
-                remote.TargetPos = new Vector3(data.X, data.Y, data.Z);
-                remote.TargetRotY = data.RotY;
+                var newTarget = new Vector3(data.X, data.Y, data.Z);
+                float newRotY = data.RotY;
 
-                // Measure movement speed before moving
-                Vector3 prevPos = remote.GO.transform.position;
+                if (Vector3.Distance(newTarget, remote.TargetPos) > 0.001f ||
+                    Mathf.Abs(newRotY - remote.TargetRotY) > 0.1f)
+                {
+                    remote.PrevTargetPos = remote.TargetPos;
+                    remote.PrevTargetRotY = remote.TargetRotY;
+                    remote.TargetPos = newTarget;
+                    remote.TargetRotY = newRotY;
+                    remote.LastNetworkUpdate = Time.time;
+                }
 
-                // NavMeshAgent.Move(delta) — moves the agent on the NavMesh surface
-                // WITHOUT any pathfinding. Same smooth interpolation as our old Lerp,
-                // but Unity constrains movement to the walkable floor automatically.
+                float elapsed = Time.time - remote.LastNetworkUpdate;
+                float t = Mathf.Clamp(elapsed / 0.05f, 0f, 1.5f);
+                Vector3 interpolated = Vector3.Lerp(remote.PrevTargetPos, remote.TargetPos, t);
+                float interpolatedRotY = Mathf.LerpAngle(remote.PrevTargetRotY, remote.TargetRotY, Mathf.Min(t, 1f));
+
+                Vector3 currentPos = remote.GO.transform.position;
+
                 if (remote.NavAgent != null && remote.NavAgent.isOnNavMesh)
                 {
-                    float distToTarget = Vector3.Distance(prevPos, remote.TargetPos);
-                    if (distToTarget > 5f)
-                    {
-                        // Large distance — teleport (floor change, etc.)
-                        remote.NavAgent.Warp(remote.TargetPos);
-                    }
-                    else if (distToTarget > 0.01f)
-                    {
-                        // Smooth move toward target — 10x/s interpolation speed, no pathfinding
-                        Vector3 step = (remote.TargetPos - prevPos) * Mathf.Min(1f, Time.deltaTime * 10f);
-                        remote.NavAgent.Move(step);
-                    }
+                    float dist = Vector3.Distance(currentPos, interpolated);
+                    if (dist > 5f)
+                        remote.NavAgent.Warp(interpolated);
+                    else if (dist > 0.002f)
+                        remote.NavAgent.Move(interpolated - currentPos);
+                    remote.GO.transform.position = remote.NavAgent.nextPosition;
                 }
                 else
                 {
-                    // Fallback for characters without NavMeshAgent (capsule etc.)
-                    Vector3 lerpedPos = Vector3.Lerp(prevPos, remote.TargetPos, Time.deltaTime * 10f);
-                    remote.GO.transform.position = lerpedPos;
+                    remote.GO.transform.position = interpolated;
                 }
 
-                // Handle rotation ourselves (NavMeshAgent.updateRotation is off)
                 var euler = remote.GO.transform.eulerAngles;
-                euler.y = Mathf.LerpAngle(euler.y, remote.TargetRotY, Time.deltaTime * 10f);
+                euler.y = Mathf.LerpAngle(euler.y, interpolatedRotY, Time.deltaTime * 15f);
                 remote.GO.transform.eulerAngles = euler;
 
                 // Drive animator from movement speed
@@ -2799,164 +2806,98 @@ public class MultiplayerBridge
     private RemotePlayerGO SpawnRemotePlayer(RemotePlayerData data)
     {
         string playerName = GetPlayerName(data);
-        CrashLog.Log($"[MP Render] SpawnRemotePlayer: {playerName} ({data.SteamId}) at ({data.X:F1}, {data.Y:F1}, {data.Z:F1})");
 
         try
         {
-            // ── Strategy: instantiate a UMA prefab and let UMA generate the mesh ──
-            // No cloning of live technicians — we always create a fresh UMA character.
-            // DynamicCharacterAvatar.Start() fires after we re-activate the GO and
-            // the UMA generator builds the mesh within 1-3 frames.
             GameObject go = null;
 
             var mgr = MainGameManager.instance;
             if (mgr != null && mgr.techniciansPrefabs != null && mgr.techniciansPrefabs.Length > 0)
             {
-                // Pick a prefab — cycle through available prefabs per player for variety
                 int prefabIdx = (int)(data.SteamId % (ulong)mgr.techniciansPrefabs.Length);
                 var prefab = mgr.techniciansPrefabs[prefabIdx];
-                CrashLog.Log($"[MP Render] Instantiating UMA prefab [{prefabIdx}] '{prefab.name}' ({mgr.techniciansPrefabs.Length} prefabs available)");
                 go = UnityEngine.Object.Instantiate(prefab);
             }
             else
             {
-                CrashLog.Log("[MP Render] No UMA prefabs available — capsule fallback");
                 return SpawnCapsuleFallback(data);
             }
 
-            // Immediately deactivate so Start() doesn't fire yet.
-            // Note: Awake() already ran during Instantiate() — only Start() is deferred.
-            // This prevents Technician.Start() from self-destructing or path-finding.
+            // Deactivate so Technician.Start() doesn't fire
             go.SetActive(false);
-
             go.name = $"RemotePlayer_{data.SteamId}";
 
             var spawnPos = new Vector3(data.X, data.Y, data.Z);
             go.transform.position = spawnPos;
 
-            // Configure NavMeshAgent for Move()-based movement — we calculate the
-            // delta ourselves (like Lerp) and call Move(delta) each frame.
-            // The agent constrains movement to the NavMesh surface (ground-snapping)
-            // with ZERO pathfinding overhead.
+            // NavMeshAgent: we drive via Move() each frame, agent constrains to NavMesh
             UnityEngine.AI.NavMeshAgent nav = null;
             var navCheck = go.GetComponent<UnityEngine.AI.NavMeshAgent>();
             if (navCheck != null)
             {
                 nav = navCheck;
-                nav.updateRotation = false;      // we handle rotation via TargetRotY
+                nav.updatePosition = false;
+                nav.updateRotation = false;
                 nav.updateUpAxis = false;
-                nav.isStopped = true;            // no autonomous movement — we drive via Move()
+                nav.isStopped = true;
                 nav.obstacleAvoidanceType = ObstacleAvoidanceType.NoObstacleAvoidance;
                 nav.autoTraverseOffMeshLink = false;
                 nav.autoBraking = false;
-                CrashLog.Log($"[MP Render] NavMeshAgent configured for Move(): enabled={nav.enabled} radius={nav.radius:F2} height={nav.height:F2}");
-            }
-            else
-            {
-                CrashLog.Log("[MP Render] No NavMeshAgent on prefab — will use direct position fallback");
             }
 
-            // Disable gameplay scripts, keep UMA + Animator + Renderer alive
-            // so UMA's DynamicCharacterAvatar.Start() can fire and generate the mesh
-            int disabledCount = 0;
-            int keptCount = 0;
+            // Keep UMA/Animator/Renderer alive disable gameplay scripts
             foreach (var mb in go.GetComponentsInChildren<MonoBehaviour>(true))
             {
                 if (mb == null) continue;
                 string typeName = mb.GetIl2CppType().Name;
-                // Keep: UMA/DynamicCharacter scripts (mesh generation), Animator, Renderers
                 if (typeName.Contains("UMA") || typeName.Contains("DynamicCharacter") ||
                     typeName.Contains("Avatar") || typeName.Contains("Generator") ||
                     typeName == "Animator" || typeName.Contains("Renderer"))
-                {
-                    keptCount++;
                     continue;
-                }
-                // Disable: Technician, AI, ThirdPerson, IK, etc.
-                try { mb.enabled = false; disabledCount++; } catch { }
+                try { mb.enabled = false; } catch { }
             }
-            CrashLog.Log($"[MP Render] Scripts: {keptCount} kept (UMA/Animator/Renderer), {disabledCount} disabled (gameplay)");
 
-            // Strip colliders so remote players don't block the local player
             foreach (var col in go.GetComponentsInChildren<Collider>(true))
-            {
                 try { UnityEngine.Object.Destroy(col); } catch { }
-            }
-
-            // Strip rigidbody to prevent physics
             foreach (var rb in go.GetComponentsInChildren<Rigidbody>(true))
-            {
                 try { UnityEngine.Object.Destroy(rb); } catch { }
-            }
 
-            // Disable NavMeshAgent BEFORE activation so it doesn't auto-snap to the
-            // nearest NavMesh surface (which could be the roof instead of the floor).
+            // Disable nav before activation so it doesn't auto-snap to the roof
             if (nav != null) nav.enabled = false;
-
-            // Now activate — UMA's DynamicCharacterAvatar.Start() will fire
-            // and queue the character for mesh generation (gameplay scripts are disabled)
             go.SetActive(true);
 
-            CrashLog.Log($"[MP Render] GO active={go.activeSelf}, pos=({go.transform.position.x:F1}, {go.transform.position.y:F1}, {go.transform.position.z:F1})");
-
-            // Now enable NavMeshAgent — transform.position is already at the correct
-            // network position, so the agent will find the right NavMesh surface (the
-            // floor the sender is standing on, not the roof).
             if (nav != null)
             {
                 nav.enabled = true;
                 nav.Warp(spawnPos);
-                CrashLog.Log($"[MP Render] NavMesh Warp snap: Y={go.transform.position.y:F2} (from {spawnPos.y:F2}) isOnNavMesh={nav.isOnNavMesh}");
             }
 
-            // Log DynamicCharacterAvatar state
             var avatar = go.GetComponentInChildren<DynamicCharacterAvatar>(true);
-            if (avatar != null)
-            {
-                CrashLog.Log($"[MP Render] DynamicCharacterAvatar: '{avatar.gameObject.name}' enabled={avatar.enabled} BuildCharacterEnabled={avatar.BuildCharacterEnabled}");
-            }
-            else
-            {
+            if (avatar == null)
                 CrashLog.Log("[MP Render] WARNING: No DynamicCharacterAvatar on prefab!");
-            }
-
-            // Log UMAData state (may not exist yet — DCA.Start() creates it)
-            var umaData = go.GetComponentInChildren<UMAData>(true);
-            if (umaData != null)
-            {
-                CrashLog.Log($"[MP Render] UMAData: isOfficiallyCreated={umaData.isOfficiallyCreated} dirty={umaData.dirty} firstBake={umaData.firstBake}");
-            }
-            else
-            {
-                CrashLog.Log("[MP Render] No UMAData yet (will be created by DynamicCharacterAvatar.Start())");
-            }
 
             AddNameTag(go, playerName);
 
-            // Animator may not exist yet — UMA creates/configures it during generation.
-            // We'll pick it up in UpdateRemotePlayers once the mesh is ready.
             Animator animator = go.GetComponentInChildren<Animator>();
             if (animator != null)
-            {
                 animator.applyRootMotion = false;
-                CrashLog.Log($"[MP Render] Animator found early: enabled={animator.enabled} hasController={animator.runtimeAnimatorController != null} rootMotion=OFF");
-            }
-            else
-            {
-                CrashLog.Log("[MP Render] No Animator yet (expected — UMA creates it during generation)");
-            }
 
-            _logger.Msg($"[MP Bridge] Spawned remote player (UMA): {playerName} ({data.SteamId})");
+            CrashLog.Log($"[MP Render] Spawned {playerName} ({data.SteamId}) at ({data.X:F1}, {data.Y:F1}, {data.Z:F1}) navMesh={nav?.isOnNavMesh} animator={animator != null}");
+            _logger.Msg($"[MP Bridge] Spawned remote player: {playerName} ({data.SteamId})");
 
+            var spawnTarget = new Vector3(data.X, data.Y, data.Z);
             return new RemotePlayerGO
             {
                 GO = go,
                 NavAgent = nav,
                 SteamId = data.SteamId,
-                TargetPos = new Vector3(data.X, data.Y, data.Z),
+                TargetPos = spawnTarget,
                 TargetRotY = data.RotY,
+                PrevTargetPos = spawnTarget,
+                PrevTargetRotY = data.RotY,
+                LastNetworkUpdate = Time.time,
                 Animator = animator,
-                LastPos = new Vector3(data.X, data.Y, data.Z),
+                LastPos = spawnTarget,
                 SpeedParamHash = 0,
                 WalkingParamHash = 0,
                 HasSpeedParam = false,
@@ -3016,7 +2957,6 @@ public class MultiplayerBridge
         {
             // Log parent scale so we can diagnose if the prefab has non-unit scale
             var parentScale = parent.transform.lossyScale;
-            CrashLog.Log($"[MP NameTag] Parent '{parent.name}' lossyScale=({parentScale.x:F3}, {parentScale.y:F3}, {parentScale.z:F3})");
 
             // Match the game's server canvas pattern:
             //   Server: scale=0.01, rect=(38,11), fontSize=0.9-2.0
@@ -3031,7 +2971,6 @@ public class MultiplayerBridge
             {
                 float compensate = 1f / parentScale.x;
                 scale *= compensate;
-                CrashLog.Log($"[MP NameTag] Compensating for parent scale: adjusted canvas scale={scale:F6}");
             }
 
             // Don't parent to the player GO — parent scale inheritance causes
@@ -3085,12 +3024,7 @@ public class MultiplayerBridge
             rect.offsetMax = Vector2.zero;
 
             // Log the actual world size for debugging
-            var lossyAfter = canvasGO.transform.lossyScale;
-            float worldWidth = rectW * lossyAfter.x;
-            float worldHeight = rectH * lossyAfter.y;
-            CrashLog.Log($"[MP NameTag] Created for '{name}': lossyScale=({lossyAfter.x:F6}, {lossyAfter.y:F6}, {lossyAfter.z:F6}) worldSize={worldWidth:F4}m x {worldHeight:F4}m, fontSize={fontSize:F1}");
 
-            // Billboard: follows parent and always faces camera
             var bb = canvasGO.AddComponent<BillboardNameTag>();
             bb.followTarget = parent.transform;
             bb.offsetY = 1.85f;
@@ -3142,16 +3076,10 @@ public class BillboardNameTag : MonoBehaviour
 
     public Transform followTarget;
     public float offsetY = 2.05f;
-    private bool _loggedOnce = false;
     private float _smoothY = float.NaN;
 
     void LateUpdate()
     {
-        if (!_loggedOnce)
-        {
-            _loggedOnce = true;
-            CrashLog.Log($"[MP Billboard] LateUpdate first run: followTarget={(followTarget != null ? followTarget.gameObject.name : "NULL")} offsetY={offsetY:F2} myPos=({transform.position.x:F1}, {transform.position.y:F1}, {transform.position.z:F1})");
-        }
 
         // Follow the target (remote player GO) — nametag is NOT parented to avoid scale inheritance
         // XZ follows instantly; Y is heavily smoothed to prevent micro-jitter that

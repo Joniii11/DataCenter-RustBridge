@@ -144,8 +144,6 @@ public class Core : MelonMod
             _mpBridge?.OnSceneLoaded(sceneName);
             ModConfigSystem.OnSceneLoaded(sceneName);
 
-            // Re-register salaries for previously hired custom employees
-            CustomEmployeeManager.ReregisterSalariesIfNeeded();
         }
         catch (Exception ex)
         {
@@ -160,6 +158,7 @@ public class Core : MelonMod
             _ffiBridge?.OnUpdate(Time.deltaTime);
             _mpBridge?.OnUpdate(Time.deltaTime);
             ModConfigSystem.OnUpdate(Time.deltaTime);
+            CustomEmployeeManager.ReregisterSalariesIfNeeded();
         }
         catch (Exception ex)
         {
