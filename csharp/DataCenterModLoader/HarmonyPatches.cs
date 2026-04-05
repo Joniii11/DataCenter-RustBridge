@@ -691,6 +691,12 @@ internal static class Patch_UsableObject_InteractOnClick
     private static byte _heldObjectType = 0;
     private static UsableObject _heldObjectRef = null;
 
+    // Dedup: Harmony+Il2Cpp can double-fire patches
+    private static long _lastPickupTick;
+    private static long _lastDropTick;
+    private static string _lastPickupId;
+    private static string _lastDropId;
+
     internal static void Prefix(UsableObject __instance)
     {
         try
@@ -740,8 +746,15 @@ internal static class Patch_UsableObject_InteractOnClick
                     _heldObjectType = objectType;
                     _heldObjectRef = __instance;
 
-                    CrashLog.Log($"[WorldSync] Pickup detected: '{objectId}' type={objectType}");
-                    EventDispatcher.FireObjectPickedUp(objectId, objectType);
+                    long now = System.Diagnostics.Stopwatch.GetTimestamp();
+                    long threshold = System.Diagnostics.Stopwatch.Frequency / 10; // 100ms window
+                    if (objectId != _lastPickupId || (now - _lastPickupTick) > threshold)
+                    {
+                        _lastPickupId = objectId;
+                        _lastPickupTick = now;
+                        CrashLog.Log($"[WorldSync] Pickup detected: '{objectId}' type={objectType}");
+                        EventDispatcher.FireObjectPickedUp(objectId, objectType);
+                    }
                 }
             }
             // ── DROP: was holding something, now empty-handed ──
@@ -765,8 +778,15 @@ internal static class Patch_UsableObject_InteractOnClick
                         rot = __instance.transform.rotation;
                     }
 
-                    CrashLog.Log($"[WorldSync] Drop detected: '{_heldObjectId}' type={_heldObjectType} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
-                    EventDispatcher.FireObjectDropped(_heldObjectId, _heldObjectType, pos, rot);
+                    long now = System.Diagnostics.Stopwatch.GetTimestamp();
+                    long threshold = System.Diagnostics.Stopwatch.Frequency / 10; // 100ms window
+                    if (_heldObjectId != _lastDropId || (now - _lastDropTick) > threshold)
+                    {
+                        _lastDropId = _heldObjectId;
+                        _lastDropTick = now;
+                        CrashLog.Log($"[WorldSync] Drop detected: '{_heldObjectId}' type={_heldObjectType} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
+                        EventDispatcher.FireObjectDropped(_heldObjectId, _heldObjectType, pos, rot);
+                    }
 
                     _heldObjectId = null;
                     _heldObjectType = 0;

@@ -1367,7 +1367,7 @@ public partial class GameAPIManager : IDisposable
                         var rb = serverComp.rb;
                         if (rb != null)
                         {
-                            rb.isKinematic = true;
+                            rb.isKinematic = false;
                             rb.velocity = UnityEngine.Vector3.zero;
                             rb.angularVelocity = UnityEngine.Vector3.zero;
                         }
@@ -1420,12 +1420,14 @@ public partial class GameAPIManager : IDisposable
             CrashLog.Log($"[WorldSync] PlaceInRack: id={serverId}, rackUid={rackUid}");
 
             // ── 1. Find the server by its ServerID ──────────────────────────
-            var servers = UnityEngine.Object.FindObjectsOfType<Il2Cpp.Server>();
+            var servers = UnityEngine.Resources.FindObjectsOfTypeAll<Il2Cpp.Server>();
             Il2Cpp.Server targetServer = null;
             foreach (var srv in servers)
             {
                 try
                 {
+                    // Skip prefabs / assets (only want scene objects)
+                    if (srv.gameObject.scene.name == null) continue;
                     if (srv.ServerID == serverId)
                     {
                         targetServer = srv;
@@ -1437,11 +1439,26 @@ public partial class GameAPIManager : IDisposable
 
             if (targetServer == null)
             {
-                CrashLog.Log($"[WorldSync] PlaceInRack: server '{serverId}' not found among {servers.Count} servers");
-
+                // Count only scene servers for the log
+                int sceneCount = 0;
                 foreach (var srv in servers)
                 {
-                    try { CrashLog.Log($"[WorldSync]   known server: '{srv.ServerID}'"); } catch { }
+                    try
+                    {
+                        if (srv.gameObject.scene.name == null) continue;
+                        sceneCount++;
+                    }
+                    catch { }
+                }
+                CrashLog.Log($"[WorldSync] PlaceInRack: server '{serverId}' not found among {sceneCount} servers");
+                foreach (var srv in servers)
+                {
+                    try
+                    {
+                        if (srv.gameObject.scene.name == null) continue;
+                        CrashLog.Log($"[WorldSync]   known server: '{srv.ServerID}' active={srv.gameObject.activeSelf}");
+                    }
+                    catch { }
                 }
                 return 0;
             }
@@ -1507,6 +1524,13 @@ public partial class GameAPIManager : IDisposable
             }
 
             CrashLog.Log($"[WorldSync] PlaceInRack: found server '{serverId}' and rackPos UID={rackUid} (index={targetRackPos.positionIndex})");
+
+            // Reactivate if it was deactivated by a pickup
+            if (!targetServer.gameObject.activeSelf)
+            {
+                targetServer.gameObject.SetActive(true);
+                CrashLog.Log($"[WorldSync] PlaceInRack: reactivated server '{serverId}' for rack install");
+            }
 
             try
             {
@@ -1641,16 +1665,16 @@ public partial class GameAPIManager : IDisposable
             string objId = ReadUtf8(id, idLen);
             CrashLog.Log($"[WorldSync] PickupObject: id={objId}");
 
-            // Find the server by ID
-            var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
+            // Find the server by ID (including inactive objects)
+            var allServers = UnityEngine.Resources.FindObjectsOfTypeAll<Server>();
             foreach (var srv in allServers)
             {
                 try
                 {
+                    if (srv.gameObject.scene.name == null) continue; // skip prefabs
                     string sid = srv.ServerID ?? "";
                     if (sid == objId)
                     {
-                        // Deactivate the object — it's now "in someone's hands" on the remote side
                         srv.gameObject.SetActive(false);
                         CrashLog.Log($"[WorldSync] PickupObject: deactivated server '{objId}'");
                         return 1;
@@ -1659,12 +1683,12 @@ public partial class GameAPIManager : IDisposable
                 catch { }
             }
 
-            // Try NetworkSwitch and other UsableObjects by name_instanceId pattern
-            var allUsable = UnityEngine.Object.FindObjectsOfType<UsableObject>();
+            var allUsable = UnityEngine.Resources.FindObjectsOfTypeAll<UsableObject>();
             foreach (var uo in allUsable)
             {
                 try
                 {
+                    if (uo.gameObject.scene.name == null) continue; // skip prefabs
                     string uoId = $"{uo.gameObject.name}_{uo.GetInstanceID()}";
                     if (uoId == objId)
                     {
