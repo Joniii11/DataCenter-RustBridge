@@ -10,8 +10,6 @@ use std::ffi::CString;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 
-// ── Constants ────────────────────────────────────────────────────────────────
-
 pub const POSITION_SEND_INTERVAL: f32 = 0.05;
 pub const HELLO_RETRY_INTERVAL: f32 = 2.0;
 pub const HELLO_MAX_RETRIES: u32 = 15;
@@ -19,7 +17,6 @@ pub const DEFAULT_RELAY_URL: &str = "ws://192.99.16.77:9943"; // FIXME: Proper U
 pub const SAVE_CHUNK_SIZE: usize = 60_000;
 pub const PLAYER_STATE_HEARTBEAT_INTERVAL: f32 = 1.0;
 
-/// Join state — Rust is the authority, C# polls/sets via FFI.
 #[repr(u32)]
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum JoinState {
@@ -89,6 +86,9 @@ pub struct MultiplayerState {
     pub default_spawn: Option<Vec3>,
 
     pub world_sync: WorldSyncState,
+
+    /// Re-entrancy guard set to `true` while executing a remote world action
+    pub executing_remote_action: bool,
 }
 
 impl MultiplayerState {
@@ -131,6 +131,8 @@ impl MultiplayerState {
             default_spawn: None,
 
             world_sync: WorldSyncState::new(),
+
+            executing_remote_action: false,
         }
     }
 }

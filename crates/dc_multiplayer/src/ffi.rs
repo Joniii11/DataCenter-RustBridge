@@ -240,6 +240,14 @@ pub extern "C" fn mp_set_join_state(state: u32) {
                 p.entity_id = None;
             });
             dc_api::crash_log("[MP] Cleared entity IDs for respawn in new scene");
+
+            if let Some(api) = dc_api::mod_api() {
+                let assigned = api.world_ensure_rack_uids();
+                dc_api::crash_log(&format!(
+                    "[MP] Pre-assigned {} rack position UIDs after load",
+                    assigned
+                ));
+            }
         }
     });
 }

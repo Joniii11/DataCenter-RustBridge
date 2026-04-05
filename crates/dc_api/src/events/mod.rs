@@ -68,7 +68,14 @@ pub fn decode(event_id: u32, data: *const u8, size: u32) -> Option<Event> {
         }
         Some(EventId::ServerBroken) => Some(Event::ServerBroken),
         Some(EventId::ServerRepaired) => Some(Event::ServerRepaired),
-        Some(EventId::ServerInstalled) => Some(Event::ServerInstalled),
+        Some(EventId::ServerInstalled) => {
+            let d = read_payload::<ServerInstalledData>(data, size)?;
+            Some(Event::ServerInstalled {
+                server_id: d.id().to_owned(),
+                object_type: d.object_type,
+                rack_position_uid: d.rack_position_uid,
+            })
+        }
         Some(EventId::CableConnected) => Some(Event::CableConnected),
         Some(EventId::CableDisconnected) => Some(Event::CableDisconnected),
         Some(EventId::ServerCustomerChanged) => {
@@ -252,7 +259,6 @@ mod tests {
         let simple = [
             (EventId::ServerBroken, "ServerBroken"),
             (EventId::ServerRepaired, "ServerRepaired"),
-            (EventId::ServerInstalled, "ServerInstalled"),
             (EventId::CableConnected, "CableConnected"),
             (EventId::CableDisconnected, "CableDisconnected"),
             (EventId::RackUnmounted, "RackUnmounted"),
@@ -320,6 +326,34 @@ mod tests {
         assert!(!u.is_employee());
         assert!(!u.is_save_load());
         assert!(!u.is_building());
+    }
+
+    #[test]
+    fn decode_server_installed() {
+        let mut data = ServerInstalledData {
+            server_id: [0u8; 64],
+            object_type: 1,
+            rack_position_uid: 42,
+        };
+        let id_bytes = b"server_001";
+        data.server_id[..id_bytes.len()].copy_from_slice(id_bytes);
+
+        let ptr = &data as *const _ as *const u8;
+        let size = std::mem::size_of::<ServerInstalledData>() as u32;
+
+        let evt = decode(EventId::ServerInstalled as u32, ptr, size).unwrap();
+        match evt {
+            Event::ServerInstalled {
+                server_id,
+                object_type,
+                rack_position_uid,
+            } => {
+                assert_eq!(server_id, "server_001");
+                assert_eq!(object_type, 1);
+                assert_eq!(rack_position_uid, 42);
+            }
+            other => panic!("expected ServerInstalled, got {:?}", other),
+        }
     }
 
     #[test]

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Il2Cpp;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using UnityEngine;
@@ -8,6 +9,103 @@ namespace DataCenterModLoader;
 // safe game state accessors, returns defaults when singletons are null
 public static class GameHooks
 {
+    public static int EnsureAllRackPositionUIDs()
+    {
+        try
+        {
+            var mgr = MainGameManager.instance;
+            if (mgr == null)
+            {
+                CrashLog.Log("[WorldSync] EnsureAllRackPositionUIDs: MainGameManager is null");
+                return 0;
+            }
+
+            var allPositions = UnityEngine.Object.FindObjectsOfType<RackPosition>();
+            if (allPositions == null || allPositions.Count == 0)
+            {
+                CrashLog.Log("[WorldSync] EnsureAllRackPositionUIDs: no RackPositions found");
+                return 0;
+            }
+
+            var sorted = new List<RackPosition>();
+            foreach (var rp in allPositions)
+            {
+                if (rp != null) sorted.Add(rp);
+            }
+
+            sorted.Sort((a, b) =>
+            {
+                var pa = a.transform.position;
+                var pb = b.transform.position;
+                int cmp = pa.x.CompareTo(pb.x);
+                if (cmp != 0) return cmp;
+                cmp = pa.z.CompareTo(pb.z);
+                if (cmp != 0) return cmp;
+                cmp = pa.y.CompareTo(pb.y);
+                if (cmp != 0) return cmp;
+                cmp = a.positionIndex.CompareTo(b.positionIndex);
+                if (cmp != 0) return cmp;
+
+                string nameA = "", nameB = "";
+                try { nameA = a.rack?.gameObject?.name ?? ""; } catch { }
+                try { nameB = b.rack?.gameObject?.name ?? ""; } catch { }
+                return string.Compare(nameA, nameB, StringComparison.Ordinal);
+            });
+
+            const int SYNC_UID_BASE = 10000;
+            mgr.lastUsedRackPositionGlobalUID = SYNC_UID_BASE;
+
+            int assigned = 0;
+            foreach (var rp in sorted)
+            {
+                try
+                {
+                    mgr.lastUsedRackPositionGlobalUID++;
+                    rp.rackPosGlobalUID = mgr.lastUsedRackPositionGlobalUID;
+                    assigned++;
+                }
+                catch { /* field access can fail during teardown */ }
+            }
+
+            try
+            {
+                var servers = UnityEngine.Object.FindObjectsOfType<Il2Cpp.Server>();
+                int updated = 0;
+                foreach (var srv in servers)
+                {
+                    try
+                    {
+                        if (srv.currentRackPosition != null)
+                        {
+                            int oldUid = srv.rackPositionUID;
+                            int newUid = srv.currentRackPosition.rackPosGlobalUID;
+                            if (oldUid != newUid)
+                            {
+                                srv.rackPositionUID = newUid;
+                                updated++;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+                if (updated > 0)
+                    CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs: updated {updated} server rackPositionUID references");
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs: server ref update failed: {ex.Message}");
+            }
+
+            CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs: assigned {assigned}/{sorted.Count} positions (counter now {mgr.lastUsedRackPositionGlobalUID})");
+            return assigned;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs failed: {ex.Message}");
+            return 0;
+        }
+    }
+
     public static float GetPlayerMoney()
     {
         try { return PlayerManager.instance?.playerClass?.money ?? 0f; }

@@ -120,12 +120,29 @@ public struct GameAPITable
     public IntPtr GetEntityPosition;
     public IntPtr AddEntityCollider;
     public IntPtr SetEntityCarryTransform;
+
+    // v13 - World Object Sync
+    public IntPtr WorldGetObjectCount;
+    public IntPtr WorldGetObjectHashes;
+    public IntPtr WorldGetObjectState;
+    public IntPtr WorldSpawnObject;
+    public IntPtr WorldDestroyObject;
+    public IntPtr WorldPlaceInRack;
+    public IntPtr WorldRemoveFromRack;
+    public IntPtr WorldSetPower;
+    public IntPtr WorldSetProperty;
+    public IntPtr WorldConnectCable;
+    public IntPtr WorldDisconnectCable;
+    public IntPtr WorldPickupObject;
+    public IntPtr WorldDropObject;
+
+    public IntPtr WorldEnsureRackUIDs;
 }
 
 // delegates stored as fields to prevent GC collection while rust holds pointers
 public partial class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 12;
+    public const uint API_VERSION = 14;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -194,6 +211,34 @@ public partial class GameAPIManager : IDisposable
     private delegate void AddEntityColliderDelegate(uint entityId);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void SetEntityCarryTransformDelegate(uint entityId, float posX, float posY, float posZ, float rotX, float rotY, float rotZ);
+
+    // v13 - World sync delegate types
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint WorldGetObjectCountDelegate();
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint WorldGetObjectHashesDelegate(IntPtr buf, uint maxCount);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint WorldGetObjectStateDelegate(IntPtr id, uint idLen, IntPtr buf, uint bufMax);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldSpawnObjectDelegate(byte objectType, int prefabId, float x, float y, float z, float rotX, float rotY, float rotZ, float rotW, IntPtr outId, uint outMax);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldDestroyObjectDelegate(IntPtr id, uint idLen);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldPlaceInRackDelegate(IntPtr id, uint idLen, int rackUid);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldRemoveFromRackDelegate(IntPtr id, uint idLen);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldSetPowerDelegate(IntPtr id, uint idLen, byte isOn);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldSetPropertyDelegate(IntPtr id, uint idLen, IntPtr key, uint keyLen, IntPtr val, uint valLen);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldConnectCableDelegate(int cableId, byte startType, float sx, float sy, float sz, IntPtr startDevice, uint startDeviceLen, byte endType, float ex, float ey, float ez, IntPtr endDevice, uint endDeviceLen);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldDisconnectCableDelegate(int cableId);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldPickupObjectDelegate(IntPtr id, uint idLen);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int WorldDropObjectDelegate(IntPtr id, uint idLen, float x, float y, float z, float rotX, float rotY, float rotZ, float rotW);
 
     [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr SteamAPI_SteamNetworking_v006();
@@ -311,6 +356,21 @@ public partial class GameAPIManager : IDisposable
     GetEntityPositionDelegate _getEntityPosition;
     AddEntityColliderDelegate _addEntityCollider;
     SetEntityCarryTransformDelegate _setEntityCarryTransform;
+    // v13
+    WorldGetObjectCountDelegate _worldGetObjectCount;
+    WorldGetObjectHashesDelegate _worldGetObjectHashes;
+    WorldGetObjectStateDelegate _worldGetObjectState;
+    WorldSpawnObjectDelegate _worldSpawnObject;
+    WorldDestroyObjectDelegate _worldDestroyObject;
+    WorldPlaceInRackDelegate _worldPlaceInRack;
+    WorldRemoveFromRackDelegate _worldRemoveFromRack;
+    WorldSetPowerDelegate _worldSetPower;
+    WorldSetPropertyDelegate _worldSetProperty;
+    WorldConnectCableDelegate _worldConnectCable;
+    WorldDisconnectCableDelegate _worldDisconnectCable;
+    WorldPickupObjectDelegate _worldPickupObject;
+    WorldDropObjectDelegate _worldDropObject;
+    GetIntDelegate _worldEnsureRackUIDs;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
@@ -419,6 +479,21 @@ public partial class GameAPIManager : IDisposable
         _getEntityPosition = GetEntityPositionImpl;
         _addEntityCollider = AddEntityColliderImpl;
         _setEntityCarryTransform = SetEntityCarryTransformImpl;
+        // v13
+        _worldGetObjectCount = WorldGetObjectCountImpl;
+        _worldGetObjectHashes = WorldGetObjectHashesImpl;
+        _worldGetObjectState = WorldGetObjectStateImpl;
+        _worldSpawnObject = WorldSpawnObjectImpl;
+        _worldDestroyObject = WorldDestroyObjectImpl;
+        _worldPlaceInRack = WorldPlaceInRackImpl;
+        _worldRemoveFromRack = WorldRemoveFromRackImpl;
+        _worldSetPower = WorldSetPowerImpl;
+        _worldSetProperty = WorldSetPropertyImpl;
+        _worldConnectCable = WorldConnectCableImpl;
+        _worldDisconnectCable = WorldDisconnectCableImpl;
+        _worldPickupObject = WorldPickupObjectImpl;
+        _worldDropObject = WorldDropObjectImpl;
+        _worldEnsureRackUIDs = WorldEnsureRackUIDsImpl;
 
         _table = new GameAPITable
         {
@@ -511,6 +586,21 @@ public partial class GameAPIManager : IDisposable
             GetEntityPosition = Marshal.GetFunctionPointerForDelegate(_getEntityPosition),
             AddEntityCollider = Marshal.GetFunctionPointerForDelegate(_addEntityCollider),
             SetEntityCarryTransform = Marshal.GetFunctionPointerForDelegate(_setEntityCarryTransform),
+
+            WorldGetObjectCount = Marshal.GetFunctionPointerForDelegate(_worldGetObjectCount),
+            WorldGetObjectHashes = Marshal.GetFunctionPointerForDelegate(_worldGetObjectHashes),
+            WorldGetObjectState = Marshal.GetFunctionPointerForDelegate(_worldGetObjectState),
+            WorldSpawnObject = Marshal.GetFunctionPointerForDelegate(_worldSpawnObject),
+            WorldDestroyObject = Marshal.GetFunctionPointerForDelegate(_worldDestroyObject),
+            WorldPlaceInRack = Marshal.GetFunctionPointerForDelegate(_worldPlaceInRack),
+            WorldRemoveFromRack = Marshal.GetFunctionPointerForDelegate(_worldRemoveFromRack),
+            WorldSetPower = Marshal.GetFunctionPointerForDelegate(_worldSetPower),
+            WorldSetProperty = Marshal.GetFunctionPointerForDelegate(_worldSetProperty),
+            WorldConnectCable = Marshal.GetFunctionPointerForDelegate(_worldConnectCable),
+            WorldDisconnectCable = Marshal.GetFunctionPointerForDelegate(_worldDisconnectCable),
+            WorldPickupObject = Marshal.GetFunctionPointerForDelegate(_worldPickupObject),
+            WorldDropObject = Marshal.GetFunctionPointerForDelegate(_worldDropObject),
+            WorldEnsureRackUIDs = Marshal.GetFunctionPointerForDelegate(_worldEnsureRackUIDs),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -1145,6 +1235,300 @@ public partial class GameAPIManager : IDisposable
     {
         try { EntityManager.SetEntityCarryTransform(entityId, posX, posY, posZ, rotX, rotY, rotZ); }
         catch (Exception ex) { CrashLog.LogException("SetEntityCarryTransformImpl", ex); }
+    }
+
+    // ── v13: World Object Sync ────────────────────────────────────────
+
+    static string ReadUtf8(IntPtr ptr, uint len)
+    {
+        if (ptr == IntPtr.Zero || len == 0) return "";
+        byte[] buf = new byte[len];
+        Marshal.Copy(ptr, buf, 0, (int)len);
+        return System.Text.Encoding.UTF8.GetString(buf);
+    }
+
+    uint WorldGetObjectCountImpl()
+    {
+        // Phase 4 stub
+        return 0;
+    }
+
+    uint WorldGetObjectHashesImpl(IntPtr buf, uint maxCount)
+    {
+        // Phase 4 stub
+        return 0;
+    }
+
+    uint WorldGetObjectStateImpl(IntPtr id, uint idLen, IntPtr buf, uint bufMax)
+    {
+        // Phase 4 stub
+        return 0;
+    }
+
+    int WorldSpawnObjectImpl(byte objectType, int prefabId, float x, float y, float z, float rotX, float rotY, float rotZ, float rotW, IntPtr outId, uint outMax)
+    {
+        // Phase 3 stub
+        CrashLog.Log($"[WorldSync] SpawnObject stub: type={objectType}, prefab={prefabId}");
+        return 0;
+    }
+
+    int WorldDestroyObjectImpl(IntPtr id, uint idLen)
+    {
+        // Phase 3 stub
+        string objId = ReadUtf8(id, idLen);
+        CrashLog.Log($"[WorldSync] DestroyObject stub: id={objId}");
+        return 0;
+    }
+
+    int WorldPlaceInRackImpl(IntPtr id, uint idLen, int rackUid)
+    {
+        try
+        {
+            string serverId = ReadUtf8(id, idLen);
+            CrashLog.Log($"[WorldSync] PlaceInRack: id={serverId}, rackUid={rackUid}");
+
+            // ── 1. Find the server by its ServerID ──────────────────────────
+            var servers = UnityEngine.Object.FindObjectsOfType<Il2Cpp.Server>();
+            Il2Cpp.Server targetServer = null;
+            foreach (var srv in servers)
+            {
+                try
+                {
+                    if (srv.ServerID == serverId)
+                    {
+                        targetServer = srv;
+                        break;
+                    }
+                }
+                catch { }
+            }
+
+            if (targetServer == null)
+            {
+                CrashLog.Log($"[WorldSync] PlaceInRack: server '{serverId}' not found among {servers.Count} servers");
+
+                foreach (var srv in servers)
+                {
+                    try { CrashLog.Log($"[WorldSync]   known server: '{srv.ServerID}'"); } catch { }
+                }
+                return 0;
+            }
+
+            Il2Cpp.RackPosition targetRackPos = null;
+
+            var rackPositions = UnityEngine.Object.FindObjectsOfType<Il2Cpp.RackPosition>();
+            foreach (var rp in rackPositions)
+            {
+                try
+                {
+                    if (rp.rackPosGlobalUID == rackUid)
+                    {
+                        targetRackPos = rp;
+                        break;
+                    }
+                }
+                catch { }
+            }
+
+            if (targetRackPos == null)
+            {
+                CrashLog.Log($"[WorldSync] PlaceInRack: UID={rackUid} not found among {rackPositions.Count} positions — force-reassigning UIDs...");
+                GameHooks.EnsureAllRackPositionUIDs();
+
+                rackPositions = UnityEngine.Object.FindObjectsOfType<Il2Cpp.RackPosition>();
+                foreach (var rp in rackPositions)
+                {
+                    try
+                    {
+                        if (rp.rackPosGlobalUID == rackUid)
+                        {
+                            targetRackPos = rp;
+                            break;
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            if (targetRackPos == null)
+            {
+                int minUid = int.MaxValue, maxUid = int.MinValue;
+                foreach (var rp in rackPositions)
+                {
+                    try
+                    {
+                        int u = rp.rackPosGlobalUID;
+                        if (u < minUid) minUid = u;
+                        if (u > maxUid) maxUid = u;
+                    }
+                    catch { }
+                }
+                CrashLog.Log($"[WorldSync] PlaceInRack: UID={rackUid} still not found. Existing UID range: [{minUid}..{maxUid}] across {rackPositions.Count} positions");
+                return 0;
+            }
+
+            Il2Cpp.Rack rack = targetRackPos.rack;
+            if (rack == null)
+            {
+                CrashLog.Log($"[WorldSync] PlaceInRack: rackPosition UID={rackUid} has no parent Rack reference");
+                return 0;
+            }
+
+            CrashLog.Log($"[WorldSync] PlaceInRack: found server '{serverId}' and rackPos UID={rackUid} (index={targetRackPos.positionIndex})");
+
+            try
+            {
+                var saveData = new Il2Cpp.ServerSaveData();
+                saveData.serverID = serverId;
+                saveData.rackPositionUID = rackUid;
+                saveData.serverType = targetServer.serverType;
+                saveData.position = targetRackPos.transform.position;
+                saveData.rotation = targetRackPos.transform.rotation;
+                try { saveData.isOn = targetServer.isOn; } catch { saveData.isOn = false; }
+                try { saveData.isBroken = targetServer.isBroken; } catch { saveData.isBroken = false; }
+
+                targetServer.ServerInsertedInRack(saveData);
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] PlaceInRack: ServerInsertedInRack call failed (non-fatal): {ex.Message}");
+            }
+
+            // ── 4. Physical placement: parent + position the server ─────────
+            try
+            {
+                targetServer.transform.SetParent(targetRackPos.transform, false);
+                targetServer.transform.localPosition = UnityEngine.Vector3.zero;
+                targetServer.transform.localRotation = UnityEngine.Quaternion.identity;
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] PlaceInRack: transform parenting failed: {ex.Message}");
+            }
+
+            // ── 5. Update server bookkeeping fields ─────────────────────────
+            try
+            {
+                targetServer.rackPositionUID = rackUid;
+                targetServer.currentRackPosition = targetRackPos;
+                targetServer.objectInHands = false;
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] PlaceInRack: server field update failed: {ex.Message}");
+            }
+
+            // ── 6. Disable physics so the server doesn't fall ───────────────
+            try
+            {
+                var rb = targetServer.rb;
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                    rb.velocity = UnityEngine.Vector3.zero;
+                    rb.angularVelocity = UnityEngine.Vector3.zero;
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] PlaceInRack: rigidbody disable failed: {ex.Message}");
+            }
+
+            try
+            {
+                int sizeInU = 1;
+                try { sizeInU = targetServer.sizeInU; } catch { }
+                if (sizeInU <= 0) sizeInU = 1;
+                Patch_Rack_MarkPositionAsUsed.SuppressEvents = true;
+                try
+                {
+                    rack.MarkPositionAsUsed(targetRackPos.positionIndex, sizeInU);
+                }
+                finally
+                {
+                    Patch_Rack_MarkPositionAsUsed.SuppressEvents = false;
+                }
+                CrashLog.Log($"[WorldSync] PlaceInRack: marked position index={targetRackPos.positionIndex} sizeInU={sizeInU} as used");
+            }
+            catch (Exception ex)
+            {
+                Patch_Rack_MarkPositionAsUsed.SuppressEvents = false;
+                CrashLog.Log($"[WorldSync] PlaceInRack: MarkPositionAsUsed failed: {ex.Message}");
+            }
+
+            CrashLog.Log($"[WorldSync] PlaceInRack: '{serverId}' fully installed at UID={rackUid} OK");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("WorldPlaceInRackImpl", ex);
+            return 0;
+        }
+    }
+
+    int WorldRemoveFromRackImpl(IntPtr id, uint idLen)
+    {
+        // Phase 3 stub
+        string objId = ReadUtf8(id, idLen);
+        CrashLog.Log($"[WorldSync] RemoveFromRack stub: id={objId}");
+        return 0;
+    }
+
+    int WorldSetPowerImpl(IntPtr id, uint idLen, byte isOn)
+    {
+        // Phase 3 stub
+        string objId = ReadUtf8(id, idLen);
+        CrashLog.Log($"[WorldSync] SetPower stub: id={objId}, on={isOn}");
+        return 0;
+    }
+
+    int WorldSetPropertyImpl(IntPtr id, uint idLen, IntPtr key, uint keyLen, IntPtr val, uint valLen)
+    {
+        // Phase 3 stub
+        return 0;
+    }
+
+    int WorldConnectCableImpl(int cableId, byte startType, float sx, float sy, float sz, IntPtr startDevice, uint startDeviceLen, byte endType, float ex, float ey, float ez, IntPtr endDevice, uint endDeviceLen)
+    {
+        // Phase 3 stub
+        CrashLog.Log($"[WorldSync] ConnectCable stub: cableId={cableId}");
+        return 0;
+    }
+
+    int WorldDisconnectCableImpl(int cableId)
+    {
+        // Phase 3 stub
+        CrashLog.Log($"[WorldSync] DisconnectCable stub: cableId={cableId}");
+        return 0;
+    }
+
+    int WorldPickupObjectImpl(IntPtr id, uint idLen)
+    {
+        // Phase 3 stub
+        string objId = ReadUtf8(id, idLen);
+        CrashLog.Log($"[WorldSync] PickupObject stub: id={objId}");
+        return 0;
+    }
+
+    int WorldDropObjectImpl(IntPtr id, uint idLen, float x, float y, float z, float rotX, float rotY, float rotZ, float rotW)
+    {
+        // Phase 3 stub
+        string objId = ReadUtf8(id, idLen);
+        CrashLog.Log($"[WorldSync] DropObject stub: id={objId}, pos=({x:F1},{y:F1},{z:F1})");
+        return 0;
+    }
+
+    int WorldEnsureRackUIDsImpl()
+    {
+        try
+        {
+            return GameHooks.EnsureAllRackPositionUIDs();
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("WorldEnsureRackUIDsImpl", ex);
+            return 0;
+        }
     }
 
     public void Dispose()

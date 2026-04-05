@@ -142,6 +142,32 @@ public struct CustomEmployeeEventData
     }
 }
 
+/// Payload for ServerInstalled events. Must match Rust's ServerInstalledData layout.
+[StructLayout(LayoutKind.Sequential)]
+public struct ServerInstalledData
+{
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
+    public byte[] ServerId;
+    public byte ObjectType;
+    public int RackPositionUid;
+
+    public static ServerInstalledData Create(string serverId, byte objectType, int rackPositionUid)
+    {
+        var data = new ServerInstalledData
+        {
+            ServerId = new byte[64],
+            ObjectType = objectType,
+            RackPositionUid = rackPositionUid
+        };
+        if (!string.IsNullOrEmpty(serverId))
+        {
+            var bytes = System.Text.Encoding.ASCII.GetBytes(serverId);
+            Array.Copy(bytes, data.ServerId, Math.Min(bytes.Length, 63));
+        }
+        return data;
+    }
+}
+
 public static class EventDispatcher
 {
     private static FFIBridge _bridge;
@@ -269,6 +295,13 @@ public static class EventDispatcher
     public static void FireServerAppChanged(int newAppId)
     {
         DispatchWithData(EventIds.ServerAppChanged, new ServerAppChangedData { NewAppId = newAppId }, newAppId);
+    }
+
+    public static void FireServerInstalled(string serverId, byte objectType, int rackPositionUid)
+    {
+        DispatchWithData(EventIds.ServerInstalled,
+            ServerInstalledData.Create(serverId, objectType, rackPositionUid),
+            serverId?.GetHashCode() ?? 0 + rackPositionUid * 31.0);
     }
 
     public static void FireRackUnmounted()

@@ -96,6 +96,9 @@ pub fn update(api: &Api, dt: f32) {
         return;
     }
 
+    // Check for timed-out world actions
+    check_world_action_timeouts(api, dt);
+
     // Send our position at fixed interval
     let should_send = with_state(|s| {
         s.pos_timer += dt;
@@ -402,6 +405,25 @@ struct UpdateInfo {
     player_state: PlayerStateSnapshot,
     carry_changed: bool,
     old_carry_type: u8,
+}
+
+/// Check for pending world actions that have timed out and roll them back
+fn check_world_action_timeouts(api: &Api, dt: f32) {
+    let timed_out = with_state(|s| {
+        s.world_sync.game_time += dt;
+        s.world_sync.drain_timed_out()
+    });
+
+    if let Some(timed_out) = timed_out {
+        for pending in &timed_out {
+            dc_api::crash_log(&format!(
+                "[WORLD] Action seq={} timed out after {:.1}s, rolling back",
+                pending.seq,
+                crate::world::WORLD_ACTION_TIMEOUT_SECS
+            ));
+            crate::world::execute_rollback(api, &pending.rollback_info);
+        }
+    }
 }
 
 fn update_entities(api: &Api, _dt: f32) {

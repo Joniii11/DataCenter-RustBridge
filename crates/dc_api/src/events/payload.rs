@@ -111,3 +111,23 @@ impl CustomEmployeeEventData {
         std::str::from_utf8(&self.employee_id[..end]).unwrap_or("")
     }
 }
+
+/// Payload for [`ServerInstalled`] with server identity and rack positio
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct ServerInstalledData {
+    pub server_id: [u8; 64],
+    pub object_type: u8,
+    pub rack_position_uid: i32,
+}
+
+impl ServerInstalledData {
+    pub fn id(&self) -> &str {
+        let end = self
+            .server_id
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(self.server_id.len());
+        std::str::from_utf8(&self.server_id[..end]).unwrap_or("")
+    }
+}

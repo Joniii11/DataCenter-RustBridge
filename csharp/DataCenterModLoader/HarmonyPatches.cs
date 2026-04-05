@@ -110,10 +110,140 @@ internal static class Patch_Server_RepairDevice
 [HarmonyPatch(typeof(Server), nameof(Server.ServerInsertedInRack))]
 internal static class Patch_Server_ServerInsertedInRack
 {
-    internal static void Postfix()
+    internal static void Postfix(Server __instance, ServerSaveData __0)
     {
-        try { EventDispatcher.FireSimple(EventIds.ServerInstalled); }
+        try
+        {
+            string instanceId = "";
+            string saveDataId = "";
+            byte objectType = 0;
+            int rackUid = -1;
+
+            try { instanceId = __instance?.ServerID ?? ""; } catch { }
+            try { saveDataId = __0?.serverID ?? ""; } catch { }
+            try { objectType = (byte)(__instance?.serverType ?? 0); } catch { }
+            try { rackUid = __0?.rackPositionUID ?? -1; } catch { }
+
+            string serverId = !string.IsNullOrEmpty(instanceId) ? instanceId : saveDataId;
+
+            CrashLog.Log($"ServerInsertedInRack [diag]: instanceId={instanceId}, saveDataId={saveDataId}, resolved={serverId}, type={objectType}, rackUid={rackUid}");
+        }
         catch (Exception ex) { EventDispatcher.LogError($"ServerInsertedInRack: {ex.Message}"); }
+    }
+}
+
+/// <summary>
+/// PRIMARY hook for "server installed in rack" during gameplay.
+/// </summary>
+[HarmonyPatch(typeof(Rack), nameof(Rack.MarkPositionAsUsed))]
+internal static class Patch_Rack_MarkPositionAsUsed
+{
+    internal static bool SuppressEvents = false;
+
+    internal static void Postfix(Rack __instance, int __0, int __1)
+    {
+        try
+        {
+            if (SuppressEvents) return;
+            int index = __0;
+            int sizeInU = __1;
+
+            // Find the RackPosition at this index to get its global UID
+            var positions = __instance.positions;
+            if (positions == null || index < 0 || index >= positions.Count)
+            {
+                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} out of range (positions={positions?.Count ?? 0})");
+                return;
+            }
+
+            RackPosition rackPos = positions[index];
+            if (rackPos == null)
+            {
+                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: positions[{index}] is null");
+                return;
+            }
+
+            int rackPosUid = rackPos.rackPosGlobalUID;
+
+            // Find which server was just installed at this rack position.
+            // We search by currentRackPosition first, then by rackPositionUID as fallback.
+            var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
+            Server installed = null;
+
+            foreach (var srv in allServers)
+            {
+                try
+                {
+                    // Primary: check if currentRackPosition points to this slot
+                    if (srv.currentRackPosition != null &&
+                        srv.currentRackPosition.rackPosGlobalUID == rackPosUid)
+                    {
+                        installed = srv;
+                        break;
+                    }
+                }
+                catch { /* Il2Cpp field access can throw if object is being set up */ }
+            }
+
+            // Fallback: match by rackPositionUID field
+            if (installed == null)
+            {
+                foreach (var srv in allServers)
+                {
+                    try
+                    {
+                        if (srv.rackPositionUID == rackPosUid)
+                        {
+                            installed = srv;
+                            break;
+                        }
+                    }
+                    catch { }
+                }
+            }
+
+            if (installed == null)
+            {
+                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} uid={rackPosUid} — could not find installed server among {allServers.Count} servers");
+                return;
+            }
+
+            string serverId = installed.ServerID ?? "";
+            byte objectType = (byte)installed.serverType;
+
+            if (string.IsNullOrEmpty(serverId))
+            {
+                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} uid={rackPosUid} — server has empty ServerID, skipping event");
+                return;
+            }
+
+            if (rackPosUid < 0)
+            {
+                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: server '{serverId}' type={objectType} at rackUid={rackPosUid} (index={index}, sizeInU={sizeInU}) [skip: invalid UID]");
+                return;
+            }
+
+            CrashLog.Log($"[WorldSync] MarkPositionAsUsed: server '{serverId}' type={objectType} at rackUid={rackPosUid} (index={index}, sizeInU={sizeInU}) → firing event");
+            EventDispatcher.FireServerInstalled(serverId, objectType, rackPosUid);
+        }
+        catch (Exception ex) { EventDispatcher.LogError($"MarkPositionAsUsed: {ex.Message}"); }
+    }
+}
+
+/// <summary>
+/// Diagnostic hook for RackPosition.InteractOnClick — logs when a player
+/// clicks on a rack slot (start of the installation coroutine).
+/// </summary>
+[HarmonyPatch(typeof(RackPosition), nameof(RackPosition.InteractOnClick))]
+internal static class Patch_RackPosition_InteractOnClick
+{
+    internal static void Postfix(RackPosition __instance)
+    {
+        try
+        {
+            CrashLog.Log($"[WorldSync] RackPosition.InteractOnClick: posIndex={__instance.positionIndex} rackPosGlobalUID={__instance.rackPosGlobalUID}");
+        }
+        catch (Exception ex) { EventDispatcher.LogError($"RackPosition.InteractOnClick: {ex.Message}"); }
     }
 }
 

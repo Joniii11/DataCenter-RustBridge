@@ -3,8 +3,6 @@
 use crate::protocol::Message;
 use crate::state::*;
 
-/// Tell the Rust side to NOT request save on the next connection.
-/// Call this BEFORE mp_connect when doing an auto-reconnect.
 #[no_mangle]
 pub extern "C" fn mp_skip_next_save_request() {
     with_state(|s| {
@@ -12,7 +10,6 @@ pub extern "C" fn mp_skip_next_save_request() {
     });
 }
 
-/// Host: returns 1 if a client has requested save data and C# should provide it.
 #[no_mangle]
 pub extern "C" fn mp_should_send_save() -> u32 {
     with_state(|s| {
@@ -25,8 +22,6 @@ pub extern "C" fn mp_should_send_save() -> u32 {
     .unwrap_or(0)
 }
 
-/// Host: C# provides save file bytes. Rust will chunk and send them.
-/// Returns 1 on success, 0 on failure.
 #[no_mangle]
 pub extern "C" fn mp_send_save_data(data: *const u8, len: u32) -> i32 {
     if data.is_null() || len == 0 {

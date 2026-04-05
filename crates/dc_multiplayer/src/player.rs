@@ -231,6 +231,13 @@ impl PlayerTracker {
         self.players.get_mut(&steam_id)
     }
 
+    /// Iterate immutably over all players
+    pub fn for_each_player<F: FnMut(&RemotePlayer)>(&self, mut f: F) {
+        for player in self.players.values() {
+            f(player);
+        }
+    }
+
     /// Iterate mutably over all players
     pub fn for_each_player_mut<F: FnMut(&mut RemotePlayer)>(&mut self, mut f: F) {
         for player in self.players.values_mut() {

@@ -32,7 +32,11 @@ pub enum Event {
     },
     ServerBroken,
     ServerRepaired,
-    ServerInstalled,
+    ServerInstalled {
+        server_id: String,
+        object_type: u8,
+        rack_position_uid: i32,
+    },
     CableConnected,
     CableDisconnected,
     ServerCustomerChanged {
@@ -117,7 +121,7 @@ impl Event {
             Self::ServerPowered { .. } => EventId::ServerPowered as u32,
             Self::ServerBroken => EventId::ServerBroken as u32,
             Self::ServerRepaired => EventId::ServerRepaired as u32,
-            Self::ServerInstalled => EventId::ServerInstalled as u32,
+            Self::ServerInstalled { .. } => EventId::ServerInstalled as u32,
             Self::CableConnected => EventId::CableConnected as u32,
             Self::CableDisconnected => EventId::CableDisconnected as u32,
             Self::ServerCustomerChanged { .. } => EventId::ServerCustomerChanged as u32,
@@ -253,7 +257,15 @@ impl fmt::Display for Event {
             ),
             Self::ServerBroken => write!(f, "ServerBroken"),
             Self::ServerRepaired => write!(f, "ServerRepaired"),
-            Self::ServerInstalled => write!(f, "ServerInstalled"),
+            Self::ServerInstalled {
+                server_id,
+                object_type,
+                rack_position_uid,
+            } => write!(
+                f,
+                "ServerInstalled(server={}, type={}, rack_uid={})",
+                server_id, object_type, rack_position_uid
+            ),
             Self::CableConnected => write!(f, "CableConnected"),
             Self::CableDisconnected => write!(f, "CableDisconnected"),
             Self::ServerCustomerChanged { new_customer_id } => {

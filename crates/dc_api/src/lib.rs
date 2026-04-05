@@ -424,6 +424,7 @@ pub struct GameAPI {
         rot_z: f32,
         rot_w: f32,
     ) -> i32,
+    pub world_ensure_rack_uids: extern "C" fn() -> i32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -1492,6 +1493,13 @@ impl Api {
             rot_z,
             rot_w,
         ) == 1
+    }
+
+    pub fn world_ensure_rack_uids(&self) -> i32 {
+        if self.version() < 14 {
+            return 0;
+        }
+        (self.raw.world_ensure_rack_uids)()
     }
 }
 

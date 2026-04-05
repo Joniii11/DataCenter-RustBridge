@@ -35,6 +35,88 @@ fn update(api: &Api, dt: f32) {
     tick::update(api, dt);
 }
 
+#[dc_api::on_event]
+fn handle_event(api: &Api, event: Event) {
+    let connected = state::with_state(|s| s.connected).unwrap_or(false);
+    if !connected {
+        return;
+    }
+
+    let loaded = state::with_state(|s| s.join_state == state::JoinState::Loaded).unwrap_or(false);
+    if !loaded {
+        return;
+    }
+
+    let executing = state::with_state(|s| s.executing_remote_action).unwrap_or(false);
+    if executing {
+        return;
+    }
+
+    let action = match event {
+        Event::ServerInstalled {
+            server_id,
+            object_type,
+            rack_position_uid,
+        } => Some(protocol::WorldAction::InstalledInRack {
+            object_id: server_id,
+            object_type,
+            rack_position_uid,
+        }),
+        // Phase 3 will add more event→action conversions here
+        _ => None,
+    };
+
+    if let Some(action) = action {
+        send_world_action(api, action);
+    }
+}
+
+/// Convert a local game event into a world sync message and send it.
+fn send_world_action(_api: &Api, action: protocol::WorldAction) {
+    let is_host = state::with_state(|s| s.is_host).unwrap_or(false);
+
+    if is_host {
+        let broadcast = protocol::Message::WorldActionBroadcast {
+            action: action.clone(),
+        };
+        state::with_state(|s| {
+            if let Some(ref relay) = s.relay {
+                s.tracker.for_each_player(|player| {
+                    relay.send_game_message_to(&broadcast, player.steam_id);
+                });
+            }
+        });
+        dc_api::crash_log(&format!("[MP] Host broadcast world action: {:?}", action));
+    } else {
+        let seq = state::with_state(|s| s.world_sync.next_seq()).unwrap_or(0);
+        if seq == 0 {
+            dc_api::crash_log("[MP] Failed to get next seq for world action");
+            return;
+        }
+
+        let rollback = world::RollbackInfo::None;
+
+        state::with_state(|s| {
+            s.world_sync.register_pending(seq, action.clone(), rollback);
+        });
+
+        let msg = protocol::Message::WorldActionMsg {
+            seq,
+            action: action.clone(),
+        };
+        state::with_state(|s| {
+            if let Some(ref relay) = s.relay {
+                relay.send_game_message(&msg);
+            }
+        });
+
+        dc_api::crash_log(&format!(
+            "[MP] Client sent WorldActionMsg seq={}: {:?}",
+            seq, action
+        ));
+    }
+}
+
 #[dc_api::on_shutdown]
 fn shutdown(api: &Api) {
     let entity_ids = state::with_state(|s| {

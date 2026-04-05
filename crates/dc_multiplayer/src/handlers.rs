@@ -3,7 +3,9 @@
 use crate::net;
 use crate::player;
 use crate::protocol::Message;
+use crate::protocol::WorldAction;
 use crate::state::*;
+use crate::world;
 use dc_api::Api;
 use dc_api::Vec3;
 
@@ -314,6 +316,11 @@ fn handle_message(api: &Api, sender: u64, target: u64, msg: Message) {
 
         Message::RequestSave => {
             dc_api::crash_log(&format!("[MP] Save requested by peer {}", sender));
+            let assigned = api.world_ensure_rack_uids();
+            dc_api::crash_log(&format!(
+                "[MP] Pre-assigned {} rack position UIDs before save",
+                assigned
+            ));
             with_state(|s| {
                 if s.is_host {
                     s.save_transfers
@@ -412,31 +419,84 @@ fn handle_message(api: &Api, sender: u64, target: u64, msg: Message) {
             });
         }
 
-        Message::WorldActionMsg {
-            seq,
-            action: _action,
-        } => {
-            // TODO Phase 2: Host validates action, sends ACK, broadcasts to others
+        Message::WorldActionMsg { seq, action } => {
+            let is_host = with_state(|s| s.is_host).unwrap_or(false);
+            if !is_host {
+                return;
+            }
+
             dc_api::crash_log(&format!(
-                "[MP] Received WorldActionMsg seq={} from {} (not yet implemented)",
-                seq, sender
+                "[MP] WorldActionMsg seq={} from {}: {:?}",
+                seq, sender, action
             ));
+
+            // Phase 2: simple validation (accept everything for now)
+            let accepted = validate_world_action(api, &action);
+
+            let ack = Message::WorldActionAck { seq, accepted };
+            with_state(|s| {
+                if let Some(ref relay) = s.relay {
+                    relay.send_game_message_to(&ack, sender);
+                }
+            });
+
+            if accepted {
+                let broadcast = Message::WorldActionBroadcast {
+                    action: action.clone(),
+                };
+                with_state(|s| {
+                    if let Some(ref relay) = s.relay {
+                        s.tracker.for_each_player_mut(|player| {
+                            if player.steam_id != sender {
+                                relay.send_game_message_to(&broadcast, player.steam_id);
+                            }
+                        });
+                    }
+                });
+
+                world::execute_world_action(api, &action);
+            }
         }
 
         Message::WorldActionAck { seq, accepted } => {
-            // TODO Phase 2: Client removes pending action; if rejected, rollback
+            let is_host = with_state(|s| s.is_host).unwrap_or(false);
+            if is_host {
+                return;
+            }
+
             dc_api::crash_log(&format!(
-                "[MP] Received WorldActionAck seq={} accepted={} (not yet implemented)",
+                "[MP] WorldActionAck seq={} accepted={}",
                 seq, accepted
             ));
+
+            let pending = with_state(|s| s.world_sync.remove_pending(seq)).flatten();
+
+            if let Some(pending_action) = pending {
+                if !accepted {
+                    dc_api::crash_log(&format!("[MP] Action seq={} rejected, rolling back", seq));
+                    world::execute_rollback(api, &pending_action.rollback_info);
+                    api.show_notification("Action rejected by host.");
+                }
+            } else {
+                dc_api::crash_log(&format!(
+                    "[MP] WorldActionAck seq={} but no pending action found (already timed out?)",
+                    seq
+                ));
+            }
         }
 
-        Message::WorldActionBroadcast { action: _action } => {
-            // TODO Phase 2: Client executes authoritative action via FFI
+        Message::WorldActionBroadcast { action } => {
+            let is_host = with_state(|s| s.is_host).unwrap_or(false);
+            if is_host {
+                return; // host already has the authoritative state
+            }
+
             dc_api::crash_log(&format!(
-                "[MP] Received WorldActionBroadcast from {} (not yet implemented)",
-                sender
+                "[MP] WorldActionBroadcast from {}: {:?}",
+                sender, action
             ));
+
+            world::execute_world_action(api, &action);
         }
 
         Message::WorldHashCheck { hashes } => {
@@ -510,4 +570,75 @@ pub fn do_disconnect_cleanup() -> Vec<u32> {
         entity_ids
     })
     .unwrap_or_default()
+}
+
+/// Validate a world action on the host side
+fn validate_world_action(_api: &Api, action: &WorldAction) -> bool {
+    let (valid, reason) = match action {
+        WorldAction::InstalledInRack {
+            object_id,
+            rack_position_uid,
+            ..
+        } => {
+            if object_id.is_empty() {
+                (false, "InstalledInRack: empty object_id")
+            } else if *rack_position_uid < 0 {
+                (false, "InstalledInRack: negative rack_position_uid")
+            } else {
+                (true, "InstalledInRack: valid")
+            }
+        }
+        WorldAction::ObjectDropped {
+            object_id,
+            pos_x,
+            pos_y,
+            pos_z,
+            rot_x,
+            rot_y,
+            rot_z,
+            rot_w,
+            ..
+        } => {
+            if object_id.is_empty() {
+                (false, "ObjectDropped: empty object_id")
+            } else if *pos_x == 0.0
+                && *pos_y == 0.0
+                && *pos_z == 0.0
+                && *rot_x == 0.0
+                && *rot_y == 0.0
+                && *rot_z == 0.0
+                && *rot_w == 0.0
+            {
+                (
+                    false,
+                    "ObjectDropped: all position/rotation values are zero (uninitialized)",
+                )
+            } else {
+                (true, "ObjectDropped: valid")
+            }
+        }
+        WorldAction::ObjectPickedUp { object_id, .. }
+        | WorldAction::RemovedFromRack { object_id, .. }
+        | WorldAction::PowerToggled { object_id, .. }
+        | WorldAction::PropertyChanged { object_id, .. }
+        | WorldAction::ObjectSpawned { object_id, .. }
+        | WorldAction::ObjectDestroyed { object_id, .. } => {
+            if object_id.is_empty() {
+                (false, "empty object_id")
+            } else {
+                (true, "valid")
+            }
+        }
+        WorldAction::CableConnected { .. } | WorldAction::CableDisconnected { .. } => {
+            (true, "cable action: accepted")
+        }
+    };
+
+    dc_api::crash_log(&format!(
+        "[MP] Validating action: {:?} → {} ({})",
+        action,
+        if valid { "accepted" } else { "rejected" },
+        reason
+    ));
+    valid
 }
