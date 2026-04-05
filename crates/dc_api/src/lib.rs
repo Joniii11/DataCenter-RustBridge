@@ -1359,7 +1359,9 @@ impl Api {
                 .iter()
                 .position(|&b| b == 0)
                 .unwrap_or(out_buf.len());
-            String::from_utf8(out_buf[..len].to_vec()).ok()
+            String::from_utf8(out_buf[..len].to_vec())
+                .ok()
+                .map(|s| s.trim().to_string())
         } else {
             None
         }
@@ -1385,7 +1387,8 @@ impl Api {
 
         let mut out_buf = [0u8; 128];
 
-        let id_bytes = desired_id.as_bytes();
+        let trimmed_id = desired_id.trim();
+        let id_bytes = trimmed_id.as_bytes();
         let copy_len = id_bytes.len().min(127);
         out_buf[..copy_len].copy_from_slice(&id_bytes[..copy_len]);
 
@@ -1407,7 +1410,9 @@ impl Api {
                 .iter()
                 .position(|&b| b == 0)
                 .unwrap_or(out_buf.len());
-            String::from_utf8(out_buf[..len].to_vec()).ok()
+            String::from_utf8(out_buf[..len].to_vec())
+                .ok()
+                .map(|s| s.trim().to_string())
         } else {
             None
         }
@@ -1418,7 +1423,8 @@ impl Api {
         if self.version() < 13 {
             return false;
         }
-        (self.raw.world_destroy_object)(object_id.as_ptr(), object_id.len() as u32) == 1
+        let id = object_id.trim();
+        (self.raw.world_destroy_object)(id.as_ptr(), id.len() as u32) == 1
     }
 
     /// Install an object into a rack slot
@@ -1426,7 +1432,8 @@ impl Api {
         if self.version() < 13 {
             return false;
         }
-        (self.raw.world_place_in_rack)(object_id.as_ptr(), object_id.len() as u32, rack_uid) == 1
+        let id = object_id.trim();
+        (self.raw.world_place_in_rack)(id.as_ptr(), id.len() as u32, rack_uid) == 1
     }
 
     /// Remove an object from its rack slot
@@ -1434,7 +1441,8 @@ impl Api {
         if self.version() < 13 {
             return false;
         }
-        (self.raw.world_remove_from_rack)(object_id.as_ptr(), object_id.len() as u32) == 1
+        let id = object_id.trim();
+        (self.raw.world_remove_from_rack)(id.as_ptr(), id.len() as u32) == 1
     }
 
     /// Set power state on a server/switch
@@ -1442,11 +1450,8 @@ impl Api {
         if self.version() < 13 {
             return false;
         }
-        (self.raw.world_set_power)(
-            object_id.as_ptr(),
-            object_id.len() as u32,
-            if is_on { 1 } else { 0 },
-        ) == 1
+        let id = object_id.trim();
+        (self.raw.world_set_power)(id.as_ptr(), id.len() as u32, if is_on { 1 } else { 0 }) == 1
     }
 
     /// Set a named property on an object
@@ -1454,9 +1459,10 @@ impl Api {
         if self.version() < 13 {
             return false;
         }
+        let id = object_id.trim();
         (self.raw.world_set_property)(
-            object_id.as_ptr(),
-            object_id.len() as u32,
+            id.as_ptr(),
+            id.len() as u32,
             key.as_ptr(),
             key.len() as u32,
             value.as_ptr(),
@@ -1482,20 +1488,22 @@ impl Api {
         if self.version() < 13 {
             return false;
         }
+        let start_id = start_device_id.trim();
+        let end_id = end_device_id.trim();
         (self.raw.world_connect_cable)(
             cable_id,
             start_type,
             sx,
             sy,
             sz,
-            start_device_id.as_ptr(),
-            start_device_id.len() as u32,
+            start_id.as_ptr(),
+            start_id.len() as u32,
             end_type,
             ex,
             ey,
             ez,
-            end_device_id.as_ptr(),
-            end_device_id.len() as u32,
+            end_id.as_ptr(),
+            end_id.len() as u32,
         ) == 1
     }
 
@@ -1512,7 +1520,8 @@ impl Api {
         if self.version() < 13 {
             return false;
         }
-        (self.raw.world_pickup_object)(object_id.as_ptr(), object_id.len() as u32) == 1
+        let id = object_id.trim();
+        (self.raw.world_pickup_object)(id.as_ptr(), id.len() as u32) == 1
     }
 
     /// Place an object back into the world at a position
@@ -1530,9 +1539,10 @@ impl Api {
         if self.version() < 13 {
             return false;
         }
+        let id = object_id.trim();
         (self.raw.world_drop_object)(
-            object_id.as_ptr(),
-            object_id.len() as u32,
+            id.as_ptr(),
+            id.len() as u32,
             x,
             y,
             z,

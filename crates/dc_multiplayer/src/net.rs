@@ -14,6 +14,8 @@ use tungstenite::WebSocket;
 
 type WsStream = WebSocket<MaybeTlsStream<TcpStream>>;
 
+// FIXME: make it not possible to go into the garage while somebody is on the computer.
+
 pub enum RelayEvent {
     RoomCreated(String),
     JoinOk {

@@ -108,7 +108,9 @@ impl CustomEmployeeEventData {
             .iter()
             .position(|&b| b == 0)
             .unwrap_or(self.employee_id.len());
-        std::str::from_utf8(&self.employee_id[..end]).unwrap_or("")
+        std::str::from_utf8(&self.employee_id[..end])
+            .unwrap_or("")
+            .trim()
     }
 }
 
@@ -128,7 +130,9 @@ impl ServerInstalledData {
             .iter()
             .position(|&b| b == 0)
             .unwrap_or(self.server_id.len());
-        std::str::from_utf8(&self.server_id[..end]).unwrap_or("")
+        std::str::from_utf8(&self.server_id[..end])
+            .unwrap_or("")
+            .trim()
     }
 }
 
@@ -155,6 +159,8 @@ impl ObjectSpawnedData {
             .iter()
             .position(|&b| b == 0)
             .unwrap_or(self.object_id.len());
-        std::str::from_utf8(&self.object_id[..end]).unwrap_or("")
+        std::str::from_utf8(&self.object_id[..end])
+            .unwrap_or("")
+            .trim()
     }
 }

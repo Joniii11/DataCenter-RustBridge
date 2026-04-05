@@ -151,7 +151,7 @@ internal static class Patch_Server_ServerInsertedInRack
         catch (Exception ex) { EventDispatcher.LogError($"ServerInsertedInRack: {ex.Message}"); }
     }
 
-    private static int FindServerPrefabIndex(Server srv)
+    internal static int FindServerPrefabIndex(Server srv)
     {
         try
         {
@@ -310,6 +310,91 @@ internal static class Patch_ComputerShop_ButtonCheckOut
     }
 }
 
+/// <summary>
+/// Detects when a physical item (server, switch, etc.) is spawned by the shop.
+/// </summary>
+[HarmonyPatch(typeof(ComputerShop), "SpawnPhysicalItem")]
+internal static class Patch_ComputerShop_SpawnPhysicalItem
+{
+    internal static bool SuppressEvents = false;
+
+    // Track known server instance IDs so we only fire once per object.
+    // Populated on scene load with pre-existing servers.
+    private static readonly HashSet<int> _knownServerInstances = new();
+
+    internal static void Postfix(ComputerShop __instance)
+    {
+        if (SuppressEvents) return;
+
+        try
+        {
+            // Scan for any Server component we haven't seen yet.
+            // SpawnPhysicalItem just created a new GameObject — find it.
+            var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
+
+            foreach (var srv in allServers)
+            {
+                try
+                {
+                    int instId = srv.GetInstanceID();
+                    if (!_knownServerInstances.Add(instId)) continue;
+
+                    // ── New server detected ──────────────────────────────
+                    string serverId = srv.ServerID ?? "";
+
+                    if (string.IsNullOrEmpty(serverId))
+                    {
+                        string objName = srv.gameObject?.name ?? "Server";
+                        if (objName.EndsWith("(Clone)"))
+                            objName = objName.Substring(0, objName.Length - 7);
+                        serverId = $"{objName}_{instId}";
+                        srv.ServerID = serverId;
+                    }
+
+                    byte objectType = (byte)srv.serverType;
+                    int prefabId = Patch_Server_ServerInsertedInRack.FindServerPrefabIndex(srv);
+                    var pos = srv.transform.position;
+                    var rot = srv.transform.rotation;
+
+                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: new server '{serverId}' type={objectType} prefab={prefabId} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
+                    EventDispatcher.FireObjectSpawned(serverId, objectType, prefabId, pos, rot);
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: error processing server: {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex) { EventDispatcher.LogError($"SpawnPhysicalItem: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// Populate known instances from the current scene so we don't
+    /// re-fire ObjectSpawned for servers that came from the save file.
+    /// Call this after scene load / save load.
+    /// </summary>
+    internal static void PopulateKnownServers()
+    {
+        _knownServerInstances.Clear();
+        try
+        {
+            foreach (var srv in UnityEngine.Object.FindObjectsOfType<Server>())
+                _knownServerInstances.Add(srv.GetInstanceID());
+            CrashLog.Log($"[WorldSync] SpawnPhysicalItem: populated {_knownServerInstances.Count} known servers");
+        }
+        catch (Exception ex) { CrashLog.Log($"[WorldSync] PopulateKnownServers error: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// Register a remotely-spawned server so we don't re-detect it.
+    /// Call this from WorldSpawnObjectImpl after creating an object.
+    /// </summary>
+    internal static void RegisterRemoteSpawn(int instanceId)
+    {
+        _knownServerInstances.Add(instanceId);
+    }
+}
+
 [HarmonyPatch(typeof(HRSystem), nameof(HRSystem.ButtonConfirmHire))]
 internal static class Patch_HRSystem_ButtonConfirmHire
 {
@@ -399,7 +484,7 @@ internal static class Patch_SaveSystem_Load
         {
             CustomEmployeeManager.LoadState();
             EventDispatcher.FireSimple(EventIds.GameLoaded);
-
+            Patch_ComputerShop_SpawnPhysicalItem.PopulateKnownServers();
         }
         catch (Exception ex) { EventDispatcher.LogError($"Load: {ex.Message}"); }
     }

@@ -1244,7 +1244,9 @@ public partial class GameAPIManager : IDisposable
         if (ptr == IntPtr.Zero || len == 0) return "";
         byte[] buf = new byte[len];
         Marshal.Copy(ptr, buf, 0, (int)len);
-        return System.Text.Encoding.UTF8.GetString(buf);
+        int end = Array.IndexOf(buf, (byte)0);
+        if (end < 0) end = (int)len;
+        return System.Text.Encoding.UTF8.GetString(buf, 0, end).Trim();
     }
 
     uint WorldGetObjectCountImpl()
@@ -1388,6 +1390,9 @@ public partial class GameAPIManager : IDisposable
                 Marshal.Copy(bytes, 0, outId, copyLen);
                 Marshal.WriteByte(outId, copyLen, 0);
             }
+
+            try { Patch_ComputerShop_SpawnPhysicalItem.RegisterRemoteSpawn(go.GetInstanceID()); }
+            catch { }
 
             CrashLog.Log($"[WorldSync] SpawnObject: created '{resultId}' (type={objectType}, prefab={prefabId}) OK");
             return 1;
