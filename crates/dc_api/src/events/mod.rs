@@ -93,6 +93,16 @@ pub fn decode(event_id: u32, data: *const u8, size: u32) -> Option<Event> {
         Some(EventId::RackUnmounted) => Some(Event::RackUnmounted),
         Some(EventId::SwitchBroken) => Some(Event::SwitchBroken),
         Some(EventId::SwitchRepaired) => Some(Event::SwitchRepaired),
+        Some(EventId::ObjectSpawned) => {
+            let d = read_payload::<ObjectSpawnedData>(data, size)?;
+            Some(Event::ObjectSpawned {
+                object_id: d.id().to_owned(),
+                object_type: d.object_type,
+                prefab_id: d.prefab_id,
+                pos: (d.pos_x, d.pos_y, d.pos_z),
+                rot: (d.rot_x, d.rot_y, d.rot_z, d.rot_w),
+            })
+        }
         Some(EventId::DayEnded) => {
             let d = read_payload::<DayEndedData>(data, size)?;
             Some(Event::DayEnded { day: d.day })
@@ -353,6 +363,45 @@ mod tests {
                 assert_eq!(rack_position_uid, 42);
             }
             other => panic!("expected ServerInstalled, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn decode_object_spawned() {
+        let mut data = ObjectSpawnedData {
+            object_id: [0u8; 64],
+            object_type: 1,
+            prefab_id: 3,
+            pos_x: 1.0,
+            pos_y: 2.0,
+            pos_z: 3.0,
+            rot_x: 0.0,
+            rot_y: 0.0,
+            rot_z: 0.0,
+            rot_w: 1.0,
+        };
+        let id_bytes = b"Server.Yellow1_-5084";
+        data.object_id[..id_bytes.len()].copy_from_slice(id_bytes);
+
+        let ptr = &data as *const _ as *const u8;
+        let size = std::mem::size_of::<ObjectSpawnedData>() as u32;
+
+        let evt = decode(EventId::ObjectSpawned as u32, ptr, size).unwrap();
+        match evt {
+            Event::ObjectSpawned {
+                object_id,
+                object_type,
+                prefab_id,
+                pos,
+                rot,
+            } => {
+                assert_eq!(object_id, "Server.Yellow1_-5084");
+                assert_eq!(object_type, 1);
+                assert_eq!(prefab_id, 3);
+                assert!((pos.0 - 1.0).abs() < f32::EPSILON);
+                assert!((rot.3 - 1.0).abs() < f32::EPSILON);
+            }
+            other => panic!("expected ObjectSpawned, got {:?}", other),
         }
     }
 

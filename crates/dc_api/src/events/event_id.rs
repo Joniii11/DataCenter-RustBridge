@@ -36,6 +36,7 @@ pub enum EventId {
     RackUnmounted = 208,
     SwitchBroken = 209,
     SwitchRepaired = 210,
+    ObjectSpawned = 211,
 
     // time (3xx)
     DayEnded = 300,
@@ -86,6 +87,7 @@ impl EventId {
         Self::RackUnmounted,
         Self::SwitchBroken,
         Self::SwitchRepaired,
+        Self::ObjectSpawned,
         Self::DayEnded,
         Self::MonthEnded,
         Self::CustomerAccepted,
@@ -132,6 +134,7 @@ impl EventId {
             Self::RackUnmounted => "RackUnmounted",
             Self::SwitchBroken => "SwitchBroken",
             Self::SwitchRepaired => "SwitchRepaired",
+            Self::ObjectSpawned => "ObjectSpawned",
             Self::DayEnded => "DayEnded",
             Self::MonthEnded => "MonthEnded",
             Self::CustomerAccepted => "CustomerAccepted",
@@ -168,7 +171,8 @@ impl EventId {
             | Self::ServerAppChanged
             | Self::RackUnmounted
             | Self::SwitchBroken
-            | Self::SwitchRepaired => EventCategory::Server,
+            | Self::SwitchRepaired
+            | Self::ObjectSpawned => EventCategory::Server,
             Self::DayEnded | Self::MonthEnded => EventCategory::Time,
             Self::CustomerAccepted | Self::CustomerSatisfied | Self::CustomerUnsatisfied => {
                 EventCategory::Customer
@@ -197,7 +201,7 @@ mod tests {
 
     #[test]
     fn all_contains_every_variant() {
-        assert_eq!(EventId::ALL.len(), 31);
+        assert_eq!(EventId::ALL.len(), 32);
     }
 
     #[test]
@@ -244,6 +248,7 @@ mod tests {
             EventId::CustomEmployeeFired.to_string(),
             "CustomEmployeeFired(1001)"
         );
+        assert_eq!(EventId::ObjectSpawned.to_string(), "ObjectSpawned(211)");
     }
 
     #[test]
@@ -330,6 +335,7 @@ mod tests {
         assert_eq!(EventId::RackUnmounted.category(), EventCategory::Server);
         assert_eq!(EventId::SwitchBroken.category(), EventCategory::Server);
         assert_eq!(EventId::SwitchRepaired.category(), EventCategory::Server);
+        assert_eq!(EventId::ObjectSpawned.category(), EventCategory::Server);
 
         // time
         assert_eq!(EventId::DayEnded.category(), EventCategory::Time);

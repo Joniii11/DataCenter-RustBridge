@@ -48,6 +48,13 @@ pub enum Event {
     RackUnmounted,
     SwitchBroken,
     SwitchRepaired,
+    ObjectSpawned {
+        object_id: String,
+        object_type: u8,
+        prefab_id: i32,
+        pos: (f32, f32, f32),
+        rot: (f32, f32, f32, f32),
+    },
 
     // time (3xx)
     DayEnded {
@@ -129,6 +136,7 @@ impl Event {
             Self::RackUnmounted => EventId::RackUnmounted as u32,
             Self::SwitchBroken => EventId::SwitchBroken as u32,
             Self::SwitchRepaired => EventId::SwitchRepaired as u32,
+            Self::ObjectSpawned { .. } => EventId::ObjectSpawned as u32,
             Self::DayEnded { .. } => EventId::DayEnded as u32,
             Self::MonthEnded { .. } => EventId::MonthEnded as u32,
             Self::CustomerAccepted { .. } => EventId::CustomerAccepted as u32,
@@ -277,6 +285,17 @@ impl fmt::Display for Event {
             Self::RackUnmounted => write!(f, "RackUnmounted"),
             Self::SwitchBroken => write!(f, "SwitchBroken"),
             Self::SwitchRepaired => write!(f, "SwitchRepaired"),
+            Self::ObjectSpawned {
+                object_id,
+                object_type,
+                prefab_id,
+                pos,
+                rot: _,
+            } => write!(
+                f,
+                "ObjectSpawned(id={}, type={}, prefab={}, pos=({:.1},{:.1},{:.1}))",
+                object_id, object_type, prefab_id, pos.0, pos.1, pos.2
+            ),
             Self::DayEnded { day } => write!(f, "DayEnded(day={})", day),
             Self::MonthEnded { month } => write!(f, "MonthEnded(month={})", month),
             Self::CustomerAccepted { customer_id } => {

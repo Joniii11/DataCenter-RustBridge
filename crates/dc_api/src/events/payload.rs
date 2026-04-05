@@ -131,3 +131,30 @@ impl ServerInstalledData {
         std::str::from_utf8(&self.server_id[..end]).unwrap_or("")
     }
 }
+
+/// Payload for [`ObjectSpawned`]
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct ObjectSpawnedData {
+    pub object_id: [u8; 64],
+    pub object_type: u8,
+    pub prefab_id: i32,
+    pub pos_x: f32,
+    pub pos_y: f32,
+    pub pos_z: f32,
+    pub rot_x: f32,
+    pub rot_y: f32,
+    pub rot_z: f32,
+    pub rot_w: f32,
+}
+
+impl ObjectSpawnedData {
+    pub fn id(&self) -> &str {
+        let end = self
+            .object_id
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(self.object_id.len());
+        std::str::from_utf8(&self.object_id[..end]).unwrap_or("")
+    }
+}

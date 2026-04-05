@@ -289,6 +289,7 @@ fn execute_world_action_inner(api: &dc_api::Api, action: &WorldAction) {
             ));
         }
         WorldAction::ObjectSpawned {
+            object_id,
             object_type,
             prefab_id,
             pos_x,
@@ -298,9 +299,9 @@ fn execute_world_action_inner(api: &dc_api::Api, action: &WorldAction) {
             rot_y,
             rot_z,
             rot_w,
-            ..
         } => {
-            let result = api.world_spawn_object(
+            let result = api.world_spawn_object_with_id(
+                object_id,
                 *object_type,
                 *prefab_id,
                 *pos_x,
@@ -312,8 +313,8 @@ fn execute_world_action_inner(api: &dc_api::Api, action: &WorldAction) {
                 *rot_w,
             );
             dc_api::crash_log(&format!(
-                "[WORLD] Execute spawn type={} prefab={} → {:?}",
-                object_type, prefab_id, result
+                "[WORLD] Execute spawn '{}' type={} prefab={} → {:?}",
+                object_id, object_type, prefab_id, result
             ));
         }
         WorldAction::ObjectDestroyed { object_id, .. } => {

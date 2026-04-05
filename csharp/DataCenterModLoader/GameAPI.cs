@@ -1267,9 +1267,136 @@ public partial class GameAPIManager : IDisposable
 
     int WorldSpawnObjectImpl(byte objectType, int prefabId, float x, float y, float z, float rotX, float rotY, float rotZ, float rotW, IntPtr outId, uint outMax)
     {
-        // Phase 3 stub
-        CrashLog.Log($"[WorldSync] SpawnObject stub: type={objectType}, prefab={prefabId}");
-        return 0;
+        try
+        {
+            string desiredId = null;
+            if (outId != IntPtr.Zero && outMax > 0)
+            {
+                byte firstByte = Marshal.ReadByte(outId);
+                if (firstByte != 0)
+                {
+                    desiredId = ReadUtf8(outId, outMax);
+                }
+            }
+
+            CrashLog.Log($"[WorldSync] SpawnObject: type={objectType}, prefab={prefabId}, desiredId='{desiredId ?? "(none)"}', pos=({x:F1},{y:F1},{z:F1})");
+
+            var mgr = Il2Cpp.MainGameManager.instance;
+            if (mgr == null)
+            {
+                CrashLog.Log("[WorldSync] SpawnObject: MainGameManager is null");
+                return 0;
+            }
+
+            UnityEngine.GameObject prefab = null;
+
+            try
+            {
+                if (mgr.serverPrefabs != null && prefabId >= 0 && prefabId < mgr.serverPrefabs.Count)
+                {
+                    prefab = mgr.serverPrefabs[prefabId];
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] SpawnObject: serverPrefabs lookup failed: {ex.Message}");
+            }
+
+            if (prefab == null && objectType == 4)
+            {
+                try
+                {
+                    if (mgr.switchesPrefabs != null && prefabId >= 0 && prefabId < mgr.switchesPrefabs.Count)
+                    {
+                        prefab = mgr.switchesPrefabs[prefabId];
+                    }
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[WorldSync] SpawnObject: switchesPrefabs lookup failed: {ex.Message}");
+                }
+            }
+
+            if (prefab == null)
+            {
+                CrashLog.Log($"[WorldSync] SpawnObject: no prefab found for type={objectType} prefabId={prefabId}");
+                return 0;
+            }
+
+            var pos = new UnityEngine.Vector3(x, y, z);
+            var rot = new UnityEngine.Quaternion(rotX, rotY, rotZ, rotW);
+            var go = UnityEngine.Object.Instantiate(prefab, pos, rot);
+            if (go == null)
+            {
+                CrashLog.Log("[WorldSync] SpawnObject: Instantiate returned null");
+                return 0;
+            }
+
+            try
+            {
+                if (mgr.parentUsableObjects != null)
+                    go.transform.SetParent(mgr.parentUsableObjects, true);
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] SpawnObject: parenting failed (non-fatal): {ex.Message}");
+            }
+
+            string resultId = go.name;
+
+            try
+            {
+                var serverComp = go.GetComponent<Il2Cpp.Server>();
+                if (serverComp != null)
+                {
+                    if (!string.IsNullOrEmpty(desiredId))
+                    {
+                        serverComp.ServerID = desiredId;
+                        resultId = desiredId;
+                        CrashLog.Log($"[WorldSync] SpawnObject: set ServerID to '{desiredId}'");
+                    }
+                    else
+                    {
+                        resultId = serverComp.ServerID ?? go.name;
+                    }
+
+                    try
+                    {
+                        var rb = serverComp.rb;
+                        if (rb != null)
+                        {
+                            rb.isKinematic = true;
+                            rb.velocity = UnityEngine.Vector3.zero;
+                            rb.angularVelocity = UnityEngine.Vector3.zero;
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] SpawnObject: server setup failed: {ex.Message}");
+            }
+
+            if (outId != IntPtr.Zero && outMax > 0)
+            {
+                for (uint i = 0; i < outMax && i < 128; i++)
+                    Marshal.WriteByte(outId, (int)i, 0);
+
+                var bytes = System.Text.Encoding.UTF8.GetBytes(resultId);
+                int copyLen = Math.Min(bytes.Length, (int)outMax - 1);
+                Marshal.Copy(bytes, 0, outId, copyLen);
+                Marshal.WriteByte(outId, copyLen, 0);
+            }
+
+            CrashLog.Log($"[WorldSync] SpawnObject: created '{resultId}' (type={objectType}, prefab={prefabId}) OK");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("WorldSpawnObjectImpl", ex);
+            return 0;
+        }
     }
 
     int WorldDestroyObjectImpl(IntPtr id, uint idLen)

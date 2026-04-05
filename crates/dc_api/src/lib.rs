@@ -1365,6 +1365,54 @@ impl Api {
         }
     }
 
+    /// Spawn a world object, requesting a specific object ID
+    pub fn world_spawn_object_with_id(
+        &self,
+        desired_id: &str,
+        object_type: u8,
+        prefab_id: i32,
+        x: f32,
+        y: f32,
+        z: f32,
+        rot_x: f32,
+        rot_y: f32,
+        rot_z: f32,
+        rot_w: f32,
+    ) -> Option<String> {
+        if self.version() < 13 {
+            return None;
+        }
+
+        let mut out_buf = [0u8; 128];
+
+        let id_bytes = desired_id.as_bytes();
+        let copy_len = id_bytes.len().min(127);
+        out_buf[..copy_len].copy_from_slice(&id_bytes[..copy_len]);
+
+        let result = (self.raw.world_spawn_object)(
+            object_type,
+            prefab_id,
+            x,
+            y,
+            z,
+            rot_x,
+            rot_y,
+            rot_z,
+            rot_w,
+            out_buf.as_mut_ptr(),
+            out_buf.len() as u32,
+        );
+        if result > 0 {
+            let len = out_buf
+                .iter()
+                .position(|&b| b == 0)
+                .unwrap_or(out_buf.len());
+            String::from_utf8(out_buf[..len].to_vec()).ok()
+        } else {
+            None
+        }
+    }
+
     /// Permanently destroy/remove an object from the world
     pub fn world_destroy_object(&self, object_id: &str) -> bool {
         if self.version() < 13 {

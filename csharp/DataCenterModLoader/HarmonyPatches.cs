@@ -127,18 +127,64 @@ internal static class Patch_Server_ServerInsertedInRack
             string serverId = !string.IsNullOrEmpty(instanceId) ? instanceId : saveDataId;
 
             CrashLog.Log($"ServerInsertedInRack [diag]: instanceId={instanceId}, saveDataId={saveDataId}, resolved={serverId}, type={objectType}, rackUid={rackUid}");
+
+            // When the game assigns a ServerID to a newly placed server,
+            // check if MarkPositionAsUsed stored a pending install for it.
+            // If so, fire ObjectSpawned + ServerInstalled now that we have the ID.
+            if (!string.IsNullOrEmpty(instanceId) && string.IsNullOrEmpty(saveDataId))
+            {
+                int instId = 0;
+                try { instId = __instance.GetInstanceID(); } catch { }
+
+                if (instId != 0 && Patch_Rack_MarkPositionAsUsed.PendingInstalls.Remove(instId, out var pending))
+                {
+                    int prefabId = FindServerPrefabIndex(__instance);
+                    var pos = __instance.transform.position;
+                    var rot = __instance.transform.rotation;
+
+                    CrashLog.Log($"[WorldSync] ServerInsertedInRack: deferred sync for '{instanceId}' at uid={pending.rackPosUid} prefab={prefabId}");
+                    EventDispatcher.FireObjectSpawned(instanceId, pending.objectType, prefabId, pos, rot);
+                    EventDispatcher.FireServerInstalled(instanceId, pending.objectType, pending.rackPosUid);
+                }
+            }
         }
         catch (Exception ex) { EventDispatcher.LogError($"ServerInsertedInRack: {ex.Message}"); }
+    }
+
+    private static int FindServerPrefabIndex(Server srv)
+    {
+        try
+        {
+            var mgr = MainGameManager.instance;
+            if (mgr?.serverPrefabs == null) return 0;
+            string srvName = srv.gameObject?.name ?? "";
+            if (srvName.EndsWith("(Clone)")) srvName = srvName.Substring(0, srvName.Length - 7);
+            int idx = srvName.LastIndexOf('_');
+            string prefix = idx > 0 ? srvName.Substring(0, idx) : srvName;
+            for (int i = 0; i < mgr.serverPrefabs.Count; i++)
+            {
+                try { if (mgr.serverPrefabs[i]?.name == prefix) return i; } catch { }
+            }
+        }
+        catch { }
+        return 0;
     }
 }
 
 /// <summary>
 /// PRIMARY hook for "server installed in rack" during gameplay.
+/// Fires ServerInstalled immediately when ServerID is known.
+/// When ServerID is empty (newly purchased), stores a pending entry
+/// that ServerInsertedInRack picks up once the game assigns the ID.
 /// </summary>
 [HarmonyPatch(typeof(Rack), nameof(Rack.MarkPositionAsUsed))]
 internal static class Patch_Rack_MarkPositionAsUsed
 {
     internal static bool SuppressEvents = false;
+
+    // Pending installs: Unity instanceId → (rackPosUid, objectType).
+    // Filled here when ServerID is empty, consumed by ServerInsertedInRack.
+    internal static readonly Dictionary<int, (int rackPosUid, byte objectType)> PendingInstalls = new();
 
     internal static void Postfix(Rack __instance, int __0, int __1)
     {
@@ -148,25 +194,15 @@ internal static class Patch_Rack_MarkPositionAsUsed
             int index = __0;
             int sizeInU = __1;
 
-            // Find the RackPosition at this index to get its global UID
             var positions = __instance.positions;
-            if (positions == null || index < 0 || index >= positions.Count)
-            {
-                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} out of range (positions={positions?.Count ?? 0})");
-                return;
-            }
+            if (positions == null || index < 0 || index >= positions.Count) return;
 
             RackPosition rackPos = positions[index];
-            if (rackPos == null)
-            {
-                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: positions[{index}] is null");
-                return;
-            }
+            if (rackPos == null) return;
 
             int rackPosUid = rackPos.rackPosGlobalUID;
 
             // Find which server was just installed at this rack position.
-            // We search by currentRackPosition first, then by rackPositionUID as fallback.
             var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
             Server installed = null;
 
@@ -174,30 +210,18 @@ internal static class Patch_Rack_MarkPositionAsUsed
             {
                 try
                 {
-                    // Primary: check if currentRackPosition points to this slot
                     if (srv.currentRackPosition != null &&
                         srv.currentRackPosition.rackPosGlobalUID == rackPosUid)
-                    {
-                        installed = srv;
-                        break;
-                    }
+                    { installed = srv; break; }
                 }
-                catch { /* Il2Cpp field access can throw if object is being set up */ }
+                catch { }
             }
 
-            // Fallback: match by rackPositionUID field
             if (installed == null)
             {
                 foreach (var srv in allServers)
                 {
-                    try
-                    {
-                        if (srv.rackPositionUID == rackPosUid)
-                        {
-                            installed = srv;
-                            break;
-                        }
-                    }
+                    try { if (srv.rackPositionUID == rackPosUid) { installed = srv; break; } }
                     catch { }
                 }
             }
@@ -213,15 +237,15 @@ internal static class Patch_Rack_MarkPositionAsUsed
 
             if (string.IsNullOrEmpty(serverId))
             {
-                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} uid={rackPosUid} — server has empty ServerID, skipping event");
+                // Game assigns ServerID later in ServerInsertedInRack (~2s).
+                // Store pending entry so that hook can fire the events.
+                int instId = installed.GetInstanceID();
+                PendingInstalls[instId] = (rackPosUid, objectType);
+                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} uid={rackPosUid} instId={instId} — empty ServerID, stored pending");
                 return;
             }
 
-            if (rackPosUid < 0)
-            {
-                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: server '{serverId}' type={objectType} at rackUid={rackPosUid} (index={index}, sizeInU={sizeInU}) [skip: invalid UID]");
-                return;
-            }
+            if (rackPosUid < 0) return;
 
             CrashLog.Log($"[WorldSync] MarkPositionAsUsed: server '{serverId}' type={objectType} at rackUid={rackPosUid} (index={index}, sizeInU={sizeInU}) → firing event");
             EventDispatcher.FireServerInstalled(serverId, objectType, rackPosUid);

@@ -42,9 +42,13 @@ fn handle_event(api: &Api, event: Event) {
         return;
     }
 
-    let loaded = state::with_state(|s| s.join_state == state::JoinState::Loaded).unwrap_or(false);
-    if !loaded {
-        return;
+    let is_host = state::with_state(|s| s.is_host).unwrap_or(false);
+    if !is_host {
+        let loaded =
+            state::with_state(|s| s.join_state == state::JoinState::Loaded).unwrap_or(false);
+        if !loaded {
+            return;
+        }
     }
 
     let executing = state::with_state(|s| s.executing_remote_action).unwrap_or(false);
@@ -62,7 +66,24 @@ fn handle_event(api: &Api, event: Event) {
             object_type,
             rack_position_uid,
         }),
-        // Phase 3 will add more event→action conversions here
+        Event::ObjectSpawned {
+            object_id,
+            object_type,
+            prefab_id,
+            pos,
+            rot,
+        } => Some(protocol::WorldAction::ObjectSpawned {
+            object_id,
+            object_type,
+            prefab_id,
+            pos_x: pos.0,
+            pos_y: pos.1,
+            pos_z: pos.2,
+            rot_x: rot.0,
+            rot_y: rot.1,
+            rot_z: rot.2,
+            rot_w: rot.3,
+        }),
         _ => None,
     };
 
