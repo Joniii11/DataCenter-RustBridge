@@ -23,6 +23,8 @@ public static class EventIds
     public const uint SwitchBroken = 209;
     public const uint SwitchRepaired = 210;
     public const uint ObjectSpawned = 211;
+    public const uint ObjectPickedUp = 212;
+    public const uint ObjectDropped = 213;
 
     public const uint DayEnded = 300;
     public const uint MonthEnded = 301;
@@ -209,6 +211,67 @@ public struct ObjectSpawnedData
     }
 }
 
+[StructLayout(LayoutKind.Sequential)]
+public struct ObjectPickedUpData
+{
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
+    public byte[] ObjectId;
+    public byte ObjectType;
+
+    public static ObjectPickedUpData Create(string objectId, byte objectType)
+    {
+        var data = new ObjectPickedUpData
+        {
+            ObjectId = new byte[64],
+            ObjectType = objectType
+        };
+        if (!string.IsNullOrEmpty(objectId))
+        {
+            var bytes = System.Text.Encoding.ASCII.GetBytes(objectId);
+            Array.Copy(bytes, data.ObjectId, Math.Min(bytes.Length, 63));
+        }
+        return data;
+    }
+}
+
+[StructLayout(LayoutKind.Sequential)]
+public struct ObjectDroppedData
+{
+    [MarshalAs(UnmanagedType.ByValArray, SizeConst = 64)]
+    public byte[] ObjectId;
+    public byte ObjectType;
+    public float PosX;
+    public float PosY;
+    public float PosZ;
+    public float RotX;
+    public float RotY;
+    public float RotZ;
+    public float RotW;
+
+    public static ObjectDroppedData Create(string objectId, byte objectType,
+        float px, float py, float pz, float rx, float ry, float rz, float rw)
+    {
+        var data = new ObjectDroppedData
+        {
+            ObjectId = new byte[64],
+            ObjectType = objectType,
+            PosX = px,
+            PosY = py,
+            PosZ = pz,
+            RotX = rx,
+            RotY = ry,
+            RotZ = rz,
+            RotW = rw
+        };
+        if (!string.IsNullOrEmpty(objectId))
+        {
+            var bytes = System.Text.Encoding.ASCII.GetBytes(objectId);
+            Array.Copy(bytes, data.ObjectId, Math.Min(bytes.Length, 63));
+        }
+        return data;
+    }
+}
+
 public static class EventDispatcher
 {
     private static FFIBridge _bridge;
@@ -352,6 +415,22 @@ public static class EventDispatcher
             ObjectSpawnedData.Create(objectId, objectType, prefabId,
                 pos.x, pos.y, pos.z, rot.x, rot.y, rot.z, rot.w),
             (objectId?.GetHashCode() ?? 0) + prefabId * 31.0);
+    }
+
+    public static void FireObjectPickedUp(string objectId, byte objectType)
+    {
+        DispatchWithData(EventIds.ObjectPickedUp,
+            ObjectPickedUpData.Create(objectId, objectType),
+            (objectId?.GetHashCode() ?? 0) + objectType * 31.0);
+    }
+
+    public static void FireObjectDropped(string objectId, byte objectType,
+        UnityEngine.Vector3 pos, UnityEngine.Quaternion rot)
+    {
+        DispatchWithData(EventIds.ObjectDropped,
+            ObjectDroppedData.Create(objectId, objectType,
+                pos.x, pos.y, pos.z, rot.x, rot.y, rot.z, rot.w),
+            (objectId?.GetHashCode() ?? 0) + objectType * 31.0 + pos.x);
     }
 
     public static void FireRackUnmounted()

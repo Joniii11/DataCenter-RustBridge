@@ -164,3 +164,52 @@ impl ObjectSpawnedData {
             .trim()
     }
 }
+
+/// Payload for [`ObjectPickedUp`]
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct ObjectPickedUpData {
+    pub object_id: [u8; 64],
+    pub object_type: u8,
+}
+
+impl ObjectPickedUpData {
+    pub fn id(&self) -> &str {
+        let end = self
+            .object_id
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(self.object_id.len());
+        std::str::from_utf8(&self.object_id[..end])
+            .unwrap_or("")
+            .trim()
+    }
+}
+
+/// Payload for [`ObjectDropped`]
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct ObjectDroppedData {
+    pub object_id: [u8; 64],
+    pub object_type: u8,
+    pub pos_x: f32,
+    pub pos_y: f32,
+    pub pos_z: f32,
+    pub rot_x: f32,
+    pub rot_y: f32,
+    pub rot_z: f32,
+    pub rot_w: f32,
+}
+
+impl ObjectDroppedData {
+    pub fn id(&self) -> &str {
+        let end = self
+            .object_id
+            .iter()
+            .position(|&b| b == 0)
+            .unwrap_or(self.object_id.len());
+        std::str::from_utf8(&self.object_id[..end])
+            .unwrap_or("")
+            .trim()
+    }
+}

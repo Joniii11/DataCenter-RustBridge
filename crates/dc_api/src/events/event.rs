@@ -55,6 +55,16 @@ pub enum Event {
         pos: (f32, f32, f32),
         rot: (f32, f32, f32, f32),
     },
+    ObjectPickedUp {
+        object_id: String,
+        object_type: u8,
+    },
+    ObjectDropped {
+        object_id: String,
+        object_type: u8,
+        pos: (f32, f32, f32),
+        rot: (f32, f32, f32, f32),
+    },
 
     // time (3xx)
     DayEnded {
@@ -137,6 +147,8 @@ impl Event {
             Self::SwitchBroken => EventId::SwitchBroken as u32,
             Self::SwitchRepaired => EventId::SwitchRepaired as u32,
             Self::ObjectSpawned { .. } => EventId::ObjectSpawned as u32,
+            Self::ObjectPickedUp { .. } => EventId::ObjectPickedUp as u32,
+            Self::ObjectDropped { .. } => EventId::ObjectDropped as u32,
             Self::DayEnded { .. } => EventId::DayEnded as u32,
             Self::MonthEnded { .. } => EventId::MonthEnded as u32,
             Self::CustomerAccepted { .. } => EventId::CustomerAccepted as u32,
@@ -295,6 +307,20 @@ impl fmt::Display for Event {
                 f,
                 "ObjectSpawned(id={}, type={}, prefab={}, pos=({:.1},{:.1},{:.1}))",
                 object_id, object_type, prefab_id, pos.0, pos.1, pos.2
+            ),
+            Self::ObjectPickedUp {
+                object_id,
+                object_type,
+            } => write!(f, "ObjectPickedUp(id={}, type={})", object_id, object_type),
+            Self::ObjectDropped {
+                object_id,
+                object_type,
+                pos,
+                rot: _,
+            } => write!(
+                f,
+                "ObjectDropped(id={}, type={}, pos=({:.1},{:.1},{:.1}))",
+                object_id, object_type, pos.0, pos.1, pos.2
             ),
             Self::DayEnded { day } => write!(f, "DayEnded(day={})", day),
             Self::MonthEnded { month } => write!(f, "MonthEnded(month={})", month),

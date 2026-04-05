@@ -103,6 +103,22 @@ pub fn decode(event_id: u32, data: *const u8, size: u32) -> Option<Event> {
                 rot: (d.rot_x, d.rot_y, d.rot_z, d.rot_w),
             })
         }
+        Some(EventId::ObjectPickedUp) => {
+            let d = read_payload::<ObjectPickedUpData>(data, size)?;
+            Some(Event::ObjectPickedUp {
+                object_id: d.id().to_owned(),
+                object_type: d.object_type,
+            })
+        }
+        Some(EventId::ObjectDropped) => {
+            let d = read_payload::<ObjectDroppedData>(data, size)?;
+            Some(Event::ObjectDropped {
+                object_id: d.id().to_owned(),
+                object_type: d.object_type,
+                pos: (d.pos_x, d.pos_y, d.pos_z),
+                rot: (d.rot_x, d.rot_y, d.rot_z, d.rot_w),
+            })
+        }
         Some(EventId::DayEnded) => {
             let d = read_payload::<DayEndedData>(data, size)?;
             Some(Event::DayEnded { day: d.day })

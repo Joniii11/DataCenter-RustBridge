@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using HarmonyLib;
 using Il2Cpp;
+using Il2CppInterop.Runtime;
 using UnityEngine;
 
 namespace DataCenterModLoader;
@@ -669,4 +670,129 @@ internal static class Patch_HRSystem_OnEnable
             CrashLog.LogException("HRSystem.OnEnable custom employee injection", ex);
         }
     }
+}
+
+/// <summary>
+/// Detects when the local player picks up or drops a UsableObject (Server, Switch, etc.)
+/// by comparing PlayerManager state before/after InteractOnClick.
+/// Fires ObjectPickedUp / ObjectDropped events for multiplayer synchronization.
+/// </summary>
+[HarmonyPatch(typeof(UsableObject), nameof(UsableObject.InteractOnClick))]
+internal static class Patch_UsableObject_InteractOnClick
+{
+    internal static bool SuppressEvents = false;
+
+    // Track what the player was holding before interaction
+    [ThreadStatic] private static int _prevNumObjects;
+    [ThreadStatic] private static int _prevObjectInHand;
+
+    // Track the currently held object for drop detection
+    private static string _heldObjectId = null;
+    private static byte _heldObjectType = 0;
+    private static UsableObject _heldObjectRef = null;
+
+    internal static void Prefix(UsableObject __instance)
+    {
+        try
+        {
+            var pm = PlayerManager.instance;
+            if (pm == null) return;
+            _prevNumObjects = pm.numberOfObjectsInHand;
+            _prevObjectInHand = (int)pm.objectInHand;
+        }
+        catch (Exception ex) { CrashLog.Log($"[WorldSync] InteractOnClick Prefix error: {ex.Message}"); }
+    }
+
+    internal static void Postfix(UsableObject __instance)
+    {
+        if (SuppressEvents) return;
+
+        try
+        {
+            var pm = PlayerManager.instance;
+            if (pm == null) return;
+
+            int newNumObjects = pm.numberOfObjectsInHand;
+            int newObjectInHand = (int)pm.objectInHand;
+
+            // ── PICKUP: was empty-handed, now holding something ──
+            if (_prevNumObjects == 0 && newNumObjects > 0 && _prevObjectInHand == 0 && newObjectInHand != 0)
+            {
+                string objectId = null;
+                byte objectType = 0;
+
+                var server = __instance.TryCast<Server>();
+                if (server != null)
+                {
+                    objectId = server.ServerID ?? "";
+                    objectType = (byte)server.serverType;
+                }
+                else
+                {
+                    // For non-Server UsableObjects, use instance ID as identifier
+                    objectId = $"{__instance.gameObject.name}_{__instance.GetInstanceID()}";
+                    objectType = (byte)(int)__instance.objectInHandType;
+                }
+
+                if (!string.IsNullOrEmpty(objectId))
+                {
+                    _heldObjectId = objectId;
+                    _heldObjectType = objectType;
+                    _heldObjectRef = __instance;
+
+                    CrashLog.Log($"[WorldSync] Pickup detected: '{objectId}' type={objectType}");
+                    EventDispatcher.FireObjectPickedUp(objectId, objectType);
+                }
+            }
+            // ── DROP: was holding something, now empty-handed ──
+            else if (_prevNumObjects > 0 && newNumObjects == 0 && _prevObjectInHand != 0 && newObjectInHand == 0)
+            {
+                if (!string.IsNullOrEmpty(_heldObjectId))
+                {
+                    var pos = UnityEngine.Vector3.zero;
+                    var rot = UnityEngine.Quaternion.identity;
+
+                    // Try to get position from the object that was just dropped
+                    if (_heldObjectRef != null && _heldObjectRef.gameObject != null)
+                    {
+                        pos = _heldObjectRef.transform.position;
+                        rot = _heldObjectRef.transform.rotation;
+                    }
+                    else
+                    {
+                        // Fallback: use the interacted object's position (might be a rack or other target)
+                        pos = __instance.transform.position;
+                        rot = __instance.transform.rotation;
+                    }
+
+                    CrashLog.Log($"[WorldSync] Drop detected: '{_heldObjectId}' type={_heldObjectType} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
+                    EventDispatcher.FireObjectDropped(_heldObjectId, _heldObjectType, pos, rot);
+
+                    _heldObjectId = null;
+                    _heldObjectType = 0;
+                    _heldObjectRef = null;
+                }
+            }
+        }
+        catch (Exception ex) { CrashLog.Log($"[WorldSync] InteractOnClick Postfix error: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// Called from remote world actions to suppress local event firing
+    /// </summary>
+    internal static void SetHeldObject(string objectId, byte objectType, UsableObject obj)
+    {
+        _heldObjectId = objectId;
+        _heldObjectType = objectType;
+        _heldObjectRef = obj;
+    }
+
+    internal static void ClearHeldObject()
+    {
+        _heldObjectId = null;
+        _heldObjectType = 0;
+        _heldObjectRef = null;
+    }
+
+    internal static string GetHeldObjectId() => _heldObjectId;
 }

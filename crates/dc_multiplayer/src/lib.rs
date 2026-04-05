@@ -84,6 +84,29 @@ fn handle_event(api: &Api, event: Event) {
             rot_z: rot.2,
             rot_w: rot.3,
         }),
+        Event::ObjectPickedUp {
+            object_id,
+            object_type,
+        } => Some(protocol::WorldAction::ObjectPickedUp {
+            object_id,
+            object_type,
+        }),
+        Event::ObjectDropped {
+            object_id,
+            object_type,
+            pos,
+            rot,
+        } => Some(protocol::WorldAction::ObjectDropped {
+            object_id,
+            object_type,
+            pos_x: pos.0,
+            pos_y: pos.1,
+            pos_z: pos.2,
+            rot_x: rot.0,
+            rot_y: rot.1,
+            rot_z: rot.2,
+            rot_w: rot.3,
+        }),
         _ => None,
     };
 

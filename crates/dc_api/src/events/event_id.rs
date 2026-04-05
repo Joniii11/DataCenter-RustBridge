@@ -37,6 +37,8 @@ pub enum EventId {
     SwitchBroken = 209,
     SwitchRepaired = 210,
     ObjectSpawned = 211,
+    ObjectPickedUp = 212,
+    ObjectDropped = 213,
 
     // time (3xx)
     DayEnded = 300,
@@ -88,6 +90,8 @@ impl EventId {
         Self::SwitchBroken,
         Self::SwitchRepaired,
         Self::ObjectSpawned,
+        Self::ObjectPickedUp,
+        Self::ObjectDropped,
         Self::DayEnded,
         Self::MonthEnded,
         Self::CustomerAccepted,
@@ -135,6 +139,8 @@ impl EventId {
             Self::SwitchBroken => "SwitchBroken",
             Self::SwitchRepaired => "SwitchRepaired",
             Self::ObjectSpawned => "ObjectSpawned",
+            Self::ObjectPickedUp => "ObjectPickedUp",
+            Self::ObjectDropped => "ObjectDropped",
             Self::DayEnded => "DayEnded",
             Self::MonthEnded => "MonthEnded",
             Self::CustomerAccepted => "CustomerAccepted",
@@ -172,7 +178,9 @@ impl EventId {
             | Self::RackUnmounted
             | Self::SwitchBroken
             | Self::SwitchRepaired
-            | Self::ObjectSpawned => EventCategory::Server,
+            | Self::ObjectSpawned
+            | Self::ObjectPickedUp
+            | Self::ObjectDropped => EventCategory::Server,
             Self::DayEnded | Self::MonthEnded => EventCategory::Time,
             Self::CustomerAccepted | Self::CustomerSatisfied | Self::CustomerUnsatisfied => {
                 EventCategory::Customer
@@ -201,7 +209,7 @@ mod tests {
 
     #[test]
     fn all_contains_every_variant() {
-        assert_eq!(EventId::ALL.len(), 32);
+        assert_eq!(EventId::ALL.len(), 34);
     }
 
     #[test]

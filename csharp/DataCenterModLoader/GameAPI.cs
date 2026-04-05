@@ -1636,18 +1636,139 @@ public partial class GameAPIManager : IDisposable
 
     int WorldPickupObjectImpl(IntPtr id, uint idLen)
     {
-        // Phase 3 stub
-        string objId = ReadUtf8(id, idLen);
-        CrashLog.Log($"[WorldSync] PickupObject stub: id={objId}");
-        return 0;
+        try
+        {
+            string objId = ReadUtf8(id, idLen);
+            CrashLog.Log($"[WorldSync] PickupObject: id={objId}");
+
+            // Find the server by ID
+            var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
+            foreach (var srv in allServers)
+            {
+                try
+                {
+                    string sid = srv.ServerID ?? "";
+                    if (sid == objId)
+                    {
+                        // Deactivate the object — it's now "in someone's hands" on the remote side
+                        srv.gameObject.SetActive(false);
+                        CrashLog.Log($"[WorldSync] PickupObject: deactivated server '{objId}'");
+                        return 1;
+                    }
+                }
+                catch { }
+            }
+
+            // Try NetworkSwitch and other UsableObjects by name_instanceId pattern
+            var allUsable = UnityEngine.Object.FindObjectsOfType<UsableObject>();
+            foreach (var uo in allUsable)
+            {
+                try
+                {
+                    string uoId = $"{uo.gameObject.name}_{uo.GetInstanceID()}";
+                    if (uoId == objId)
+                    {
+                        uo.gameObject.SetActive(false);
+                        CrashLog.Log($"[WorldSync] PickupObject: deactivated '{objId}'");
+                        return 1;
+                    }
+                }
+                catch { }
+            }
+
+            CrashLog.Log($"[WorldSync] PickupObject: object '{objId}' not found");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("WorldPickupObjectImpl", ex);
+            return 0;
+        }
     }
 
     int WorldDropObjectImpl(IntPtr id, uint idLen, float x, float y, float z, float rotX, float rotY, float rotZ, float rotW)
     {
-        // Phase 3 stub
-        string objId = ReadUtf8(id, idLen);
-        CrashLog.Log($"[WorldSync] DropObject stub: id={objId}, pos=({x:F1},{y:F1},{z:F1})");
-        return 0;
+        try
+        {
+            string objId = ReadUtf8(id, idLen);
+            CrashLog.Log($"[WorldSync] DropObject: id={objId}, pos=({x:F1},{y:F1},{z:F1})");
+
+            var pos = new UnityEngine.Vector3(x, y, z);
+            var rot = new UnityEngine.Quaternion(rotX, rotY, rotZ, rotW);
+
+            // Find the server by ID (may be deactivated, so search ALL including inactive)
+            // FindObjectsOfType doesn't find inactive objects, so we need to search differently
+            var allServers = UnityEngine.Resources.FindObjectsOfTypeAll<Server>();
+            foreach (var srv in allServers)
+            {
+                try
+                {
+                    // Skip prefabs / assets (only want scene objects)
+                    if (srv.gameObject.scene.name == null) continue;
+
+                    string sid = srv.ServerID ?? "";
+                    if (sid == objId)
+                    {
+                        // Reactivate and position
+                        srv.gameObject.SetActive(true);
+                        srv.transform.position = pos;
+                        srv.transform.rotation = rot;
+
+                        // Unparent from any rack/player and re-parent to world
+                        var mgr = MainGameManager.instance;
+                        if (mgr != null && mgr.parentUsableObjects != null)
+                            srv.transform.SetParent(mgr.parentUsableObjects, true);
+
+                        // Enable physics so it falls naturally
+                        var rb = srv.GetComponent<UnityEngine.Rigidbody>();
+                        if (rb != null)
+                            rb.isKinematic = false;
+
+                        CrashLog.Log($"[WorldSync] DropObject: reactivated server '{objId}' at ({x:F1},{y:F1},{z:F1})");
+                        return 1;
+                    }
+                }
+                catch { }
+            }
+
+            // Try UsableObjects by name_instanceId pattern
+            var allUsable = UnityEngine.Resources.FindObjectsOfTypeAll<UsableObject>();
+            foreach (var uo in allUsable)
+            {
+                try
+                {
+                    if (uo.gameObject.scene.name == null) continue;
+
+                    string uoId = $"{uo.gameObject.name}_{uo.GetInstanceID()}";
+                    if (uoId == objId)
+                    {
+                        uo.gameObject.SetActive(true);
+                        uo.transform.position = pos;
+                        uo.transform.rotation = rot;
+
+                        var mgr = MainGameManager.instance;
+                        if (mgr != null && mgr.parentUsableObjects != null)
+                            uo.transform.SetParent(mgr.parentUsableObjects, true);
+
+                        var rb = uo.GetComponent<UnityEngine.Rigidbody>();
+                        if (rb != null)
+                            rb.isKinematic = false;
+
+                        CrashLog.Log($"[WorldSync] DropObject: reactivated '{objId}' at ({x:F1},{y:F1},{z:F1})");
+                        return 1;
+                    }
+                }
+                catch { }
+            }
+
+            CrashLog.Log($"[WorldSync] DropObject: object '{objId}' not found");
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("WorldDropObjectImpl", ex);
+            return 0;
+        }
     }
 
     int WorldEnsureRackUIDsImpl()
