@@ -42,7 +42,6 @@
 //!     true
 //! }
 //! ```
-
 pub mod events;
 pub use events::{Event, EventCategory, EventId};
 
@@ -438,6 +437,11 @@ unsafe impl Send for Api {}
 unsafe impl Sync for Api {}
 
 impl Api {
+    /// Create a new `Api` instance from a raw `GameAPI` pointer
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure the pointer is valid and points to a `GameAPI` struct
     pub unsafe fn from_raw(raw: &'static GameAPI) -> Self {
         Self { raw }
     }
@@ -1015,8 +1019,8 @@ impl Api {
         ))
     }
 
-    /// Register an integer config entry for this mod.
-    /// Returns Some(1) on success, Some(0) if key already exists.
+    /// Register an integer config entry for this mod
+    #[allow(clippy::too_many_arguments)]
     pub fn config_register_int(
         &self,
         mod_id: &str,
@@ -1047,6 +1051,7 @@ impl Api {
 
     /// Register a float config entry for this mod.
     /// Returns Some(1) on success, Some(0) if key already exists.
+    #[allow(clippy::too_many_arguments)]
     pub fn config_register_float(
         &self,
         mod_id: &str,
@@ -1325,6 +1330,7 @@ impl Api {
     }
 
     /// Spawn a new object at a position. Returns the object ID string if successful
+    #[allow(clippy::too_many_arguments)]
     pub fn world_spawn_object(
         &self,
         object_type: u8,
@@ -1368,6 +1374,7 @@ impl Api {
     }
 
     /// Spawn a world object, requesting a specific object ID
+    #[allow(clippy::too_many_arguments)]
     pub fn world_spawn_object_with_id(
         &self,
         desired_id: &str,
@@ -1471,18 +1478,15 @@ impl Api {
     }
 
     /// Connect a cable between two endpoints
+    #[allow(clippy::too_many_arguments)]
     pub fn world_connect_cable(
         &self,
         cable_id: i32,
         start_type: u8,
-        sx: f32,
-        sy: f32,
-        sz: f32,
+        spos: Vec3,
         start_device_id: &str,
         end_type: u8,
-        ex: f32,
-        ey: f32,
-        ez: f32,
+        epos: Vec3,
         end_device_id: &str,
     ) -> bool {
         if self.version() < 13 {
@@ -1493,15 +1497,15 @@ impl Api {
         (self.raw.world_connect_cable)(
             cable_id,
             start_type,
-            sx,
-            sy,
-            sz,
+            spos.x,
+            spos.y,
+            spos.z,
             start_id.as_ptr(),
             start_id.len() as u32,
             end_type,
-            ex,
-            ey,
-            ez,
+            epos.x,
+            epos.y,
+            epos.z,
             end_id.as_ptr(),
             end_id.len() as u32,
         ) == 1
@@ -1528,9 +1532,7 @@ impl Api {
     pub fn world_drop_object(
         &self,
         object_id: &str,
-        x: f32,
-        y: f32,
-        z: f32,
+        pos: Vec3,
         rot_x: f32,
         rot_y: f32,
         rot_z: f32,
@@ -1543,9 +1545,9 @@ impl Api {
         (self.raw.world_drop_object)(
             id.as_ptr(),
             id.len() as u32,
-            x,
-            y,
-            z,
+            pos.x,
+            pos.y,
+            pos.z,
             rot_x,
             rot_y,
             rot_z,

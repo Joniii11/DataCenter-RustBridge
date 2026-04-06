@@ -26,7 +26,7 @@ pub extern "C" fn mp_is_connected() -> u32 {
 #[no_mangle]
 pub extern "C" fn mp_is_relay_active() -> u32 {
     with_state(|s| {
-        let relay_alive = s.relay.as_ref().map_or(false, |r| r.is_alive());
+        let relay_alive = s.relay.as_ref().is_some_and(|r| r.is_alive());
         if s.connected || s.connecting || (s.is_host && relay_alive) {
             1u32
         } else {

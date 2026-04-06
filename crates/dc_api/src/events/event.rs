@@ -175,55 +175,53 @@ impl Event {
         self.raw_id()
     }
 
-    // ── category helpers ───────────────────────────────────────────
-
     pub fn is_economy(&self) -> bool {
         self.event_id()
-            .map_or(false, |id| id.category() == EventCategory::Economy)
+            .is_some_and(|id| id.category() == EventCategory::Economy)
     }
 
     pub fn is_server(&self) -> bool {
         self.event_id()
-            .map_or(false, |id| id.category() == EventCategory::Server)
+            .is_some_and(|id| id.category() == EventCategory::Server)
     }
 
     pub fn is_time(&self) -> bool {
         self.event_id()
-            .map_or(false, |id| id.category() == EventCategory::Time)
+            .is_some_and(|id| id.category() == EventCategory::Time)
     }
 
     pub fn is_customer(&self) -> bool {
         self.event_id()
-            .map_or(false, |id| id.category() == EventCategory::Customer)
+            .is_some_and(|id| id.category() == EventCategory::Customer)
     }
 
     pub fn is_shop(&self) -> bool {
         self.event_id()
-            .map_or(false, |id| id.category() == EventCategory::Shop)
+            .is_some_and(|id| id.category() == EventCategory::Shop)
     }
 
     pub fn is_employee(&self) -> bool {
         self.event_id()
-            .map_or(false, |id| id.category() == EventCategory::Employee)
+            .is_some_and(|id| id.category() == EventCategory::Employee)
     }
 
     pub fn is_save_load(&self) -> bool {
         self.event_id()
-            .map_or(false, |id| id.category() == EventCategory::Persistence)
+            .is_some_and(|id| id.category() == EventCategory::Persistence)
     }
 
     pub fn is_building(&self) -> bool {
         self.event_id()
-            .map_or(false, |id| id.category() == EventCategory::Building)
+            .is_some_and(|id| id.category() == EventCategory::Building)
     }
 
     pub fn is_mod_systems(&self) -> bool {
         self.event_id()
-            .map_or(false, |id| id.category() == EventCategory::ModSystems)
+            .is_some_and(|id| id.category() == EventCategory::ModSystems)
     }
 }
 
-/// Human-readable name of an `ObjectInHand` item-type value from the game.
+/// Human-readable name of an `ObjectInHand` item-type value from the game
 pub fn item_type_name(item_type: i32) -> &'static str {
     match item_type {
         0 => "None",

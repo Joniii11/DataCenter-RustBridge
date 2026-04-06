@@ -56,6 +56,7 @@ fn scene_loaded(_api: &Api, _name: &str) {}
 
 #[dc_api::on_event]
 fn handle_event(api: &Api, event: Event) {
+    #[allow(clippy::single_match)]
     match event {
         Event::GameLoaded => {
             api.log_info("[InfiniteMoney] Game loaded, re-applying infinite money.");

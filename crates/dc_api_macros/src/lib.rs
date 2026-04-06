@@ -369,7 +369,7 @@ pub fn on_scene_loaded(_attr: TokenStream, item: TokenStream) -> TokenStream {
         fn #internal_name(#api_name: &::dc_api::Api, #name_param: &str) #body
 
         #[no_mangle]
-        pub extern "C" fn mod_on_scene_loaded(
+        pub unsafe extern "C" fn mod_on_scene_loaded(
             __scene_ptr: *const ::std::ffi::c_char,
         ) {
             let __result =

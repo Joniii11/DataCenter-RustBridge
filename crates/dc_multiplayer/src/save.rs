@@ -30,7 +30,7 @@ pub extern "C" fn mp_send_save_data(data: *const u8, len: u32) -> i32 {
 
     let bytes = unsafe { std::slice::from_raw_parts(data, len as usize) }.to_vec();
     let total_bytes = bytes.len() as u32;
-    let chunk_count = ((bytes.len() + SAVE_CHUNK_SIZE - 1) / SAVE_CHUNK_SIZE) as u32;
+    let chunk_count = bytes.len().div_ceil(SAVE_CHUNK_SIZE) as u32;
     let save_hash = compute_save_hash(&bytes);
 
     dc_api::crash_log(&format!(

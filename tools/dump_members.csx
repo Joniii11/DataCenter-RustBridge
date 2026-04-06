@@ -1,3 +1,5 @@
+#r "nuget: System.Reflection.MetadataLoadContext, 9.0.0"
+
 // C# Script (.csx) — run with: dotnet script tools/dump_members.csx
 // Or with: dotnet-script tools/dump_members.csx
 //

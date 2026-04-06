@@ -8,16 +8,13 @@ use crate::state::*;
 use dc_api::{Api, Vec3};
 use std::time::Instant;
 
-/// Interval between roof safety checks
 const ROOF_CHECK_INTERVAL: f32 = 2.0;
-/// Y threshold above which the player is considered stuck on the roof
 const ROOF_Y_THRESHOLD: f32 = 3.5;
-/// Seconds after UMA ready before collider can be added
 const COLLIDER_DELAY_SECS: f32 = 3.0;
-/// Minimum horizontal double distance from origin 0,0 for collider eligibility
 const COLLIDER_SPAWN_DIST_SQ: f32 = 4.0;
-/// Seconds before UMA mesh is considered timed out and entity is retried
 const UMA_RETRY_TIMEOUT_SECS: f32 = 15.0;
+
+pub type SaveChunks = (u64, Vec<(u32, Vec<u8>)>);
 
 /// Called every frame by the mod loader.
 pub fn update(api: &Api, dt: f32) {
@@ -165,7 +162,7 @@ pub fn update(api: &Api, dt: f32) {
         }
     }
 
-    let targeted_chunks: Vec<(u64, Vec<(u32, Vec<u8>)>)> = with_state(|s| {
+    let targeted_chunks: Vec<SaveChunks> = with_state(|s| {
         if !s.is_host {
             return Vec::new();
         }

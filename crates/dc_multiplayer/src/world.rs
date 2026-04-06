@@ -6,8 +6,9 @@
 
 use std::collections::HashMap;
 
+use dc_api::Vec3;
+
 use crate::{protocol::WorldAction, state::with_state};
-use dc_api;
 
 pub const WORLD_ACTION_TIMEOUT_SECS: f32 = 5.0;
 pub const HASH_CHECK_INTERVAL_SECS: f32 = 20.0;
@@ -206,9 +207,8 @@ fn execute_world_action_inner(api: &dc_api::Api, action: &WorldAction) {
             rot_w,
             ..
         } => {
-            let ok = api.world_drop_object(
-                object_id, *pos_x, *pos_y, *pos_z, *rot_x, *rot_y, *rot_z, *rot_w,
-            );
+            let pos = Vec3::new(*pos_x, *pos_y, *pos_z);
+            let ok = api.world_drop_object(object_id, pos, *rot_x, *rot_y, *rot_z, *rot_w);
             dc_api::crash_log(&format!(
                 "[WORLD] Execute drop '{}' at ({:.1},{:.1},{:.1}) → {}",
                 object_id, pos_x, pos_y, pos_z, ok
@@ -263,17 +263,16 @@ fn execute_world_action_inner(api: &dc_api::Api, action: &WorldAction) {
             end_pos_z,
             end_device_id,
         } => {
+            let spos = (start_pos_x, start_pos_y, start_pos_z).into();
+            let epos = (end_pos_x, end_pos_y, end_pos_z).into();
+
             let ok = api.world_connect_cable(
                 *cable_id,
                 *start_type,
-                *start_pos_x,
-                *start_pos_y,
-                *start_pos_z,
+                spos,
                 start_device_id,
                 *end_type,
-                *end_pos_x,
-                *end_pos_y,
-                *end_pos_z,
+                epos,
                 end_device_id,
             );
             dc_api::crash_log(&format!(
@@ -341,12 +340,12 @@ fn execute_rollback_inner(api: &dc_api::Api, rollback: &RollbackInfo) {
             original_rot,
             ..
         } => {
-            let (x, y, z) = *original_pos;
+            let pos: Vec3 = original_pos.into();
             let (rx, ry, rz, rw) = *original_rot;
-            let ok = api.world_drop_object(object_id, x, y, z, rx, ry, rz, rw);
+            let ok = api.world_drop_object(object_id, pos, rx, ry, rz, rw);
             dc_api::crash_log(&format!(
                 "[WORLD] Rollback pickup → drop '{}' at ({:.1},{:.1},{:.1}) → {}",
-                object_id, x, y, z, ok
+                object_id, pos.x, pos.y, pos.z, ok
             ));
         }
         RollbackInfo::UndoDrop { object_id } => {
@@ -363,9 +362,9 @@ fn execute_rollback_inner(api: &dc_api::Api, rollback: &RollbackInfo) {
             ..
         } => {
             let removed = api.world_remove_from_rack(object_id);
-            let (x, y, z) = *previous_pos;
+            let pos: Vec3 = previous_pos.into();
             let (rx, ry, rz, rw) = *previous_rot;
-            let dropped = api.world_drop_object(object_id, x, y, z, rx, ry, rz, rw);
+            let dropped = api.world_drop_object(object_id, pos, rx, ry, rz, rw);
             dc_api::crash_log(&format!(
                 "[WORLD] Rollback install '{}' → remove={} drop={}",
                 object_id, removed, dropped
@@ -416,19 +415,15 @@ fn execute_rollback_inner(api: &dc_api::Api, rollback: &RollbackInfo) {
             end_pos,
             end_device_id,
         } => {
-            let (sx, sy, sz) = *start_pos;
-            let (ex, ey, ez) = *end_pos;
+            let spos = start_pos.into();
+            let epos = end_pos.into();
             let ok = api.world_connect_cable(
                 *cable_id,
                 *start_type,
-                sx,
-                sy,
-                sz,
+                spos,
                 start_device_id,
                 *end_type,
-                ex,
-                ey,
-                ez,
+                epos,
                 end_device_id,
             );
             dc_api::crash_log(&format!(

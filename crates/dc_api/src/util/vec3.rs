@@ -34,3 +34,23 @@ impl From<Vec3> for (f32, f32, f32) {
         (vec.x, vec.y, vec.z)
     }
 }
+
+impl From<&(f32, f32, f32)> for Vec3 {
+    fn from((x, y, z): &(f32, f32, f32)) -> Self {
+        Self {
+            x: *x,
+            y: *y,
+            z: *z,
+        }
+    }
+}
+
+impl From<(&f32, &f32, &f32)> for Vec3 {
+    fn from((x, y, z): (&f32, &f32, &f32)) -> Self {
+        Self {
+            x: *x,
+            y: *y,
+            z: *z,
+        }
+    }
+}
