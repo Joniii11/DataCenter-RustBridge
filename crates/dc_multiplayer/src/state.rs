@@ -84,11 +84,12 @@ pub struct MultiplayerState {
     pub player_state_heartbeat_timer: f32,
 
     pub default_spawn: Option<Vec3>,
-
     pub world_sync: WorldSyncState,
-
-    /// Re-entrancy guard set to `true` while executing a remote world action
     pub executing_remote_action: bool,
+    pub prev_carry_count: u8,
+    pub held_object_id: String,
+    pub held_object_type: u8,
+    pub suppress_next_drop: bool,
 }
 
 impl MultiplayerState {
@@ -133,6 +134,10 @@ impl MultiplayerState {
             world_sync: WorldSyncState::new(),
 
             executing_remote_action: false,
+            prev_carry_count: 0,
+            held_object_id: String::new(),
+            held_object_type: 0,
+            suppress_next_drop: false,
         }
     }
 }

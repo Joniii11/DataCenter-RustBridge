@@ -6,8 +6,10 @@
 
 use std::collections::HashMap;
 
+use dc_api::Quat;
 use dc_api::Vec3;
 
+use crate::objects;
 use crate::{protocol::WorldAction, state::with_state};
 
 pub const WORLD_ACTION_TIMEOUT_SECS: f32 = 5.0;
@@ -193,8 +195,13 @@ pub fn execute_world_action(api: &dc_api::Api, action: &WorldAction) {
 fn execute_world_action_inner(api: &dc_api::Api, action: &WorldAction) {
     match action {
         WorldAction::ObjectPickedUp { object_id, .. } => {
-            let ok = api.world_pickup_object(object_id);
-            dc_api::crash_log(&format!("[WORLD] Execute pickup '{}' → {}", object_id, ok));
+            let ok = objects::dispatch_pickup(api, object_id);
+            if !ok {
+                dc_api::crash_log(&format!(
+                    "[WORLD] pickup '{}' not found in any type",
+                    object_id
+                ));
+            }
         }
         WorldAction::ObjectDropped {
             object_id,
@@ -208,11 +215,14 @@ fn execute_world_action_inner(api: &dc_api::Api, action: &WorldAction) {
             ..
         } => {
             let pos = Vec3::new(*pos_x, *pos_y, *pos_z);
-            let ok = api.world_drop_object(object_id, pos, *rot_x, *rot_y, *rot_z, *rot_w);
-            dc_api::crash_log(&format!(
-                "[WORLD] Execute drop '{}' at ({:.1},{:.1},{:.1}) → {}",
-                object_id, pos_x, pos_y, pos_z, ok
-            ));
+            let rot = Quat::new(*rot_x, *rot_y, *rot_z, *rot_w);
+            let ok = objects::dispatch_drop(api, object_id, pos, rot);
+            if !ok {
+                dc_api::crash_log(&format!(
+                    "[WORLD] drop '{}' not found in any type",
+                    object_id
+                ));
+            }
         }
         WorldAction::InstalledInRack {
             object_id,
@@ -341,15 +351,15 @@ fn execute_rollback_inner(api: &dc_api::Api, rollback: &RollbackInfo) {
             ..
         } => {
             let pos: Vec3 = original_pos.into();
-            let (rx, ry, rz, rw) = *original_rot;
-            let ok = api.world_drop_object(object_id, pos, rx, ry, rz, rw);
+            let rot: Quat = original_rot.into();
+            let ok = objects::dispatch_drop(api, object_id, pos, rot);
             dc_api::crash_log(&format!(
                 "[WORLD] Rollback pickup → drop '{}' at ({:.1},{:.1},{:.1}) → {}",
                 object_id, pos.x, pos.y, pos.z, ok
             ));
         }
         RollbackInfo::UndoDrop { object_id } => {
-            let ok = api.world_pickup_object(object_id);
+            let ok = objects::dispatch_pickup(api, object_id);
             dc_api::crash_log(&format!(
                 "[WORLD] Rollback drop → pickup '{}' → {}",
                 object_id, ok

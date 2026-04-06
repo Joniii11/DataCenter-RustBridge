@@ -327,6 +327,7 @@ internal static class Patch_ComputerShop_SpawnPhysicalItem
     // Track known server instance IDs so we only fire once per object.
     // Populated on scene load with pre-existing servers.
     private static readonly HashSet<int> _knownServerInstances = new();
+    private static readonly HashSet<string> _knownServerIds = new();
 
     internal static void Postfix(ComputerShop __instance)
     {
@@ -345,8 +346,13 @@ internal static class Patch_ComputerShop_SpawnPhysicalItem
                     int instId = srv.GetInstanceID();
                     if (!_knownServerInstances.Add(instId)) continue;
 
-                    // ── New server detected ──────────────────────────────
                     string serverId = srv.ServerID ?? "";
+
+                    if (!string.IsNullOrEmpty(serverId) && !_knownServerIds.Add(serverId))
+                    {
+                        CrashLog.Log($"[WorldSync] SpawnPhysicalItem: skipping '{serverId}' (already known by ServerID)");
+                        continue;
+                    }
 
                     if (string.IsNullOrEmpty(serverId))
                     {
@@ -370,6 +376,60 @@ internal static class Patch_ComputerShop_SpawnPhysicalItem
                     CrashLog.Log($"[WorldSync] SpawnPhysicalItem: error processing server: {ex.Message}");
                 }
             }
+
+            var allSwitches = UnityEngine.Object.FindObjectsOfType<NetworkSwitch>();
+            foreach (var sw in allSwitches)
+            {
+                try
+                {
+                    int instId = sw.GetInstanceID();
+                    if (!_knownServerInstances.Add(instId)) continue;
+
+                    string switchId = sw.switchId ?? "";
+
+                    if (!string.IsNullOrEmpty(switchId) && !_knownServerIds.Add(switchId))
+                    {
+                        CrashLog.Log($"[WorldSync] SpawnPhysicalItem: skipping switch '{switchId}' (already known by switchId)");
+                        continue;
+                    }
+
+                    if (string.IsNullOrEmpty(switchId))
+                    {
+                        string objName = sw.gameObject?.name ?? "Switch";
+                        if (objName.EndsWith("(Clone)"))
+                            objName = objName.Substring(0, objName.Length - 7);
+                        switchId = $"{objName}_{instId}";
+                        sw.switchId = switchId;
+                    }
+
+                    byte objectType = 4;
+                    int prefabId = 0;
+                    try
+                    {
+                        var mgr = MainGameManager.instance;
+                        if (mgr?.switchesPrefabs != null)
+                        {
+                            string swName = sw.gameObject?.name ?? "";
+                            if (swName.EndsWith("(Clone)")) swName = swName.Substring(0, swName.Length - 7);
+                            for (int i = 0; i < mgr.switchesPrefabs.Count; i++)
+                            {
+                                try { if (mgr.switchesPrefabs[i]?.name == swName) { prefabId = i; break; } } catch { }
+                            }
+                        }
+                    }
+                    catch { }
+
+                    var pos = sw.transform.position;
+                    var rot = sw.transform.rotation;
+
+                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: new switch '{switchId}' type={objectType} prefab={prefabId} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
+                    EventDispatcher.FireObjectSpawned(switchId, objectType, prefabId, pos, rot);
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: error processing switch: {ex.Message}");
+                }
+            }
         }
         catch (Exception ex) { EventDispatcher.LogError($"SpawnPhysicalItem: {ex.Message}"); }
     }
@@ -382,11 +442,24 @@ internal static class Patch_ComputerShop_SpawnPhysicalItem
     internal static void PopulateKnownServers()
     {
         _knownServerInstances.Clear();
+        _knownServerIds.Clear();
         try
         {
             foreach (var srv in UnityEngine.Object.FindObjectsOfType<Server>())
+            {
                 _knownServerInstances.Add(srv.GetInstanceID());
-            CrashLog.Log($"[WorldSync] SpawnPhysicalItem: populated {_knownServerInstances.Count} known servers");
+                string sid = srv.ServerID ?? "";
+                if (!string.IsNullOrEmpty(sid))
+                    _knownServerIds.Add(sid);
+            }
+            foreach (var sw in UnityEngine.Object.FindObjectsOfType<NetworkSwitch>())
+            {
+                _knownServerInstances.Add(sw.GetInstanceID());
+                string sid = sw.switchId ?? "";
+                if (!string.IsNullOrEmpty(sid))
+                    _knownServerIds.Add(sid);
+            }
+            CrashLog.Log($"[WorldSync] PopulateKnownServers: populated {_knownServerInstances.Count} known objects ({_knownServerIds.Count} by ID)");
         }
         catch (Exception ex) { CrashLog.Log($"[WorldSync] PopulateKnownServers error: {ex.Message}"); }
     }
@@ -395,9 +468,11 @@ internal static class Patch_ComputerShop_SpawnPhysicalItem
     /// Register a remotely-spawned server so we don't re-detect it.
     /// Call this from WorldSpawnObjectImpl after creating an object.
     /// </summary>
-    internal static void RegisterRemoteSpawn(int instanceId)
+    internal static void RegisterRemoteSpawn(int instanceId, string serverId = null)
     {
         _knownServerInstances.Add(instanceId);
+        if (!string.IsNullOrEmpty(serverId))
+            _knownServerIds.Add(serverId);
     }
 }
 
@@ -696,11 +771,7 @@ internal static class Patch_UsableObject_InteractOnClick
     private static byte _heldObjectType = 0;
     private static UsableObject _heldObjectRef = null;
 
-    // Dedup: Harmony+Il2Cpp can double-fire patches
-    private static long _lastPickupTick;
-    private static long _lastDropTick;
-    private static string _lastPickupId;
-    private static string _lastDropId;
+
 
     internal static void Prefix(UsableObject __instance)
     {
@@ -740,9 +811,19 @@ internal static class Patch_UsableObject_InteractOnClick
                 }
                 else
                 {
-                    // For non-Server UsableObjects, use instance ID as identifier
-                    objectId = $"{__instance.gameObject.name}_{__instance.GetInstanceID()}";
-                    objectType = (byte)(int)__instance.objectInHandType;
+                    var netSwitch = __instance.TryCast<NetworkSwitch>();
+                    if (netSwitch != null)
+                    {
+                        objectId = netSwitch.switchId ?? "";
+                        objectType = (byte)(int)__instance.objectInHandType;
+                    }
+                    else
+                    {
+                        var p = __instance.transform.position;
+                        int posHash = ((int)(p.x * 100)) ^ ((int)(p.y * 100) << 10) ^ ((int)(p.z * 100) << 20);
+                        objectId = $"{__instance.gameObject.name}_{posHash}";
+                        objectType = (byte)(int)__instance.objectInHandType;
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(objectId))
@@ -751,15 +832,7 @@ internal static class Patch_UsableObject_InteractOnClick
                     _heldObjectType = objectType;
                     _heldObjectRef = __instance;
 
-                    long now = System.Diagnostics.Stopwatch.GetTimestamp();
-                    long threshold = System.Diagnostics.Stopwatch.Frequency / 10; // 100ms window
-                    if (objectId != _lastPickupId || (now - _lastPickupTick) > threshold)
-                    {
-                        _lastPickupId = objectId;
-                        _lastPickupTick = now;
-                        CrashLog.Log($"[WorldSync] Pickup detected: '{objectId}' type={objectType}");
-                        EventDispatcher.FireObjectPickedUp(objectId, objectType);
-                    }
+                    CrashLog.Log($"[WorldSync] Pickup tracked: '{objectId}' type={objectType}");
                 }
             }
             // ── DROP: was holding something, now empty-handed ──
@@ -767,32 +840,8 @@ internal static class Patch_UsableObject_InteractOnClick
             {
                 if (!string.IsNullOrEmpty(_heldObjectId))
                 {
-                    var pos = UnityEngine.Vector3.zero;
-                    var rot = UnityEngine.Quaternion.identity;
 
-                    // Try to get position from the object that was just dropped
-                    if (_heldObjectRef != null && _heldObjectRef.gameObject != null)
-                    {
-                        pos = _heldObjectRef.transform.position;
-                        rot = _heldObjectRef.transform.rotation;
-                    }
-                    else
-                    {
-                        // Fallback: use the interacted object's position (might be a rack or other target)
-                        pos = __instance.transform.position;
-                        rot = __instance.transform.rotation;
-                    }
-
-                    long now = System.Diagnostics.Stopwatch.GetTimestamp();
-                    long threshold = System.Diagnostics.Stopwatch.Frequency / 10; // 100ms window
-                    if (_heldObjectId != _lastDropId || (now - _lastDropTick) > threshold)
-                    {
-                        _lastDropId = _heldObjectId;
-                        _lastDropTick = now;
-                        CrashLog.Log($"[WorldSync] Drop detected: '{_heldObjectId}' type={_heldObjectType} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
-                        EventDispatcher.FireObjectDropped(_heldObjectId, _heldObjectType, pos, rot);
-                    }
-
+                    CrashLog.Log($"[WorldSync] Drop tracked: '{_heldObjectId}' type={_heldObjectType}");
                     _heldObjectId = null;
                     _heldObjectType = 0;
                     _heldObjectRef = null;
@@ -869,72 +918,15 @@ internal static class CarryStateMonitor
                     _suppressNextDrop = false;
             }
 
-            // Detect transition: was holding something → now empty-handed
+
             if (_prevNumObjects > 0 && curNumObjects == 0 && _prevObjectInHand != 0 && curObjectInHand == 0)
             {
-                string heldId = Patch_UsableObject_InteractOnClick.GetHeldObjectId();
-
-                if (!string.IsNullOrEmpty(heldId))
+                if (_suppressNextDrop)
                 {
-                    if (_suppressNextDrop)
-                    {
-                        // This drop was from an InstalledInRack, not a ground drop
-                        _suppressNextDrop = false;
-                        Patch_UsableObject_InteractOnClick.ClearHeldObject();
-                    }
-                    else
-                    {
-                        // This is a genuine ground drop (no InteractOnClick fired)
-                        var pos = UnityEngine.Vector3.zero;
-                        var rot = UnityEngine.Quaternion.identity;
-
-                        // Try to find the dropped object to get its position
-                        try
-                        {
-                            var allServers = UnityEngine.Resources.FindObjectsOfTypeAll<Server>();
-                            foreach (var srv in allServers)
-                            {
-                                try
-                                {
-                                    if (srv.gameObject.scene.name == null) continue;
-                                    string sid = srv.ServerID ?? "";
-                                    if (sid == heldId && srv.gameObject.activeSelf)
-                                    {
-                                        pos = srv.transform.position;
-                                        rot = srv.transform.rotation;
-                                        break;
-                                    }
-                                }
-                                catch { }
-                            }
-                        }
-                        catch { }
-
-                        // Fallback: use player position if object position not found
-                        if (pos == UnityEngine.Vector3.zero)
-                        {
-                            try
-                            {
-                                var player = pm.gameObject;
-                                if (player != null)
-                                {
-                                    pos = player.transform.position;
-                                    rot = player.transform.rotation;
-                                }
-                            }
-                            catch { }
-                        }
-
-                        byte heldType = Patch_UsableObject_InteractOnClick.GetHeldObjectType();
-                        CrashLog.Log($"[WorldSync] Drop detected (monitor): '{heldId}' pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
-                        EventDispatcher.FireObjectDropped(heldId, heldType, pos, rot);
-                        Patch_UsableObject_InteractOnClick.ClearHeldObject();
-                    }
+                    _suppressNextDrop = false;
+                    Patch_UsableObject_InteractOnClick.ClearHeldObject();
                 }
             }
-
-            // Also detect pickups that weren't caught by InteractOnClick
-            // (less likely but possible for edge cases)
 
             _prevNumObjects = curNumObjects;
             _prevObjectInHand = curObjectInHand;

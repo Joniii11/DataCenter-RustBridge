@@ -48,6 +48,8 @@ pub use events::{Event, EventCategory, EventId};
 pub mod util;
 pub use util::*;
 
+pub mod world;
+
 // Re-export proc macros so users can write `#[dc_api::mod_entry(...)]` etc.
 pub use dc_api_macros::{mod_entry, on_event, on_scene_loaded, on_shutdown, on_update};
 
@@ -424,6 +426,31 @@ pub struct GameAPI {
         rot_w: f32,
     ) -> i32,
     pub world_ensure_rack_uids: extern "C" fn() -> i32,
+
+    pub obj_find_by_type: extern "C" fn(type_id: u8, out_handles: *mut u64, max: u32) -> u32,
+    pub obj_get_string_field:
+        extern "C" fn(handle: u64, field_id: u16, out_buf: *mut u8, max: u32) -> u32,
+    pub obj_is_active: extern "C" fn(handle: u64) -> i32,
+    pub obj_set_active: extern "C" fn(handle: u64, active: i32) -> i32,
+    pub obj_get_position:
+        extern "C" fn(handle: u64, out_x: *mut f32, out_y: *mut f32, out_z: *mut f32) -> i32,
+    pub obj_set_position: extern "C" fn(handle: u64, x: f32, y: f32, z: f32) -> i32,
+    pub obj_set_rotation: extern "C" fn(handle: u64, x: f32, y: f32, z: f32, w: f32) -> i32,
+    pub obj_set_parent_to_world: extern "C" fn(handle: u64) -> i32,
+    pub rb_set_kinematic: extern "C" fn(handle: u64, kinematic: i32) -> i32,
+    pub rb_set_gravity: extern "C" fn(handle: u64, use_gravity: i32) -> i32,
+    pub rb_wake_up: extern "C" fn(handle: u64) -> i32,
+    pub obj_find_by_id:
+        extern "C" fn(type_id: u8, field_id: u16, id: *const u8, id_len: u32) -> u64,
+
+    pub get_held_object: extern "C" fn(out_id: *mut u8, id_max: u32, out_type: *mut u8) -> i32,
+    pub obj_get_rotation: extern "C" fn(
+        handle: u64,
+        out_x: *mut f32,
+        out_y: *mut f32,
+        out_z: *mut f32,
+        out_w: *mut f32,
+    ) -> i32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -503,7 +530,6 @@ impl Api {
             .into_owned()
     }
 
-    // returns None if API version < 2
     pub fn get_player_xp(&self) -> Option<f64> {
         if self.raw.api_version < 2 {
             return None;
@@ -989,8 +1015,6 @@ impl Api {
         (self.raw.get_player_position)(&mut x, &mut y, &mut z, &mut ry);
         Some((x, y, z, ry))
     }
-
-    // ── v8 — Mod Configuration ──────────────────────────────────────────
 
     /// Register a boolean config entry for this mod.
     /// Returns Some(1) on success, Some(0) if key already exists.
@@ -1560,6 +1584,149 @@ impl Api {
             return 0;
         }
         (self.raw.world_ensure_rack_uids)()
+    }
+
+    /// Find all objects of a given type. Returns a Vec of opaque handles.
+    pub fn obj_find_by_type(&self, obj_type: world::ObjectType) -> Vec<world::ObjectHandle> {
+        if self.version() < 15 {
+            return Vec::new();
+        }
+        let mut buf = [0u64; 512];
+        let count = (self.raw.obj_find_by_type)(obj_type.0, buf.as_mut_ptr(), buf.len() as u32);
+        buf[..count as usize]
+            .iter()
+            .map(|&h| world::ObjectHandle(h))
+            .collect()
+    }
+
+    /// Read a string field from an object by handle.
+    pub fn obj_get_string_field(
+        &self,
+        handle: world::ObjectHandle,
+        field: world::StringField,
+    ) -> String {
+        if self.version() < 15 {
+            return String::new();
+        }
+        let mut buf = [0u8; 256];
+        let len =
+            (self.raw.obj_get_string_field)(handle.0, field.0, buf.as_mut_ptr(), buf.len() as u32);
+        String::from_utf8_lossy(&buf[..len as usize]).into_owned()
+    }
+
+    /// Check if a game object is active.
+    pub fn obj_is_active(&self, handle: world::ObjectHandle) -> bool {
+        if self.version() < 15 {
+            return false;
+        }
+        (self.raw.obj_is_active)(handle.0) == 1
+    }
+
+    /// Set a game object active/inactive.
+    pub fn obj_set_active(&self, handle: world::ObjectHandle, active: bool) -> bool {
+        if self.version() < 15 {
+            return false;
+        }
+        (self.raw.obj_set_active)(handle.0, if active { 1 } else { 0 }) == 1
+    }
+
+    /// Get the world position of an object.
+    pub fn obj_get_position(&self, handle: world::ObjectHandle) -> Vec3 {
+        if self.version() < 15 {
+            return Vec3::zero();
+        }
+        let (mut x, mut y, mut z) = (0f32, 0f32, 0f32);
+        (self.raw.obj_get_position)(handle.0, &mut x, &mut y, &mut z);
+        Vec3::new(x, y, z)
+    }
+
+    /// Set the world position of an object.
+    pub fn obj_set_position(&self, handle: world::ObjectHandle, pos: Vec3) -> bool {
+        if self.version() < 15 {
+            return false;
+        }
+        (self.raw.obj_set_position)(handle.0, pos.x, pos.y, pos.z) == 1
+    }
+
+    /// Set the rotation of an object.
+    pub fn obj_set_rotation(&self, handle: world::ObjectHandle, rot: Quat) -> bool {
+        if self.version() < 15 {
+            return false;
+        }
+        (self.raw.obj_set_rotation)(handle.0, rot.x, rot.y, rot.z, rot.w) == 1
+    }
+
+    /// Re-parent an object to `MainGameManager.parentUsableObjects`.
+    pub fn obj_set_parent_to_world(&self, handle: world::ObjectHandle) -> bool {
+        if self.version() < 15 {
+            return false;
+        }
+        (self.raw.obj_set_parent_to_world)(handle.0) == 1
+    }
+
+    /// Set `rigidbody.isKinematic`.
+    pub fn rb_set_kinematic(&self, handle: world::ObjectHandle, kinematic: bool) -> bool {
+        if self.version() < 15 {
+            return false;
+        }
+        (self.raw.rb_set_kinematic)(handle.0, if kinematic { 1 } else { 0 }) == 1
+    }
+
+    /// Set `rigidbody.useGravity`.
+    pub fn rb_set_gravity(&self, handle: world::ObjectHandle, use_gravity: bool) -> bool {
+        if self.version() < 15 {
+            return false;
+        }
+        (self.raw.rb_set_gravity)(handle.0, if use_gravity { 1 } else { 0 }) == 1
+    }
+
+    /// Call `rigidbody.WakeUp()`.
+    pub fn rb_wake_up(&self, handle: world::ObjectHandle) -> bool {
+        if self.version() < 15 {
+            return false;
+        }
+        (self.raw.rb_wake_up)(handle.0) == 1
+    }
+
+    /// Find a single object by type + field ID + string value
+    pub fn obj_find_by_id(
+        &self,
+        obj_type: world::ObjectType,
+        field: world::StringField,
+        id: &str,
+    ) -> world::ObjectHandle {
+        if self.version() < 15 {
+            return world::ObjectHandle::INVALID;
+        }
+        let trimmed = id.trim();
+        let raw =
+            (self.raw.obj_find_by_id)(obj_type.0, field.0, trimmed.as_ptr(), trimmed.len() as u32);
+        world::ObjectHandle(raw)
+    }
+
+    /// Read the currently-held object's ID and type from
+    pub fn get_held_object(&self) -> (String, u8) {
+        if self.version() < 16 {
+            return (String::new(), 0);
+        }
+        let mut buf = [0u8; 128];
+        let mut obj_type: u8 = 0;
+        let len = (self.raw.get_held_object)(buf.as_mut_ptr(), buf.len() as u32, &mut obj_type);
+        if len <= 0 {
+            return (String::new(), 0);
+        }
+        let id = String::from_utf8_lossy(&buf[..len as usize]).into_owned();
+        (id, obj_type)
+    }
+
+    /// Get the world rotation of an object as a quaternion
+    pub fn obj_get_rotation(&self, handle: world::ObjectHandle) -> Quat {
+        if self.version() < 16 {
+            return Quat::identity();
+        }
+        let (mut x, mut y, mut z, mut w) = (0f32, 0f32, 0f32, 0f32);
+        (self.raw.obj_get_rotation)(handle.0, &mut x, &mut y, &mut z, &mut w);
+        Quat::new(x, y, z, w)
     }
 }
 

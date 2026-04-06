@@ -137,12 +137,26 @@ public struct GameAPITable
     public IntPtr WorldDropObject;
 
     public IntPtr WorldEnsureRackUIDs;
+
+    public IntPtr ObjFindByType;
+    public IntPtr ObjGetStringField;
+    public IntPtr ObjIsActive;
+    public IntPtr ObjSetActive;
+    public IntPtr ObjGetPosition;
+    public IntPtr ObjSetPosition;
+    public IntPtr ObjSetRotation;
+    public IntPtr ObjSetParentToWorld;
+    public IntPtr RbSetKinematic;
+    public IntPtr RbSetGravity;
+    public IntPtr RbWakeUp;
+    public IntPtr ObjFindById;
+    public IntPtr GetHeldObject;
+    public IntPtr ObjGetRotation;
 }
 
-// delegates stored as fields to prevent GC collection while rust holds pointers
 public partial class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 14;
+    public const uint API_VERSION = 16;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -239,6 +253,37 @@ public partial class GameAPIManager : IDisposable
     private delegate int WorldPickupObjectDelegate(IntPtr id, uint idLen);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int WorldDropObjectDelegate(IntPtr id, uint idLen, float x, float y, float z, float rotX, float rotY, float rotZ, float rotW);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint ObjFindByTypeDelegate(byte typeId, IntPtr outHandles, uint max);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate uint ObjGetStringFieldDelegate(ulong handle, ushort fieldId, IntPtr outBuf, uint max);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjIsActiveDelegate(ulong handle);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjSetActiveDelegate(ulong handle, int active);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjGetPositionDelegate(ulong handle, IntPtr outX, IntPtr outY, IntPtr outZ);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjSetPositionDelegate(ulong handle, float x, float y, float z);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjSetRotationDelegate(ulong handle, float x, float y, float z, float w);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjSetParentToWorldDelegate(ulong handle);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RbSetKinematicDelegate(ulong handle, int kinematic);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RbSetGravityDelegate(ulong handle, int useGravity);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RbWakeUpDelegate(ulong handle);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate ulong ObjFindByIdDelegate(byte typeId, ushort fieldId, IntPtr id, uint idLen);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int GetHeldObjectDelegate(IntPtr outId, uint idMax, IntPtr outType);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjGetRotationDelegate(ulong handle, IntPtr outX, IntPtr outY, IntPtr outZ, IntPtr outW);
 
     [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr SteamAPI_SteamNetworking_v006();
@@ -372,6 +417,22 @@ public partial class GameAPIManager : IDisposable
     WorldDropObjectDelegate _worldDropObject;
     GetIntDelegate _worldEnsureRackUIDs;
 
+    private readonly ObjFindByTypeDelegate _objFindByType;
+    private readonly ObjGetStringFieldDelegate _objGetStringField;
+    private readonly ObjIsActiveDelegate _objIsActive;
+    private readonly ObjSetActiveDelegate _objSetActive;
+    private readonly ObjGetPositionDelegate _objGetPosition;
+    private readonly ObjSetPositionDelegate _objSetPosition;
+    private readonly ObjSetRotationDelegate _objSetRotation;
+    private readonly ObjSetParentToWorldDelegate _objSetParentToWorld;
+    private readonly RbSetKinematicDelegate _rbSetKinematic;
+    private readonly RbSetGravityDelegate _rbSetGravity;
+    private readonly RbWakeUpDelegate _rbWakeUp;
+    ObjFindByIdDelegate _objFindById;
+
+    private readonly GetHeldObjectDelegate _getHeldObject;
+    private readonly ObjGetRotationDelegate _objGetRotation;
+
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
     private IntPtr _friendNamePtr = IntPtr.Zero;
@@ -494,6 +555,20 @@ public partial class GameAPIManager : IDisposable
         _worldPickupObject = WorldPickupObjectImpl;
         _worldDropObject = WorldDropObjectImpl;
         _worldEnsureRackUIDs = WorldEnsureRackUIDsImpl;
+        _objFindByType = ObjFindByTypeImpl;
+        _objGetStringField = ObjGetStringFieldImpl;
+        _objIsActive = ObjIsActiveImpl;
+        _objSetActive = ObjSetActiveImpl;
+        _objGetPosition = ObjGetPositionImpl;
+        _objSetPosition = ObjSetPositionImpl;
+        _objSetRotation = ObjSetRotationImpl;
+        _objSetParentToWorld = ObjSetParentToWorldImpl;
+        _rbSetKinematic = RbSetKinematicImpl;
+        _rbSetGravity = RbSetGravityImpl;
+        _rbWakeUp = RbWakeUpImpl;
+        _objFindById = ObjFindByIdImpl;
+        _getHeldObject = GetHeldObjectImpl;
+        _objGetRotation = ObjGetRotationImpl;
 
         _table = new GameAPITable
         {
@@ -601,6 +676,20 @@ public partial class GameAPIManager : IDisposable
             WorldPickupObject = Marshal.GetFunctionPointerForDelegate(_worldPickupObject),
             WorldDropObject = Marshal.GetFunctionPointerForDelegate(_worldDropObject),
             WorldEnsureRackUIDs = Marshal.GetFunctionPointerForDelegate(_worldEnsureRackUIDs),
+            ObjFindByType = Marshal.GetFunctionPointerForDelegate(_objFindByType),
+            ObjGetStringField = Marshal.GetFunctionPointerForDelegate(_objGetStringField),
+            ObjIsActive = Marshal.GetFunctionPointerForDelegate(_objIsActive),
+            ObjSetActive = Marshal.GetFunctionPointerForDelegate(_objSetActive),
+            ObjGetPosition = Marshal.GetFunctionPointerForDelegate(_objGetPosition),
+            ObjSetPosition = Marshal.GetFunctionPointerForDelegate(_objSetPosition),
+            ObjSetRotation = Marshal.GetFunctionPointerForDelegate(_objSetRotation),
+            ObjSetParentToWorld = Marshal.GetFunctionPointerForDelegate(_objSetParentToWorld),
+            RbSetKinematic = Marshal.GetFunctionPointerForDelegate(_rbSetKinematic),
+            RbSetGravity = Marshal.GetFunctionPointerForDelegate(_rbSetGravity),
+            RbWakeUp = Marshal.GetFunctionPointerForDelegate(_rbWakeUp),
+            ObjFindById = Marshal.GetFunctionPointerForDelegate(_objFindById),
+            GetHeldObject = Marshal.GetFunctionPointerForDelegate(_getHeldObject),
+            ObjGetRotation = Marshal.GetFunctionPointerForDelegate(_objGetRotation),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -1249,6 +1338,36 @@ public partial class GameAPIManager : IDisposable
         return System.Text.Encoding.UTF8.GetString(buf, 0, end).Trim();
     }
 
+    private ulong FindHandleByStableId(string targetId)
+    {
+        try
+        {
+            foreach (var srv in UnityEngine.Resources.FindObjectsOfTypeAll<Server>())
+            {
+                try
+                {
+                    if (srv.gameObject.scene.name == null) continue;
+                    if ((srv.ServerID ?? "") == targetId) return (ulong)srv.Pointer.ToInt64();
+                }
+                catch { }
+            }
+            foreach (var sw in UnityEngine.Resources.FindObjectsOfTypeAll<NetworkSwitch>())
+            {
+                try
+                {
+                    if (sw.gameObject.scene.name == null) continue;
+                    if ((sw.switchId ?? "") == targetId) return (ulong)sw.Pointer.ToInt64();
+                }
+                catch { }
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("FindHandleByStableId", ex);
+        }
+        return 0;
+    }
+
     uint WorldGetObjectCountImpl()
     {
         // Phase 4 stub
@@ -1292,19 +1411,7 @@ public partial class GameAPIManager : IDisposable
 
             UnityEngine.GameObject prefab = null;
 
-            try
-            {
-                if (mgr.serverPrefabs != null && prefabId >= 0 && prefabId < mgr.serverPrefabs.Count)
-                {
-                    prefab = mgr.serverPrefabs[prefabId];
-                }
-            }
-            catch (Exception ex)
-            {
-                CrashLog.Log($"[WorldSync] SpawnObject: serverPrefabs lookup failed: {ex.Message}");
-            }
-
-            if (prefab == null && objectType == 4)
+            if (objectType == 4)
             {
                 try
                 {
@@ -1316,6 +1423,20 @@ public partial class GameAPIManager : IDisposable
                 catch (Exception ex)
                 {
                     CrashLog.Log($"[WorldSync] SpawnObject: switchesPrefabs lookup failed: {ex.Message}");
+                }
+            }
+            else
+            {
+                try
+                {
+                    if (mgr.serverPrefabs != null && prefabId >= 0 && prefabId < mgr.serverPrefabs.Count)
+                    {
+                        prefab = mgr.serverPrefabs[prefabId];
+                    }
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[WorldSync] SpawnObject: serverPrefabs lookup failed: {ex.Message}");
                 }
             }
 
@@ -1346,40 +1467,82 @@ public partial class GameAPIManager : IDisposable
 
             string resultId = go.name;
 
-            try
+            if (objectType == 4)
             {
-                var serverComp = go.GetComponent<Il2Cpp.Server>();
-                if (serverComp != null)
+                try
                 {
-                    if (!string.IsNullOrEmpty(desiredId))
+                    var switchComp = go.GetComponent<Il2Cpp.NetworkSwitch>();
+                    if (switchComp != null)
                     {
-                        serverComp.ServerID = desiredId;
-                        resultId = desiredId;
-                        CrashLog.Log($"[WorldSync] SpawnObject: set ServerID to '{desiredId}'");
-                    }
-                    else
-                    {
-                        resultId = serverComp.ServerID ?? go.name;
-                    }
-
-                    try
-                    {
-                        var rb = serverComp.rb;
-                        if (rb != null)
+                        if (!string.IsNullOrEmpty(desiredId))
                         {
-                            rb.isKinematic = false;
-                            rb.useGravity = true;
-                            rb.velocity = UnityEngine.Vector3.zero;
-                            rb.angularVelocity = UnityEngine.Vector3.zero;
-                            rb.WakeUp();
+                            switchComp.switchId = desiredId;
+                            resultId = desiredId;
+                            CrashLog.Log($"[WorldSync] SpawnObject: set switchId to '{desiredId}'");
+                        }
+                        else
+                        {
+                            resultId = switchComp.switchId ?? go.name;
                         }
                     }
-                    catch { }
                 }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[WorldSync] SpawnObject: switch setup failed: {ex.Message}");
+                }
+
+                try
+                {
+                    var rb = go.GetComponent<UnityEngine.Rigidbody>();
+                    if (rb != null)
+                    {
+                        rb.isKinematic = false;
+                        rb.useGravity = true;
+                        rb.velocity = UnityEngine.Vector3.zero;
+                        rb.angularVelocity = UnityEngine.Vector3.zero;
+                        rb.WakeUp();
+                    }
+                }
+                catch { }
             }
-            catch (Exception ex)
+            else
             {
-                CrashLog.Log($"[WorldSync] SpawnObject: server setup failed: {ex.Message}");
+                // Server setup
+                try
+                {
+                    var serverComp = go.GetComponent<Il2Cpp.Server>();
+                    if (serverComp != null)
+                    {
+                        if (!string.IsNullOrEmpty(desiredId))
+                        {
+                            serverComp.ServerID = desiredId;
+                            resultId = desiredId;
+                            CrashLog.Log($"[WorldSync] SpawnObject: set ServerID to '{desiredId}'");
+                        }
+                        else
+                        {
+                            resultId = serverComp.ServerID ?? go.name;
+                        }
+
+                        try
+                        {
+                            var rb = serverComp.rb;
+                            if (rb != null)
+                            {
+                                rb.isKinematic = false;
+                                rb.useGravity = true;
+                                rb.velocity = UnityEngine.Vector3.zero;
+                                rb.angularVelocity = UnityEngine.Vector3.zero;
+                                rb.WakeUp();
+                            }
+                        }
+                        catch { }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[WorldSync] SpawnObject: server setup failed: {ex.Message}");
+                }
             }
 
             if (outId != IntPtr.Zero && outMax > 0)
@@ -1393,7 +1556,7 @@ public partial class GameAPIManager : IDisposable
                 Marshal.WriteByte(outId, copyLen, 0);
             }
 
-            try { Patch_ComputerShop_SpawnPhysicalItem.RegisterRemoteSpawn(go.GetInstanceID()); }
+            try { Patch_ComputerShop_SpawnPhysicalItem.RegisterRemoteSpawn(go.GetInstanceID(), resultId); }
             catch { }
 
             CrashLog.Log($"[WorldSync] SpawnObject: created '{resultId}' (type={objectType}, prefab={prefabId}) OK");
@@ -1667,43 +1830,16 @@ public partial class GameAPIManager : IDisposable
             string objId = ReadUtf8(id, idLen);
             CrashLog.Log($"[WorldSync] PickupObject: id={objId}");
 
-            // Find the server by ID (including inactive objects)
-            var allServers = UnityEngine.Resources.FindObjectsOfTypeAll<Server>();
-            foreach (var srv in allServers)
+            ulong handle = FindHandleByStableId(objId);
+            if (handle == 0)
             {
-                try
-                {
-                    if (srv.gameObject.scene.name == null) continue; // skip prefabs
-                    string sid = srv.ServerID ?? "";
-                    if (sid == objId)
-                    {
-                        srv.gameObject.SetActive(false);
-                        CrashLog.Log($"[WorldSync] PickupObject: deactivated server '{objId}'");
-                        return 1;
-                    }
-                }
-                catch { }
+                CrashLog.Log($"[WorldSync] PickupObject: '{objId}' not found");
+                return 0;
             }
 
-            var allUsable = UnityEngine.Resources.FindObjectsOfTypeAll<UsableObject>();
-            foreach (var uo in allUsable)
-            {
-                try
-                {
-                    if (uo.gameObject.scene.name == null) continue; // skip prefabs
-                    string uoId = $"{uo.gameObject.name}_{uo.GetInstanceID()}";
-                    if (uoId == objId)
-                    {
-                        uo.gameObject.SetActive(false);
-                        CrashLog.Log($"[WorldSync] PickupObject: deactivated '{objId}'");
-                        return 1;
-                    }
-                }
-                catch { }
-            }
-
-            CrashLog.Log($"[WorldSync] PickupObject: object '{objId}' not found");
-            return 0;
+            int result = ObjSetActiveImpl(handle, 0);
+            CrashLog.Log($"[WorldSync] PickupObject: deactivated '{objId}' → {result}");
+            return result;
         }
         catch (Exception ex)
         {
@@ -1719,84 +1855,23 @@ public partial class GameAPIManager : IDisposable
             string objId = ReadUtf8(id, idLen);
             CrashLog.Log($"[WorldSync] DropObject: id={objId}, pos=({x:F1},{y:F1},{z:F1})");
 
-            var pos = new UnityEngine.Vector3(x, y, z);
-            var rot = new UnityEngine.Quaternion(rotX, rotY, rotZ, rotW);
-
-            // Find the server by ID (may be deactivated, so search ALL including inactive)
-            // FindObjectsOfType doesn't find inactive objects, so we need to search differently
-            var allServers = UnityEngine.Resources.FindObjectsOfTypeAll<Server>();
-            foreach (var srv in allServers)
+            ulong handle = FindHandleByStableId(objId);
+            if (handle == 0)
             {
-                try
-                {
-                    // Skip prefabs / assets (only want scene objects)
-                    if (srv.gameObject.scene.name == null) continue;
-
-                    string sid = srv.ServerID ?? "";
-                    if (sid == objId)
-                    {
-                        // Reactivate and position
-                        srv.gameObject.SetActive(true);
-                        srv.transform.position = pos;
-                        srv.transform.rotation = rot;
-
-                        // Unparent from any rack/player and re-parent to world
-                        var mgr = MainGameManager.instance;
-                        if (mgr != null && mgr.parentUsableObjects != null)
-                            srv.transform.SetParent(mgr.parentUsableObjects, true);
-
-                        // Enable physics so it falls naturally
-                        var rb = srv.GetComponent<UnityEngine.Rigidbody>();
-                        if (rb != null)
-                        {
-                            rb.isKinematic = false;
-                            rb.useGravity = true;
-                            rb.WakeUp();
-                        }
-
-                        CrashLog.Log($"[WorldSync] DropObject: reactivated server '{objId}' at ({x:F1},{y:F1},{z:F1})");
-                        return 1;
-                    }
-                }
-                catch { }
+                CrashLog.Log($"[WorldSync] DropObject: '{objId}' not found");
+                return 0;
             }
 
-            // Try UsableObjects by name_instanceId pattern
-            var allUsable = UnityEngine.Resources.FindObjectsOfTypeAll<UsableObject>();
-            foreach (var uo in allUsable)
-            {
-                try
-                {
-                    if (uo.gameObject.scene.name == null) continue;
+            ObjSetActiveImpl(handle, 1);
+            ObjSetPositionImpl(handle, x, y, z);
+            ObjSetRotationImpl(handle, rotX, rotY, rotZ, rotW);
+            ObjSetParentToWorldImpl(handle);
+            RbSetKinematicImpl(handle, 0);
+            RbSetGravityImpl(handle, 1);
+            RbWakeUpImpl(handle);
 
-                    string uoId = $"{uo.gameObject.name}_{uo.GetInstanceID()}";
-                    if (uoId == objId)
-                    {
-                        uo.gameObject.SetActive(true);
-                        uo.transform.position = pos;
-                        uo.transform.rotation = rot;
-
-                        var mgr = MainGameManager.instance;
-                        if (mgr != null && mgr.parentUsableObjects != null)
-                            uo.transform.SetParent(mgr.parentUsableObjects, true);
-
-                        var rb = uo.GetComponent<UnityEngine.Rigidbody>();
-                        if (rb != null)
-                        {
-                            rb.isKinematic = false;
-                            rb.useGravity = true;
-                            rb.WakeUp();
-                        }
-
-                        CrashLog.Log($"[WorldSync] DropObject: reactivated '{objId}' at ({x:F1},{y:F1},{z:F1})");
-                        return 1;
-                    }
-                }
-                catch { }
-            }
-
-            CrashLog.Log($"[WorldSync] DropObject: object '{objId}' not found");
-            return 0;
+            CrashLog.Log($"[WorldSync] DropObject: reactivated '{objId}' at ({x:F1},{y:F1},{z:F1})");
+            return 1;
         }
         catch (Exception ex)
         {
@@ -1816,6 +1891,323 @@ public partial class GameAPIManager : IDisposable
             CrashLog.LogException("WorldEnsureRackUIDsImpl", ex);
             return 0;
         }
+    }
+
+
+    private static UnityEngine.Component ResolveComponent(ulong handle)
+    {
+        try
+        {
+            if (handle == 0) return null;
+            var ptr = new IntPtr((long)handle);
+            var comp = new UnityEngine.Component(ptr);
+            if (comp == null || comp.gameObject == null) return null;
+            return comp;
+        }
+        catch { return null; }
+    }
+
+    uint ObjFindByTypeImpl(byte typeId, IntPtr outHandles, uint max)
+    {
+        try
+        {
+            uint count = 0;
+            switch (typeId)
+            {
+                case 0: // Server
+                    {
+                        var all = UnityEngine.Resources.FindObjectsOfTypeAll<Server>();
+                        foreach (var srv in all)
+                        {
+                            try
+                            {
+                                if (srv.gameObject.scene.name == null) continue;
+                                if (count >= max) break;
+                                Marshal.WriteInt64(outHandles, (int)(count * 8), srv.Pointer.ToInt64());
+                                count++;
+                            }
+                            catch { }
+                        }
+                        break;
+                    }
+                case 4: // NetworkSwitch
+                    {
+                        var all = UnityEngine.Resources.FindObjectsOfTypeAll<NetworkSwitch>();
+                        foreach (var sw in all)
+                        {
+                            try
+                            {
+                                if (sw.gameObject.scene.name == null) continue;
+                                if (count >= max) break;
+                                Marshal.WriteInt64(outHandles, (int)(count * 8), sw.Pointer.ToInt64());
+                                count++;
+                            }
+                            catch { }
+                        }
+                        break;
+                    }
+            }
+            return count;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("ObjFindByTypeImpl", ex);
+            return 0;
+        }
+    }
+
+    uint ObjGetStringFieldImpl(ulong handle, ushort fieldId, IntPtr outBuf, uint max)
+    {
+        try
+        {
+            if (handle == 0 || outBuf == IntPtr.Zero || max == 0) return 0;
+            var ptr = new IntPtr((long)handle);
+            string value = "";
+            switch (fieldId)
+            {
+                case 0: // ServerId
+                    try { var srv = new Server(ptr); value = srv?.ServerID ?? ""; } catch { }
+                    break;
+                case 1: // SwitchId
+                    try { var sw = new NetworkSwitch(ptr); value = sw?.switchId ?? ""; } catch { }
+                    break;
+                case 2: // RackPositionUid
+                    try { var srv = new Server(ptr); value = srv?.rackPositionUID.ToString() ?? ""; } catch { }
+                    break;
+                case 3: // GameObjectName
+                    try { var comp = new UnityEngine.Component(ptr); value = comp?.gameObject?.name ?? ""; } catch { }
+                    break;
+            }
+            if (string.IsNullOrEmpty(value)) return 0;
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(value);
+            int len = System.Math.Min(bytes.Length, (int)max);
+            Marshal.Copy(bytes, 0, outBuf, len);
+            return (uint)len;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("ObjGetStringFieldImpl", ex);
+            return 0;
+        }
+    }
+
+    int ObjIsActiveImpl(ulong handle)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            return (comp != null && comp.gameObject.activeSelf) ? 1 : 0;
+        }
+        catch { return 0; }
+    }
+
+    int ObjSetActiveImpl(ulong handle, int active)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            comp.gameObject.SetActive(active != 0);
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    int ObjGetPositionImpl(ulong handle, IntPtr outX, IntPtr outY, IntPtr outZ)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            var pos = comp.transform.position;
+            Marshal.Copy(new float[] { pos.x }, 0, outX, 1);
+            Marshal.Copy(new float[] { pos.y }, 0, outY, 1);
+            Marshal.Copy(new float[] { pos.z }, 0, outZ, 1);
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    int ObjSetPositionImpl(ulong handle, float x, float y, float z)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            comp.transform.position = new UnityEngine.Vector3(x, y, z);
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    int ObjSetRotationImpl(ulong handle, float x, float y, float z, float w)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            comp.transform.rotation = new UnityEngine.Quaternion(x, y, z, w);
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    int ObjSetParentToWorldImpl(ulong handle)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            var mgr = MainGameManager.instance;
+            if (mgr != null && mgr.parentUsableObjects != null)
+            {
+                comp.transform.SetParent(mgr.parentUsableObjects, true);
+                return 1;
+            }
+            return 0;
+        }
+        catch { return 0; }
+    }
+
+    int RbSetKinematicImpl(ulong handle, int kinematic)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            var rb = comp.GetComponent<UnityEngine.Rigidbody>();
+            if (rb == null) return 0;
+            rb.isKinematic = (kinematic != 0);
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    int RbSetGravityImpl(ulong handle, int useGravity)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            var rb = comp.GetComponent<UnityEngine.Rigidbody>();
+            if (rb == null) return 0;
+            rb.useGravity = (useGravity != 0);
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    int RbWakeUpImpl(ulong handle)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            var rb = comp.GetComponent<UnityEngine.Rigidbody>();
+            if (rb == null) return 0;
+            rb.WakeUp();
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    ulong ObjFindByIdImpl(byte typeId, ushort fieldId, IntPtr id, uint idLen)
+    {
+        try
+        {
+            if (id == IntPtr.Zero || idLen == 0) return 0;
+            byte[] buf = new byte[idLen];
+            Marshal.Copy(id, buf, 0, (int)idLen);
+            int end = Array.IndexOf(buf, (byte)0);
+            if (end < 0) end = (int)idLen;
+            string targetId = System.Text.Encoding.UTF8.GetString(buf, 0, end).Trim();
+            if (string.IsNullOrEmpty(targetId)) return 0;
+
+            switch (typeId)
+            {
+                case 0: // Server
+                    {
+                        foreach (var srv in UnityEngine.Resources.FindObjectsOfTypeAll<Server>())
+                        {
+                            try
+                            {
+                                if (srv.gameObject.scene.name == null) continue;
+                                string val = fieldId switch
+                                {
+                                    0 => srv.ServerID ?? "",
+                                    2 => srv.rackPositionUID.ToString(),
+                                    3 => srv.gameObject.name ?? "",
+                                    _ => ""
+                                };
+                                if (val == targetId) return (ulong)srv.Pointer.ToInt64();
+                            }
+                            catch { }
+                        }
+                        break;
+                    }
+                case 4: // NetworkSwitch
+                    {
+                        foreach (var sw in UnityEngine.Resources.FindObjectsOfTypeAll<NetworkSwitch>())
+                        {
+                            try
+                            {
+                                if (sw.gameObject.scene.name == null) continue;
+                                string val = fieldId switch
+                                {
+                                    1 => sw.switchId ?? "",
+                                    3 => sw.gameObject.name ?? "",
+                                    _ => ""
+                                };
+                                if (val == targetId) return (ulong)sw.Pointer.ToInt64();
+                            }
+                            catch { }
+                        }
+                        break;
+                    }
+            }
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("ObjFindByIdImpl", ex);
+            return 0;
+        }
+    }
+
+    int GetHeldObjectImpl(IntPtr outId, uint idMax, IntPtr outType)
+    {
+        try
+        {
+            string id = Patch_UsableObject_InteractOnClick.GetHeldObjectId();
+            byte objType = Patch_UsableObject_InteractOnClick.GetHeldObjectType();
+            if (string.IsNullOrEmpty(id) || outId == IntPtr.Zero || idMax == 0) return 0;
+            if (outType != IntPtr.Zero) Marshal.WriteByte(outType, objType);
+            byte[] bytes = System.Text.Encoding.UTF8.GetBytes(id);
+            int len = System.Math.Min(bytes.Length, (int)idMax);
+            Marshal.Copy(bytes, 0, outId, len);
+            return len;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("GetHeldObjectImpl", ex);
+            return 0;
+        }
+    }
+
+    int ObjGetRotationImpl(ulong handle, IntPtr outX, IntPtr outY, IntPtr outZ, IntPtr outW)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            var rot = comp.transform.rotation;
+            Marshal.Copy(new float[] { rot.x }, 0, outX, 1);
+            Marshal.Copy(new float[] { rot.y }, 0, outY, 1);
+            Marshal.Copy(new float[] { rot.z }, 0, outZ, 1);
+            Marshal.Copy(new float[] { rot.w }, 0, outW, 1);
+            return 1;
+        }
+        catch { return 0; }
     }
 
     public void Dispose()

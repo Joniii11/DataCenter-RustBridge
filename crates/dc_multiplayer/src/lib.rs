@@ -1,8 +1,9 @@
-//! Multiplayer mod — adds co-op to Data Center via relay server.
+//! Multiplayer mod
 
 mod ffi;
 mod handlers;
 mod net;
+mod objects;
 mod player;
 mod protocol;
 mod save;
@@ -61,11 +62,14 @@ fn handle_event(api: &Api, event: Event) {
             server_id,
             object_type,
             rack_position_uid,
-        } => Some(protocol::WorldAction::InstalledInRack {
-            object_id: server_id,
-            object_type,
-            rack_position_uid,
-        }),
+        } => {
+            state::with_state(|s| s.suppress_next_drop = true);
+            Some(protocol::WorldAction::InstalledInRack {
+                object_id: server_id,
+                object_type,
+                rack_position_uid,
+            })
+        }
         Event::ObjectSpawned {
             object_id,
             object_type,
@@ -84,29 +88,8 @@ fn handle_event(api: &Api, event: Event) {
             rot_z: rot.2,
             rot_w: rot.3,
         }),
-        Event::ObjectPickedUp {
-            object_id,
-            object_type,
-        } => Some(protocol::WorldAction::ObjectPickedUp {
-            object_id,
-            object_type,
-        }),
-        Event::ObjectDropped {
-            object_id,
-            object_type,
-            pos,
-            rot,
-        } => Some(protocol::WorldAction::ObjectDropped {
-            object_id,
-            object_type,
-            pos_x: pos.0,
-            pos_y: pos.1,
-            pos_z: pos.2,
-            rot_x: rot.0,
-            rot_y: rot.1,
-            rot_z: rot.2,
-            rot_w: rot.3,
-        }),
+
+        Event::ObjectPickedUp { .. } | Event::ObjectDropped { .. } => None,
         _ => None,
     };
 
@@ -115,8 +98,8 @@ fn handle_event(api: &Api, event: Event) {
     }
 }
 
-/// Convert a local game event into a world sync message and send it.
-fn send_world_action(_api: &Api, action: protocol::WorldAction) {
+/// Convert a local game event into a world sync message and send it
+pub(crate) fn send_world_action(_api: &Api, action: protocol::WorldAction) {
     let is_host = state::with_state(|s| s.is_host).unwrap_or(false);
 
     if is_host {
