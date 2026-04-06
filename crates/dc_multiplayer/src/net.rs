@@ -25,31 +25,26 @@ pub enum RelayEvent {
     RoomFull,
     PeerJoined(u64),
     PeerLeft(u64),
-    /// A game message from another player.
+    /// A game message from another player
     GameMessage {
         sender: u64,
         target: u64,
         message: Message,
     },
-    /// Raw peer data that couldn't be deserialized, or a server-side error.
+    /// Raw peer data that couldn't be deserialized
     Error(String),
     Disconnected,
 }
 
-/// Manages the WebSocket connection to the relay server.
+/// Manages the WebSocket connection to the relay server
 pub struct RelayConnection {
-    /// Send relay packets to the IO thread.
     tx: mpsc::Sender<RelayPacket>,
-    /// Receive events from the IO thread.
     rx: mpsc::Receiver<RelayEvent>,
-    /// Whether the connection is alive.
     alive: Arc<AtomicBool>,
-    /// Background IO thread handle.
     _io_thread: Option<JoinHandle<()>>,
 }
 
 /// Set a read timeout on the underlying TCP stream so that `ws.read()` does not
-/// block forever and the IO thread can send outgoing packets between reads.
 fn set_read_timeout(ws: &mut WsStream, timeout: Duration) {
     match ws.get_mut() {
         MaybeTlsStream::Plain(tcp) => {
@@ -64,9 +59,6 @@ fn set_read_timeout(ws: &mut WsStream, timeout: Duration) {
 
 impl RelayConnection {
     /// Connect to the relay server via WebSocket.
-    ///
-    /// `url` should be a full WebSocket URL, e.g. `"wss://dc-mp.joniii.dev"` or
-    /// `"ws://192.99.16.77:9943"`.
     pub fn connect(url: &str) -> io::Result<Self> {
         dc_api::crash_log(&format!("[NET] Connecting to relay at {}", url));
 
@@ -99,7 +91,7 @@ impl RelayConnection {
         })
     }
 
-    /// Send a relay packet to the server.
+    /// Send a relay packet to the server
     pub fn send_packet(&self, packet: RelayPacket) -> bool {
         if !self.alive.load(Ordering::Relaxed) {
             return false;
@@ -107,7 +99,7 @@ impl RelayConnection {
         self.tx.send(packet).is_ok()
     }
 
-    /// Send a broadcast game message (all peers receive and process).
+    /// Send a broadcast game message (all peers receive and process
     pub fn send_game_message(&self, msg: &Message) -> bool {
         let envelope = Envelope::broadcast(msg.clone());
         let Some(payload) = envelope.serialize() else {
@@ -125,7 +117,7 @@ impl RelayConnection {
         self.send_packet(RelayPacket::GameData { payload })
     }
 
-    /// Drain all pending events from the IO thread (non-blocking).
+    /// Drain all pending events from the IO thread
     pub fn poll_events(&self) -> Vec<RelayEvent> {
         let mut events = Vec::new();
         while let Ok(event) = self.rx.try_recv() {
@@ -134,12 +126,12 @@ impl RelayConnection {
         events
     }
 
-    /// Check if the connection is still alive.
+    /// Check if the connection is still alive
     pub fn is_alive(&self) -> bool {
         self.alive.load(Ordering::Relaxed)
     }
 
-    /// Gracefully disconnect.
+    /// Gracefully disconnect
     pub fn disconnect(&self) {
         let _ = self.tx.send(RelayPacket::LeaveRoom);
 

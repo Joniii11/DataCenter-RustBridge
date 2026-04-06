@@ -72,11 +72,8 @@ pub struct RemotePlayer {
     pub player_state: PlayerStateSnapshot,
     pub last_applied_carry_type: u8,
     pub use_default_spawn: bool,
-    /// uma spawn timeout
     pub spawn_time: Option<Instant>,
-    /// When UMA became ready
     pub uma_ready_time: Option<Instant>,
-    /// Whether collider has been added to the entity
     pub collider_added: bool,
 }
 

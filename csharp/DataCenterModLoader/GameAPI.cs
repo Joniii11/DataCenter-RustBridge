@@ -1368,8 +1368,10 @@ public partial class GameAPIManager : IDisposable
                         if (rb != null)
                         {
                             rb.isKinematic = false;
+                            rb.useGravity = true;
                             rb.velocity = UnityEngine.Vector3.zero;
                             rb.angularVelocity = UnityEngine.Vector3.zero;
+                            rb.WakeUp();
                         }
                     }
                     catch { }
@@ -1746,7 +1748,11 @@ public partial class GameAPIManager : IDisposable
                         // Enable physics so it falls naturally
                         var rb = srv.GetComponent<UnityEngine.Rigidbody>();
                         if (rb != null)
+                        {
                             rb.isKinematic = false;
+                            rb.useGravity = true;
+                            rb.WakeUp();
+                        }
 
                         CrashLog.Log($"[WorldSync] DropObject: reactivated server '{objId}' at ({x:F1},{y:F1},{z:F1})");
                         return 1;
@@ -1776,7 +1782,11 @@ public partial class GameAPIManager : IDisposable
 
                         var rb = uo.GetComponent<UnityEngine.Rigidbody>();
                         if (rb != null)
+                        {
                             rb.isKinematic = false;
+                            rb.useGravity = true;
+                            rb.WakeUp();
+                        }
 
                         CrashLog.Log($"[WorldSync] DropObject: reactivated '{objId}' at ({x:F1},{y:F1},{z:F1})");
                         return 1;

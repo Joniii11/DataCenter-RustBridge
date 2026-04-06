@@ -243,6 +243,8 @@ internal static class Patch_Rack_MarkPositionAsUsed
                 int instId = installed.GetInstanceID();
                 PendingInstalls[instId] = (rackPosUid, objectType);
                 CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} uid={rackPosUid} instId={instId} — empty ServerID, stored pending");
+                CarryStateMonitor.SuppressNextDrop();
+                Patch_UsableObject_InteractOnClick.ClearHeldObject();
                 return;
             }
 
@@ -250,6 +252,9 @@ internal static class Patch_Rack_MarkPositionAsUsed
 
             CrashLog.Log($"[WorldSync] MarkPositionAsUsed: server '{serverId}' type={objectType} at rackUid={rackPosUid} (index={index}, sizeInU={sizeInU}) → firing event");
             EventDispatcher.FireServerInstalled(serverId, objectType, rackPosUid);
+            // Suppress carry state monitor so it doesn't fire a false drop event
+            CarryStateMonitor.SuppressNextDrop();
+            Patch_UsableObject_InteractOnClick.ClearHeldObject();
         }
         catch (Exception ex) { EventDispatcher.LogError($"MarkPositionAsUsed: {ex.Message}"); }
     }
@@ -815,4 +820,133 @@ internal static class Patch_UsableObject_InteractOnClick
     }
 
     internal static string GetHeldObjectId() => _heldObjectId;
+    internal static byte GetHeldObjectType() => _heldObjectType;
+}
+
+/// <summary>
+/// Per-frame carry state monitor. Detects drops that don't go through InteractOnClick
+/// (e.g. pressing the drop key). Called from Core.OnUpdate().
+/// </summary>
+internal static class CarryStateMonitor
+{
+    private static int _prevNumObjects = 0;
+    private static int _prevObjectInHand = 0;
+    private static bool _initialized = false;
+
+    // Flag set when an InstalledInRack event fires, to suppress false drop detection
+    private static bool _suppressNextDrop = false;
+    private static long _suppressTick = 0;
+
+    internal static void SuppressNextDrop()
+    {
+        _suppressNextDrop = true;
+        _suppressTick = System.Diagnostics.Stopwatch.GetTimestamp();
+    }
+
+    internal static void Update()
+    {
+        try
+        {
+            var pm = PlayerManager.instance;
+            if (pm == null) return;
+
+            int curNumObjects = pm.numberOfObjectsInHand;
+            int curObjectInHand = (int)pm.objectInHand;
+
+            if (!_initialized)
+            {
+                _prevNumObjects = curNumObjects;
+                _prevObjectInHand = curObjectInHand;
+                _initialized = true;
+                return;
+            }
+
+            // Clear suppress flag after 500ms to avoid permanently suppressing
+            if (_suppressNextDrop)
+            {
+                long now = System.Diagnostics.Stopwatch.GetTimestamp();
+                if ((now - _suppressTick) > System.Diagnostics.Stopwatch.Frequency / 2)
+                    _suppressNextDrop = false;
+            }
+
+            // Detect transition: was holding something → now empty-handed
+            if (_prevNumObjects > 0 && curNumObjects == 0 && _prevObjectInHand != 0 && curObjectInHand == 0)
+            {
+                string heldId = Patch_UsableObject_InteractOnClick.GetHeldObjectId();
+
+                if (!string.IsNullOrEmpty(heldId))
+                {
+                    if (_suppressNextDrop)
+                    {
+                        // This drop was from an InstalledInRack, not a ground drop
+                        _suppressNextDrop = false;
+                        Patch_UsableObject_InteractOnClick.ClearHeldObject();
+                    }
+                    else
+                    {
+                        // This is a genuine ground drop (no InteractOnClick fired)
+                        var pos = UnityEngine.Vector3.zero;
+                        var rot = UnityEngine.Quaternion.identity;
+
+                        // Try to find the dropped object to get its position
+                        try
+                        {
+                            var allServers = UnityEngine.Resources.FindObjectsOfTypeAll<Server>();
+                            foreach (var srv in allServers)
+                            {
+                                try
+                                {
+                                    if (srv.gameObject.scene.name == null) continue;
+                                    string sid = srv.ServerID ?? "";
+                                    if (sid == heldId && srv.gameObject.activeSelf)
+                                    {
+                                        pos = srv.transform.position;
+                                        rot = srv.transform.rotation;
+                                        break;
+                                    }
+                                }
+                                catch { }
+                            }
+                        }
+                        catch { }
+
+                        // Fallback: use player position if object position not found
+                        if (pos == UnityEngine.Vector3.zero)
+                        {
+                            try
+                            {
+                                var player = pm.gameObject;
+                                if (player != null)
+                                {
+                                    pos = player.transform.position;
+                                    rot = player.transform.rotation;
+                                }
+                            }
+                            catch { }
+                        }
+
+                        byte heldType = Patch_UsableObject_InteractOnClick.GetHeldObjectType();
+                        CrashLog.Log($"[WorldSync] Drop detected (monitor): '{heldId}' pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
+                        EventDispatcher.FireObjectDropped(heldId, heldType, pos, rot);
+                        Patch_UsableObject_InteractOnClick.ClearHeldObject();
+                    }
+                }
+            }
+
+            // Also detect pickups that weren't caught by InteractOnClick
+            // (less likely but possible for edge cases)
+
+            _prevNumObjects = curNumObjects;
+            _prevObjectInHand = curObjectInHand;
+        }
+        catch (Exception ex) { CrashLog.Log($"[WorldSync] CarryStateMonitor error: {ex.Message}"); }
+    }
+
+    internal static void Reset()
+    {
+        _prevNumObjects = 0;
+        _prevObjectInHand = 0;
+        _initialized = false;
+        _suppressNextDrop = false;
+    }
 }

@@ -160,6 +160,7 @@ public class Core : MelonMod
             ModConfigSystem.OnUpdate(Time.deltaTime);
             CustomEmployeeManager.ReregisterSalariesIfNeeded();
             EntityManager.Update();
+            CarryStateMonitor.Update();
         }
         catch (Exception ex)
         {

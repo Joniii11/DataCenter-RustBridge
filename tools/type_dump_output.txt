@@ -1,32 +1,197 @@
-﻿
-  TYPE NOT FOUND: Server
+﻿==========================================================
+  Data Center — Il2Cpp Type Dump
+  Generated: 2026-04-05 20:37:05
+==========================================================
 
-  Possible matches:
-    - Microsoft.Cci.Pdb.LeafTypeServer (in Mono.Cecil.Pdb)
-    - Microsoft.Cci.Pdb.LeafTypeServer2 (in Mono.Cecil.Pdb)
-    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerCommandSet (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerResponseId (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterRunner (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterRunner+<runIpcClientTcpServerRouter>d__1 (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterRunner+<runIpcServerTcpClientRouter>d__3 (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.DiagnosticsServerRouterRunner+<runIpcServerTcpServerRouter>d__2 (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IIpcServerTransportCallbackInternal (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcClientTcpServerRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcServerRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcServerTcpClientRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcServerTcpServerRouterFactory (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcServerTransport (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcSocketServerTransport (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcTcpSocketServerTransport (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcUnixDomainSocketServerTransport (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcWebSocketServerTransport (in Microsoft.Diagnostics.NETCore.Client)
-    - Microsoft.Diagnostics.NETCore.Client.IpcWindowsNamedPipeServerTransport (in Microsoft.Diagnostics.NETCore.Client)
+══════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.Server
+  Base: Il2Cpp.UsableObject
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr_activeLinks
+    private static readonly IntPtr NativeFieldInfoPtr_appID
+    private static readonly IntPtr NativeFieldInfoPtr_appLogo
+    private static readonly IntPtr NativeFieldInfoPtr_breakingRoutine
+    private static readonly IntPtr NativeFieldInfoPtr_cablelinks
+    private static readonly IntPtr NativeFieldInfoPtr_canvas
+    private static readonly IntPtr NativeFieldInfoPtr_currentProcessingSpeed
+    private static readonly IntPtr NativeFieldInfoPtr_customerLogo
+    private static readonly IntPtr NativeFieldInfoPtr_eolTime
+    private static readonly IntPtr NativeFieldInfoPtr_existingErrorSigns
+    private static readonly IntPtr NativeFieldInfoPtr_existingWarningSigns
+    private static readonly IntPtr NativeFieldInfoPtr_hasInitialized
+    private static readonly IntPtr NativeFieldInfoPtr_IP
+    private static readonly IntPtr NativeFieldInfoPtr_isBroken
+    private static readonly IntPtr NativeFieldInfoPtr_isOn
+    private static readonly IntPtr NativeFieldInfoPtr_isWarningCleared
+    private static readonly IntPtr NativeFieldInfoPtr_maxProcessingSpeed
+    private static readonly IntPtr NativeFieldInfoPtr_powerButton
+    private static readonly IntPtr NativeFieldInfoPtr_previousProcessingSpeed
+    private static readonly IntPtr NativeFieldInfoPtr_ServerID
+    private static readonly IntPtr NativeFieldInfoPtr_serverType
+    private static readonly IntPtr NativeFieldInfoPtr_timeToBrake
+    private static readonly IntPtr NativeFieldInfoPtr_txtIP
+    private static readonly IntPtr NativeFieldInfoPtr_txtServerScreen
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr__InteractOnClick_b__32_0_Private_Boolean_RackPosition_0
+    private static readonly IntPtr NativeMethodInfoPtr__ValidateRackPosition_b__47_0_Private_Boolean_RackPosition_0
+    private static readonly IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_BrekingInProgress_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonClickChangeCustomer_Public_Void_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_ButtonClickChangeIP_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ClearErrorSign_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ClearWarningSign_Public_Void_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_GetCustomerID_Public_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_GetNextCustomerID_Private_Int32_Int32_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+    private static readonly IntPtr NativeMethodInfoPtr_IsAnyCableConnected_Public_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_ItIsBroken_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnDestroy_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnLoadingComplete_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnLoadingStarted_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_PowerButton_Public_Void_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_RegisterLink_Public_Void_CableLink_0
+    private static readonly IntPtr NativeMethodInfoPtr_RepairDevice_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ServerInsertedInRack_Public_Void_ServerSaveData_0
+    private static readonly IntPtr NativeMethodInfoPtr_SetIP_Public_Void_String_0
+    private static readonly IntPtr NativeMethodInfoPtr_SetPowerLightMaterial_Private_Void_Material_0
+    private static readonly IntPtr NativeMethodInfoPtr_Start_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_TurnOffCommonFunctions_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_TurnOnCommonFunction_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_UnregisterLink_Public_Void_CableLink_0
+    private static readonly IntPtr NativeMethodInfoPtr_UpdateAppID_Public_Void_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_UpdateCustomer_Public_Void_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_UpdateServerScreenUI_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ValidateRackPosition_Public_Boolean_0
+
+  ── PROPERTIES ──
+    List<CableLink> activeLinks { get; set; }
+    int appID { get; set; }
+    Image appLogo { get; set; }
+    Coroutine breakingRoutine { get; set; }
+    Il2CppReferenceArray<CableLink> cablelinks { get; set; }
+    GameObject canvas { get; set; }
+    float currentProcessingSpeed { get; set; }
+    Image customerLogo { get; set; }
+    int eolTime { get; set; }
+    int existingErrorSigns { get; set; }
+    int existingWarningSigns { get; set; }
+    bool hasInitialized { get; set; }
+    string IP { get; set; }
+    bool isBroken { get; set; }
+    bool isOn { get; set; }
+    bool isWarningCleared { get; set; }
+    float maxProcessingSpeed { get; set; }
+    Renderer powerButton { get; set; }
+    float previousProcessingSpeed { get; set; }
+    string ServerID { get; set; }
+    int serverType { get; set; }
+    int timeToBrake { get; set; }
+    TextMeshProUGUI txtIP { get; set; }
+    TextMeshProUGUI txtServerScreen { get; set; }
+
+  ── METHODS ──
+    public bool _InteractOnClick_b__32_0(RackPosition r)
+    public bool _ValidateRackPosition_b__47_0(RackPosition r)
+    public virtual void Awake()
+    public IEnumerator BrekingInProgress()
+    public void ButtonClickChangeCustomer(bool forward)
+    public void ButtonClickChangeIP()
+    public void ClearErrorSign()
+    public void ClearWarningSign(bool isPreserved)
+    public int GetCustomerID()
+    public int GetNextCustomerID(int currentCustomerID, bool forward)
+    public virtual void InteractOnClick()
+    public virtual void InteractOnHover(RaycastHit hit)
+    public bool IsAnyCableConnected()
+    public void ItIsBroken()
+    public virtual void OnDestroy()
+    public void OnLoadingComplete()
+    public void OnLoadingStarted()
+    public void PowerButton(bool forceState)
+    public void RegisterLink(CableLink link)
+    public void RepairDevice()
+    public void ServerInsertedInRack(ServerSaveData serverSaveData)
+    public void SetIP(string _ip)
+    public void SetPowerLightMaterial(Material material)
+    public void Start()
+    public void TurnOffCommonFunctions()
+    public void TurnOnCommonFunction()
+    public void UnregisterLink(CableLink link)
+    public void UpdateAppID(int _appID)
+    public void UpdateCustomer(int newCustomerID)
+    public void UpdateServerScreenUI()
+    public bool ValidateRackPosition()
+
+  ── NESTED TYPES ──
+    class _BrekingInProgress_d__45
 
 
-  TYPE NOT FOUND: CustomerBase
+══════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.ShopCartItem
+  Base: UnityEngine.MonoBehaviour
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════
 
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr_btnAdd
+    private static readonly IntPtr NativeFieldInfoPtr_btnRemove
+    private static readonly IntPtr NativeFieldInfoPtr_hasCustomColor
+    private static readonly IntPtr NativeFieldInfoPtr_itemColor
+    private static readonly IntPtr NativeFieldInfoPtr_itemID
+    private static readonly IntPtr NativeFieldInfoPtr_itemName
+    private static readonly IntPtr NativeFieldInfoPtr_itemType
+    private static readonly IntPtr NativeFieldInfoPtr_price
+    private static readonly IntPtr NativeFieldInfoPtr_shop
+    private static readonly IntPtr NativeFieldInfoPtr_spawnedItemUIDs
+    private static readonly IntPtr NativeFieldInfoPtr_txtAmount
+    private static readonly IntPtr NativeFieldInfoPtr_txtItemName
+    private static readonly IntPtr NativeFieldInfoPtr_txtPrice
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_AddSpawnedItem_Public_Void_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_ClearAllUIDs_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_get_ItemID_Public_get_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_get_ItemType_Public_get_ObjectInHand_0
+    private static readonly IntPtr NativeMethodInfoPtr_get_Quantity_Public_get_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_get_RemoveButton_Public_get_ButtonExtended_0
+    private static readonly IntPtr NativeMethodInfoPtr_get_TotalPrice_Public_get_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_Initialize_Public_Void_ComputerShop_String_Int32_Int32_ObjectInHand_Int32_Nullable_1_Color_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnAddClicked_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnDestroy_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnRemoveClicked_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_RemoveLastSpawnedItem_Public_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_UpdateDisplay_Private_Void_0
 
-  TYPE NOT FOUND: Player
+  ── PROPERTIES ──
+    ButtonExtended btnAdd { get; set; }
+    ButtonExtended btnRemove { get; set; }
+    bool hasCustomColor { get; set; }
+    Color itemColor { get; set; }
+    int itemID { get; set; }
+    int ItemID { get; }
+    string itemName { get; set; }
+    ObjectInHand itemType { get; set; }
+    ObjectInHand ItemType { get; }
+    int price { get; set; }
+    int Quantity { get; }
+    ButtonExtended RemoveButton { get; }
+    ComputerShop shop { get; set; }
+    List<int> spawnedItemUIDs { get; set; }
+    int TotalPrice { get; }
+    TextMeshProUGUI txtAmount { get; set; }
+    TextMeshProUGUI txtItemName { get; set; }
+    TextMeshProUGUI txtPrice { get; set; }
 
+  ── METHODS ──
+    public void AddSpawnedItem(int uid)
+    public void ClearAllUIDs()
+    public void Initialize(ComputerShop shop, string itemName, int itemID, int price, ObjectInHand itemType, int firstSpawnUID, Nullable<Color> customColor)
+    public void OnAddClicked()
+    public void OnDestroy()
+    public void OnRemoveClicked()
+    public int RemoveLastSpawnedItem()
+    public void UpdateDisplay()
 
