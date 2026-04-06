@@ -288,7 +288,8 @@ public class MultiplayerBridge
             if (_menuInjectionTimer <= 0f)
             {
                 _pendingMenuInjection = false;
-                InjectMainMenuButton();
+                if (_initialized)
+                    InjectMainMenuButton();
             }
         }
 
@@ -552,7 +553,7 @@ public class MultiplayerBridge
         _currentSceneName = sceneName ?? "";
         CrashLog.Log($"[MP Join] OnSceneLoaded: \"{_currentSceneName}\" (joinState={GetJoinState()})");
 
-        if (sceneName == "MainMenu")
+        if (sceneName == "MainMenu" && _initialized)
         {
             _pendingMenuInjection = true;
             _menuInjectionTimer = 0.5f;
@@ -1835,6 +1836,16 @@ public class MultiplayerBridge
         {
             if (!_initialized) return;
             if (_menuButton != null) return;
+
+            var mpCheck = GetModuleHandle("dc_multiplayer.dll");
+            if (mpCheck == IntPtr.Zero)
+                mpCheck = GetModuleHandle("dc_multiplayer");
+            if (mpCheck == IntPtr.Zero)
+            {
+                CrashLog.Log("[MP Bridge] InjectMainMenuButton aborted — dc_multiplayer.dll is not loaded.");
+                _initialized = false;
+                return;
+            }
 
             Transform templateButton = ModConfigSystem.SettingsButtonTransform;
 

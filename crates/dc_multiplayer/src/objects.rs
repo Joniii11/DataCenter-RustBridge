@@ -1,5 +1,3 @@
-//! Multiplayer aware world object extensions
-
 #![allow(dead_code)]
 
 use dc_api::world::{NetworkSwitch, ObjectHandle, Server, WorldObject};
@@ -7,12 +5,10 @@ use dc_api::{Api, Quat, Vec3};
 
 use crate::protocol::WorldAction;
 
-/// Extension of [`WorldObject`] for objects that participate in multiplayer sync.
 pub trait SyncedObject: WorldObject {
     /// The `object_type` byte used in [`WorldAction`] protocol messages
     fn wire_type() -> u8;
 
-    /// Build an [`WorldAction::ObjectPickedUp`] message for this object
     fn pickup_action(&self) -> WorldAction {
         WorldAction::ObjectPickedUp {
             object_id: self.id().to_string(),
@@ -20,7 +16,6 @@ pub trait SyncedObject: WorldObject {
         }
     }
 
-    /// Build an [`WorldAction::ObjectDropped`] message for this object
     fn drop_action(&self, pos: Vec3, rot: Quat) -> WorldAction {
         WorldAction::ObjectDropped {
             object_id: self.id().to_string(),
@@ -35,7 +30,6 @@ pub trait SyncedObject: WorldObject {
         }
     }
 
-    /// Find an object of this type by ID and execute a pickup
     fn execute_remote_pickup(api: &Api, object_id: &str) -> bool {
         if let Some(obj) = Self::find_by_id(api, object_id) {
             let ok = obj.pickup(api);
@@ -51,7 +45,6 @@ pub trait SyncedObject: WorldObject {
         }
     }
 
-    /// Find an object of this type by ID and execute a drop
     fn execute_remote_drop(api: &Api, object_id: &str, pos: Vec3, rot: Quat) -> bool {
         if let Some(obj) = Self::find_by_id(api, object_id) {
             let ok = obj.drop_at(api, pos, rot);
@@ -73,8 +66,8 @@ pub trait SyncedObject: WorldObject {
 
 impl SyncedObject for Server {
     fn wire_type() -> u8 {
+        // All server sizes (1U/3U/7U) share the Il2Cpp.Server component
         crate::protocol::object_types::SERVER_1U
-        // NOTE: all server sizes (1U/3U/7U) share the Il2Cpp.Server component
     }
 }
 
@@ -84,19 +77,16 @@ impl SyncedObject for NetworkSwitch {
     }
 }
 
-/// Try to pick up an object across all known synced types
 pub fn dispatch_pickup(api: &Api, object_id: &str) -> bool {
     Server::execute_remote_pickup(api, object_id)
         || NetworkSwitch::execute_remote_pickup(api, object_id)
 }
 
-/// Try to drop an object across all known synced types
 pub fn dispatch_drop(api: &Api, object_id: &str, pos: Vec3, rot: Quat) -> bool {
     Server::execute_remote_drop(api, object_id, pos, rot)
         || NetworkSwitch::execute_remote_drop(api, object_id, pos, rot)
 }
 
-/// Try to find an object handle across all known synced types
 pub fn dispatch_find(api: &Api, object_id: &str) -> Option<ObjectHandle> {
     Server::find_by_id(api, object_id)
         .map(|s| s.handle())

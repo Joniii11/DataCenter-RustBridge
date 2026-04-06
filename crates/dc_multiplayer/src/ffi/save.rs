@@ -1,19 +1,17 @@
-//! Save sync FFI exports — called by C# to manage save file transfer.
-
 use crate::protocol::Message;
 use crate::state::*;
 
 #[no_mangle]
 pub extern "C" fn mp_skip_next_save_request() {
     with_state(|s| {
-        s.skip_next_save_request = true;
+        s.save.skip_next_request = true;
     });
 }
 
 #[no_mangle]
 pub extern "C" fn mp_should_send_save() -> u32 {
     with_state(|s| {
-        if !s.save_transfers.is_empty() && s.save_outgoing.is_none() {
+        if !s.save.transfers.is_empty() && s.save.outgoing.is_none() {
             1u32
         } else {
             0u32
@@ -45,15 +43,14 @@ pub extern "C" fn mp_send_save_data(data: *const u8, len: u32) -> i32 {
     };
 
     let sent = with_state(|s| {
-        s.save_outgoing = Some(bytes);
-        s.save_chunk_count = chunk_count;
+        s.save.outgoing = Some(bytes);
+        s.save.chunk_count = chunk_count;
 
-        // Send targeted SaveOffer to each waiting client and start their transfer
-        let waiting: Vec<u64> = s.save_transfers.keys().copied().collect();
+        let waiting: Vec<u64> = s.save.transfers.keys().copied().collect();
         let mut any_sent = false;
 
         for peer_id in waiting {
-            if let Some(ref relay) = s.relay {
+            if let Some(ref relay) = s.session.relay {
                 if relay.send_game_message_to(&offer, peer_id) {
                     any_sent = true;
                     dc_api::crash_log(&format!(
@@ -62,8 +59,7 @@ pub extern "C" fn mp_send_save_data(data: *const u8, len: u32) -> i32 {
                     ));
                 }
             }
-            // Reset send_index to 0 (start chunking for this client)
-            if let Some(t) = s.save_transfers.get_mut(&peer_id) {
+            if let Some(t) = s.save.transfers.get_mut(&peer_id) {
                 t.send_index = 0;
             }
         }
@@ -79,11 +75,10 @@ pub extern "C" fn mp_send_save_data(data: *const u8, len: u32) -> i32 {
     }
 }
 
-/// Client: returns 1 if complete save data from host is ready.
 #[no_mangle]
 pub extern "C" fn mp_has_pending_save() -> u32 {
     with_state(|s| {
-        if s.save_data_ready.is_some() && !s.save_loaded {
+        if s.save.data_ready.is_some() && !s.save.loaded {
             1u32
         } else {
             0u32
@@ -92,14 +87,11 @@ pub extern "C" fn mp_has_pending_save() -> u32 {
     .unwrap_or(0)
 }
 
-/// Client: returns the size in bytes of the pending save data (0 if none).
 #[no_mangle]
 pub extern "C" fn mp_get_save_data_size() -> u32 {
-    with_state(|s| s.save_data_ready.as_ref().map_or(0u32, |d| d.len() as u32)).unwrap_or(0)
+    with_state(|s| s.save.data_ready.as_ref().map_or(0u32, |d| d.len() as u32)).unwrap_or(0)
 }
 
-/// Client: copies pending save data into the provided buffer.
-/// Returns number of bytes copied, or 0 if no data available.
 #[no_mangle]
 pub extern "C" fn mp_get_save_data(buf: *mut u8, max_len: u32) -> u32 {
     if buf.is_null() || max_len == 0 {
@@ -107,7 +99,7 @@ pub extern "C" fn mp_get_save_data(buf: *mut u8, max_len: u32) -> u32 {
     }
 
     with_state(|s| {
-        if let Some(ref data) = s.save_data_ready {
+        if let Some(ref data) = s.save.data_ready {
             let copy_len = data.len().min(max_len as usize);
             unsafe {
                 std::ptr::copy_nonoverlapping(data.as_ptr(), buf, copy_len);
@@ -120,23 +112,20 @@ pub extern "C" fn mp_get_save_data(buf: *mut u8, max_len: u32) -> u32 {
     .unwrap_or(0)
 }
 
-/// Client: signal that the save was loaded. Cleans up the pending data.
 #[no_mangle]
 pub extern "C" fn mp_save_load_complete() -> i32 {
     with_state(|s| {
-        s.save_data_ready = None;
-        s.save_loaded = true;
+        s.save.data_ready = None;
+        s.save.loaded = true;
         dc_api::crash_log("[MP] Save load complete, pending data cleared");
     });
     1
 }
 
-/// C# provides the local save file bytes so Rust can compute and store the hash.
-/// Call this before connecting to enable save versioning.
 #[no_mangle]
 pub extern "C" fn mp_set_local_save_hash(data: *const u8, len: u32) {
     if data.is_null() || len == 0 {
-        with_state(|s| s.local_save_hash = 0);
+        with_state(|s| s.save.local_hash = 0);
         return;
     }
     let bytes = unsafe { std::slice::from_raw_parts(data, len as usize) };
@@ -145,33 +134,30 @@ pub extern "C" fn mp_set_local_save_hash(data: *const u8, len: u32) {
         "[MP] Local save hash set: {:016x} ({} bytes)",
         hash, len
     ));
-    with_state(|s| s.local_save_hash = hash);
+    with_state(|s| s.save.local_hash = hash);
 }
 
-/// Returns 1 if the host's save matches our local save (no download needed).
 #[no_mangle]
 pub extern "C" fn mp_is_save_up_to_date() -> u32 {
-    with_state(|s| if s.save_up_to_date { 1u32 } else { 0u32 }).unwrap_or(0)
+    with_state(|s| if s.save.up_to_date { 1u32 } else { 0u32 }).unwrap_or(0)
 }
 
-/// Returns save transfer progress: -1.0 if not transferring, 0.0..1.0 during transfer.
 #[no_mangle]
 pub extern "C" fn mp_get_save_transfer_progress() -> f32 {
     with_state(|s| {
-        if s.save_up_to_date {
+        if s.save.up_to_date {
             return 1.0f32;
         }
-        if s.save_incoming_chunk_count == 0 {
+        if s.save.incoming_chunk_count == 0 {
             return -1.0f32;
         }
-        let received = s.save_incoming_received.iter().filter(|&&r| r).count() as f32;
-        received / s.save_incoming_chunk_count as f32
+        let received = s.save.incoming_received.iter().filter(|&&r| r).count() as f32;
+        received / s.save.incoming_chunk_count as f32
     })
     .unwrap_or(-1.0)
 }
 
-/// Returns total bytes of the current incoming save transfer (0 if not active).
 #[no_mangle]
 pub extern "C" fn mp_get_save_transfer_total_bytes() -> u32 {
-    with_state(|s| s.save_incoming_total).unwrap_or(0)
+    with_state(|s| s.save.incoming_total).unwrap_or(0)
 }

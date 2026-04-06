@@ -123,8 +123,12 @@ public class Core : MelonMod
             CrashLog.Log("step: loading all mods");
             _ffiBridge.LoadAllMods();
 
-            CrashLog.Log("step: creating MultiplayerBridge");
-            _mpBridge = new MultiplayerBridge(LoggerInstance);
+
+            var mpDllPath = Path.Combine(_modsPath, "dc_multiplayer.dll");
+            if (File.Exists(mpDllPath))
+            {
+                _mpBridge = new MultiplayerBridge(LoggerInstance);
+            }
 
             LoggerInstance.Msg("Modloader initialization complete.");
             CrashLog.Log("step: OnInitializeMelon complete");

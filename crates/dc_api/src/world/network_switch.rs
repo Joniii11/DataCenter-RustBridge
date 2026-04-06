@@ -2,7 +2,6 @@ use crate::Api;
 
 use super::{ObjectHandle, ObjectType, StringField, WorldObject};
 
-/// A network switch in the game world.
 #[derive(Debug, Clone)]
 pub struct NetworkSwitch {
     handle: ObjectHandle,

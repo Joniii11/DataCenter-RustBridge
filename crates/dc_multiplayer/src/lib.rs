@@ -1,12 +1,9 @@
-//! Multiplayer mod
-
 mod ffi;
 mod handlers;
 mod net;
 mod objects;
 mod player;
 mod protocol;
-mod save;
 mod state;
 mod tick;
 mod world;
@@ -38,15 +35,15 @@ fn update(api: &Api, dt: f32) {
 
 #[dc_api::on_event]
 fn handle_event(api: &Api, event: Event) {
-    let connected = state::with_state(|s| s.connected).unwrap_or(false);
+    let connected = state::with_state(|s| s.session.connected).unwrap_or(false);
     if !connected {
         return;
     }
 
-    let is_host = state::with_state(|s| s.is_host).unwrap_or(false);
+    let is_host = state::with_state(|s| s.session.is_host).unwrap_or(false);
     if !is_host {
-        let loaded =
-            state::with_state(|s| s.join_state == state::JoinState::Loaded).unwrap_or(false);
+        let loaded = state::with_state(|s| s.session.join_state == state::JoinState::Loaded)
+            .unwrap_or(false);
         if !loaded {
             return;
         }
@@ -63,7 +60,7 @@ fn handle_event(api: &Api, event: Event) {
             object_type,
             rack_position_uid,
         } => {
-            state::with_state(|s| s.suppress_next_drop = true);
+            state::with_state(|s| s.carry.suppress_next_drop = true);
             Some(protocol::WorldAction::InstalledInRack {
                 object_id: server_id,
                 object_type,
@@ -98,16 +95,15 @@ fn handle_event(api: &Api, event: Event) {
     }
 }
 
-/// Convert a local game event into a world sync message and send it
 pub(crate) fn send_world_action(_api: &Api, action: protocol::WorldAction) {
-    let is_host = state::with_state(|s| s.is_host).unwrap_or(false);
+    let is_host = state::with_state(|s| s.session.is_host).unwrap_or(false);
 
     if is_host {
         let broadcast = protocol::Message::WorldActionBroadcast {
             action: action.clone(),
         };
         state::with_state(|s| {
-            if let Some(ref relay) = s.relay {
+            if let Some(ref relay) = s.session.relay {
                 s.tracker.for_each_player(|player| {
                     relay.send_game_message_to(&broadcast, player.steam_id);
                 });
@@ -132,7 +128,7 @@ pub(crate) fn send_world_action(_api: &Api, action: protocol::WorldAction) {
             action: action.clone(),
         };
         state::with_state(|s| {
-            if let Some(ref relay) = s.relay {
+            if let Some(ref relay) = s.session.relay {
                 relay.send_game_message(&msg);
             }
         });
@@ -147,13 +143,13 @@ pub(crate) fn send_world_action(_api: &Api, action: protocol::WorldAction) {
 #[dc_api::on_shutdown]
 fn shutdown(api: &Api) {
     let entity_ids = state::with_state(|s| {
-        if let Some(ref relay) = s.relay {
-            if s.peer_id != 0 {
+        if let Some(ref relay) = s.session.relay {
+            if s.session.peer_id != 0 {
                 relay.send_game_message(&protocol::Message::Goodbye);
             }
             relay.disconnect();
         }
-        s.relay = None;
+        s.session.relay = None;
         s.tracker.get_all_entity_ids()
     })
     .unwrap_or_default();

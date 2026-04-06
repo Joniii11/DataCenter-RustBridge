@@ -1,6 +1,5 @@
 use bincode::{Decode, Encode};
 
-/// Object type constants matching the games `ObjectInHand` enum
 #[allow(dead_code)]
 pub mod object_types {
     pub const NONE: u8 = 0;
@@ -15,7 +14,6 @@ pub mod object_types {
     pub const SFP_BOX: u8 = 9;
 }
 
-/// Compact hash representation of a world state
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct ObjectHash {
     pub object_id: String,
@@ -23,7 +21,6 @@ pub struct ObjectHash {
     pub hash: u32,
 }
 
-/// object ´has for c# and rust
 #[allow(dead_code)]
 #[repr(C)]
 pub struct ObjectHashFFI {
@@ -33,7 +30,6 @@ pub struct ObjectHashFFI {
     pub hash: u32,
 }
 
-/// Actions that modify world object state
 #[derive(Encode, Decode, Debug, Clone)]
 pub enum WorldAction {
     ObjectPickedUp {
@@ -103,10 +99,9 @@ pub enum WorldAction {
     },
 }
 
-/// Messages sent over the network between players.
 #[derive(Encode, Decode, Debug, Clone)]
 pub enum Message {
-    /// Player position update (sent frequently, unreliable)
+    /// Sent frequently, unreliable delivery
     Position {
         x: f32,
         y: f32,
@@ -114,13 +109,11 @@ pub enum Message {
         rot_y: f32,
     },
 
-    /// Initial handshake when connecting
     Hello {
         player_name: String,
         mod_version: String,
     },
 
-    /// Response to Hello
     Welcome {
         player_name: String,
         is_host: bool,
@@ -129,10 +122,8 @@ pub enum Message {
         spawn_z: f32,
     },
 
-    /// Player is disconnecting gracefully
     Goodbye,
 
-    /// Simple ping/pong for connection health
     Ping(u64),
     Pong(u64),
 
@@ -146,10 +137,9 @@ pub enum Message {
         index: u32,
         data: Vec<u8>,
     },
-    /// Client tells host "I already have this save, stop sending chunks"
+    /// Client tells host "I already have this save, skip remaining chunks"
     SaveSkip,
 
-    /// Player visual state update (carry, crouch, sit)
     PlayerState {
         object_in_hand: u8,
         num_objects: u8,
@@ -157,34 +147,28 @@ pub enum Message {
         is_sitting: bool,
     },
 
-    /// action performed
     WorldActionMsg {
         seq: u32,
         action: WorldAction,
     },
 
-    /// ack to the action or reject to rollback
     WorldActionAck {
         seq: u32,
         accepted: bool,
     },
 
-    /// broadcast action to all clients
     WorldActionBroadcast {
         action: WorldAction,
     },
 
-    /// sync hash list to prevent desync
     WorldHashCheck {
         hashes: Vec<ObjectHash>,
     },
 
-    /// request sync
     WorldResyncRequest {
         object_id: String,
     },
 
-    /// sync ack
     WorldResyncResponse {
         object_id: String,
         object_type: u8,
@@ -213,7 +197,6 @@ impl Message {
     }
 }
 
-/// A message envelope with a target steam ID for targeted delivery
 #[derive(Encode, Decode, Debug, Clone)]
 pub struct Envelope {
     pub target: u64,
@@ -221,12 +204,10 @@ pub struct Envelope {
 }
 
 impl Envelope {
-    /// Create a broadcast envelope
     pub fn broadcast(message: Message) -> Self {
         Self { target: 0, message }
     }
 
-    /// Create a targeted envelope
     pub fn targeted(target: u64, message: Message) -> Self {
         Self { target, message }
     }
@@ -415,7 +396,6 @@ mod tests {
 
     #[test]
     fn test_all_world_action_variants_serialize() {
-        // Ensure every variant can round-trip without panicking
         let actions = vec![
             WorldAction::ObjectPickedUp {
                 object_id: "a".into(),
