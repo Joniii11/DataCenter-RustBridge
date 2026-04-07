@@ -10,8 +10,11 @@ pub(super) fn handle_world_action_msg(api: &Api, sender: u64, seq: u32, action: 
     }
 
     dc_api::crash_log(&format!(
-        "[MP] WorldActionMsg seq={} from {}: {:?}",
-        seq, sender, action
+        "[MP] WorldActionMsg seq={} from {}: {} '{}'",
+        seq,
+        sender,
+        action.tag(),
+        action.object_id()
     ));
 
     let accepted = validate_world_action(api, &action);
@@ -75,8 +78,10 @@ pub(super) fn handle_world_action_broadcast(api: &Api, sender: u64, action: Worl
     }
 
     dc_api::crash_log(&format!(
-        "[MP] WorldActionBroadcast from {}: {:?}",
-        sender, action
+        "[MP] WorldActionBroadcast from {}: {} '{}'",
+        sender,
+        action.tag(),
+        action.object_id()
     ));
 
     world::execute_world_action(api, &action);
@@ -170,8 +175,9 @@ fn validate_world_action(_api: &Api, action: &WorldAction) -> bool {
     };
 
     dc_api::crash_log(&format!(
-        "[MP] Validating action: {:?} → {} ({})",
-        action,
+        "[MP] Validating {} '{}' → {} ({})",
+        action.tag(),
+        action.object_id(),
         if valid { "accepted" } else { "rejected" },
         reason
     ));

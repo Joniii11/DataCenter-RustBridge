@@ -2143,6 +2143,26 @@ public partial class GameAPIManager : IDisposable
                             }
                             catch { }
                         }
+                        // Lookup failed — dump all known servers so we can see if ID mismatch
+                        try
+                        {
+                            var all = UnityEngine.Resources.FindObjectsOfTypeAll<Server>();
+                            var sb = new System.Text.StringBuilder();
+                            sb.Append($"[FindById] Server '{targetId}' not found. Scene servers ({all.Count}): ");
+                            foreach (var srv in all)
+                            {
+                                try
+                                {
+                                    bool inScene = srv.gameObject.scene.name != null;
+                                    string sid = srv.ServerID ?? "<null>";
+                                    bool active = srv.gameObject.activeInHierarchy;
+                                    sb.Append($"[id={sid} active={active} inScene={inScene}] ");
+                                }
+                                catch { sb.Append("[err] "); }
+                            }
+                            CrashLog.Log(sb.ToString());
+                        }
+                        catch { }
                         break;
                     }
                 case 4: // NetworkSwitch
@@ -2162,6 +2182,26 @@ public partial class GameAPIManager : IDisposable
                             }
                             catch { }
                         }
+                        // Lookup failed — dump all known switches so we can see if ID mismatch
+                        try
+                        {
+                            var all = UnityEngine.Resources.FindObjectsOfTypeAll<NetworkSwitch>();
+                            var sb = new System.Text.StringBuilder();
+                            sb.Append($"[FindById] NetworkSwitch '{targetId}' not found. Scene switches ({all.Count}): ");
+                            foreach (var sw in all)
+                            {
+                                try
+                                {
+                                    bool inScene = sw.gameObject.scene.name != null;
+                                    string sid = sw.switchId ?? "<null>";
+                                    bool active = sw.gameObject.activeInHierarchy;
+                                    sb.Append($"[id={sid} active={active} inScene={inScene}] ");
+                                }
+                                catch { sb.Append("[err] "); }
+                            }
+                            CrashLog.Log(sb.ToString());
+                        }
+                        catch { }
                         break;
                     }
             }

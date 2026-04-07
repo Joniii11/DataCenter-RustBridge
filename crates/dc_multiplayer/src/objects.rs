@@ -41,6 +41,11 @@ pub trait SyncedObject: WorldObject {
             ));
             ok
         } else {
+            dc_api::crash_log(&format!(
+                "[WORLD] pickup '{}' not found as type={}",
+                object_id,
+                Self::wire_type()
+            ));
             false
         }
     }
@@ -59,8 +64,29 @@ pub trait SyncedObject: WorldObject {
             ));
             ok
         } else {
+            dc_api::crash_log(&format!(
+                "[WORLD] drop '{}' not found as type={}",
+                object_id,
+                Self::wire_type()
+            ));
             false
         }
+    }
+
+    fn put_in_rack(&self, api: &Api, rack_id: &str) -> bool {
+        return true;
+    }
+
+    fn put_out_of_rack(&self, api: &Api) -> bool {
+        return true;
+    }
+
+    fn remote_put_in_rack(&self, api: &Api, rack_id: &str) -> bool {
+        return true;
+    }
+
+    fn remote_put_out_of_rack(&self, api: &Api) -> bool {
+        return true;
     }
 }
 

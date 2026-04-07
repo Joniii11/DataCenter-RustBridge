@@ -7,7 +7,6 @@ use super::RollbackInfo;
 pub const WORLD_ACTION_TIMEOUT_SECS: f32 = 5.0;
 pub const HASH_CHECK_INTERVAL_SECS: f32 = 20.0;
 
-#[derive(Debug)]
 pub struct PendingAction {
     pub seq: u32,
     pub action: WorldAction,

@@ -30,7 +30,7 @@ pub struct ObjectHashFFI {
     pub hash: u32,
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Clone)]
 pub enum WorldAction {
     ObjectPickedUp {
         object_id: String,
@@ -99,7 +99,7 @@ pub enum WorldAction {
     },
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Clone)]
 pub enum Message {
     /// Sent frequently, unreliable delivery
     Position {
@@ -176,6 +176,40 @@ pub enum Message {
     },
 }
 
+impl WorldAction {
+    pub fn tag(&self) -> &'static str {
+        match self {
+            Self::ObjectPickedUp { .. } => "ObjectPickedUp",
+            Self::ObjectDropped { .. } => "ObjectDropped",
+            Self::InstalledInRack { .. } => "InstalledInRack",
+            Self::RemovedFromRack { .. } => "RemovedFromRack",
+            Self::PowerToggled { .. } => "PowerToggled",
+            Self::PropertyChanged { .. } => "PropertyChanged",
+            Self::CableConnected { .. } => "CableConnected",
+            Self::CableDisconnected { .. } => "CableDisconnected",
+            Self::ObjectSpawned { .. } => "ObjectSpawned",
+            Self::ObjectDestroyed { .. } => "ObjectDestroyed",
+        }
+    }
+
+    pub fn object_id(&self) -> &str {
+        match self {
+            Self::ObjectPickedUp { object_id, .. }
+            | Self::ObjectDropped { object_id, .. }
+            | Self::InstalledInRack { object_id, .. }
+            | Self::RemovedFromRack { object_id, .. }
+            | Self::PowerToggled { object_id, .. }
+            | Self::PropertyChanged { object_id, .. }
+            | Self::ObjectSpawned { object_id, .. }
+            | Self::ObjectDestroyed { object_id, .. } => object_id,
+            Self::CableConnected {
+                start_device_id, ..
+            } => start_device_id,
+            Self::CableDisconnected { .. } => "",
+        }
+    }
+}
+
 const BINCODE_CONFIG: bincode::config::Configuration = bincode::config::standard();
 
 impl Message {
@@ -197,7 +231,7 @@ impl Message {
     }
 }
 
-#[derive(Encode, Decode, Debug, Clone)]
+#[derive(Encode, Decode, Clone)]
 pub struct Envelope {
     pub target: u64,
     pub message: Message,

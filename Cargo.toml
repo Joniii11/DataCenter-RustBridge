@@ -22,3 +22,7 @@ anyhow = "1"
 
 [profile.release]
 panic = "unwind"
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = "symbols"

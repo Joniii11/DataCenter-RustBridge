@@ -109,7 +109,11 @@ pub(crate) fn send_world_action(_api: &Api, action: protocol::WorldAction) {
                 });
             }
         });
-        dc_api::crash_log(&format!("[MP] Host broadcast world action: {:?}", action));
+        dc_api::crash_log(&format!(
+            "[MP] Host broadcast world action: {} '{}'",
+            action.tag(),
+            action.object_id()
+        ));
     } else {
         let seq = state::with_state(|s| s.world_sync.next_seq()).unwrap_or(0);
         if seq == 0 {
@@ -134,8 +138,10 @@ pub(crate) fn send_world_action(_api: &Api, action: protocol::WorldAction) {
         });
 
         dc_api::crash_log(&format!(
-            "[MP] Client sent WorldActionMsg seq={}: {:?}",
-            seq, action
+            "[MP] Client sent WorldActionMsg seq={}: {} '{}'",
+            seq,
+            action.tag(),
+            action.object_id()
         ));
     }
 }
