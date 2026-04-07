@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use dc_api::world::{NetworkSwitch, ObjectHandle, Server, StringField, WorldObject};
+use dc_api::world::{NetworkSwitch, ObjectHandle, PatchPanel, Server, StringField, WorldObject};
 use dc_api::{Api, Quat, Vec3};
 
 use crate::protocol::WorldAction;
@@ -101,20 +101,29 @@ impl SyncedObject for NetworkSwitch {
     }
 }
 
+impl SyncedObject for PatchPanel {
+    fn wire_type() -> u8 {
+        crate::protocol::object_types::PATCH_PANEL
+    }
+}
+
 pub fn dispatch_pickup(api: &Api, object_id: &str) -> bool {
     Server::execute_remote_pickup(api, object_id)
         || NetworkSwitch::execute_remote_pickup(api, object_id)
+        || PatchPanel::execute_remote_pickup(api, object_id)
 }
 
 pub fn dispatch_drop(api: &Api, object_id: &str, pos: Vec3, rot: Quat) -> bool {
     Server::execute_remote_drop(api, object_id, pos, rot)
         || NetworkSwitch::execute_remote_drop(api, object_id, pos, rot)
+        || PatchPanel::execute_remote_drop(api, object_id, pos, rot)
 }
 
 pub fn dispatch_find(api: &Api, object_id: &str) -> Option<ObjectHandle> {
     Server::find_by_id(api, object_id)
         .map(|s| s.handle())
         .or_else(|| NetworkSwitch::find_by_id(api, object_id).map(|s| s.handle()))
+        .or_else(|| PatchPanel::find_by_id(api, object_id).map(|s| s.handle()))
 }
 
 pub fn dispatch_install_in_rack_action(

@@ -4,6 +4,7 @@
 # C# build output
 csharp/**/bin/
 csharp/**/obj/
+inspect_tool/
 
 # IDE
 .vs/

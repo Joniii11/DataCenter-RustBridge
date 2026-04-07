@@ -1401,6 +1401,15 @@ public partial class GameAPIManager : IDisposable
                 }
                 catch { }
             }
+            foreach (var pp in UnityEngine.Resources.FindObjectsOfTypeAll<PatchPanel>())
+            {
+                try
+                {
+                    if (pp.gameObject.scene.name == null) continue;
+                    if ((pp.patchPanelId ?? "") == targetId) return (ulong)pp.Pointer.ToInt64();
+                }
+                catch { }
+            }
         }
         catch (Exception ex)
         {
@@ -1685,12 +1694,79 @@ public partial class GameAPIManager : IDisposable
                 }
 
             case 4: // NetworkSwitch
-                // no game-specific bookkeeping needed (yet)
-                break;
+                {
+                    try
+                    {
+                        var sw = new Il2Cpp.NetworkSwitch(ptr);
+                        int rackUid = rackPos.rackPosGlobalUID;
+                        sizeInU = sw.sizeInU > 0 ? sw.sizeInU : 1;
+
+                        var sd = new Il2Cpp.SwitchSaveData();
+                        sd.switchID = sw.switchId;
+                        sd.rackPositionUID = rackUid;
+                        sd.switchType = sw.switchType;
+                        sd.position = rackPos.transform.position;
+                        sd.rotation = rackPos.transform.rotation;
+                        try { sd.isOn = sw.isOn; } catch { sd.isOn = false; }
+                        try { sd.isBroken = sw.isBroken; } catch { sd.isBroken = false; }
+                        try { sd.label = sw.label ?? ""; } catch { sd.label = ""; }
+
+                        sw.SwitchInsertedInRack(sd);
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[WorldSync] {logPrefix}: SwitchInsertedInRack failed: {ex.Message}");
+                    }
+
+                    try
+                    {
+                        var sw = new Il2Cpp.NetworkSwitch(ptr);
+                        sw.rackPositionUID = rackPos.rackPosGlobalUID;
+                        sw.currentRackPosition = rackPos;
+                        sw.objectInHands = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[WorldSync] {logPrefix}: switch field update failed: {ex.Message}");
+                    }
+                    break;
+                }
 
             case 7: // PatchPanel
-                // TODO: add PatchPanel bookkeeping when needed
-                break;
+                {
+                    try
+                    {
+                        var pp = new Il2Cpp.PatchPanel(ptr);
+                        int rackUid = rackPos.rackPosGlobalUID;
+                        sizeInU = pp.sizeInU > 0 ? pp.sizeInU : 1;
+
+                        var sd = new Il2Cpp.PatchPanelSaveData();
+                        sd.patchPanelID = pp.patchPanelId;
+                        sd.rackPositionUID = rackUid;
+                        sd.patchPanelType = pp.patchPanelType;
+                        sd.position = rackPos.transform.position;
+                        sd.rotation = rackPos.transform.rotation;
+
+                        pp.InsertedInRack(sd);
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[WorldSync] {logPrefix}: PatchPanel.InsertedInRack failed: {ex.Message}");
+                    }
+
+                    try
+                    {
+                        var pp = new Il2Cpp.PatchPanel(ptr);
+                        pp.rackPositionUID = rackPos.rackPosGlobalUID;
+                        pp.currentRackPosition = rackPos;
+                        pp.objectInHands = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[WorldSync] {logPrefix}: patchpanel field update failed: {ex.Message}");
+                    }
+                    break;
+                }
 
             default:
                 CrashLog.Log($"[WorldSync] {logPrefix}: unknown objectType={objectType}, no bookkeeping");
@@ -1724,12 +1800,36 @@ public partial class GameAPIManager : IDisposable
                 }
 
             case 4: // NetworkSwitch
-                // no game-specific bookkeeping needed (yet)
-                break;
+                {
+                    try
+                    {
+                        var sw = new Il2Cpp.NetworkSwitch(ptr);
+                        sw.rackPositionUID = 0;
+                        sw.currentRackPosition = null;
+                        sw.objectInHands = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[WorldSync] {logPrefix}: switch field clear failed: {ex.Message}");
+                    }
+                    break;
+                }
 
             case 7: // PatchPanel
-                // TODO: add PatchPanel bookkeeping when needed
-                break;
+                {
+                    try
+                    {
+                        var pp = new Il2Cpp.PatchPanel(ptr);
+                        pp.rackPositionUID = 0;
+                        pp.currentRackPosition = null;
+                        pp.objectInHands = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[WorldSync] {logPrefix}: patchpanel field clear failed: {ex.Message}");
+                    }
+                    break;
+                }
 
             default:
                 CrashLog.Log($"[WorldSync] {logPrefix}: unknown objectType={objectType}, no bookkeeping");
@@ -1780,6 +1880,10 @@ public partial class GameAPIManager : IDisposable
             if (guessedType == 0)
             {
                 try { var sw = new Il2Cpp.NetworkSwitch(ptr); if (!string.IsNullOrEmpty(sw.switchId)) guessedType = 4; } catch { }
+            }
+            if (guessedType == 0)
+            {
+                try { var pp = new Il2Cpp.PatchPanel(ptr); if (!string.IsNullOrEmpty(pp.patchPanelId)) guessedType = 7; } catch { }
             }
 
             int sizeInU = RackInstallBookkeeping(ptr, rackPos, guessedType, "PlaceInRack");
@@ -1842,6 +1946,10 @@ public partial class GameAPIManager : IDisposable
             if (guessedType == 0)
             {
                 try { var sw = new Il2Cpp.NetworkSwitch(ptr); if (!string.IsNullOrEmpty(sw.switchId)) guessedType = 4; } catch { }
+            }
+            if (guessedType == 0)
+            {
+                try { var pp = new Il2Cpp.PatchPanel(ptr); if (!string.IsNullOrEmpty(pp.patchPanelId)) guessedType = 7; } catch { }
             }
             RackUninstallBookkeeping(ptr, guessedType, "RemoveFromRack");
 
@@ -2059,6 +2167,9 @@ public partial class GameAPIManager : IDisposable
                 case 3: // GameObjectName
                     try { var comp = new UnityEngine.Component(ptr); value = comp?.gameObject?.name ?? ""; } catch { }
                     break;
+                case 4: // PatchPanelId
+                    try { var pp = new PatchPanel(ptr); value = pp?.patchPanelId ?? ""; } catch { }
+                    break;
             }
             if (string.IsNullOrEmpty(value)) return 0;
             byte[] bytes = System.Text.Encoding.UTF8.GetBytes(value);
@@ -2264,7 +2375,6 @@ public partial class GameAPIManager : IDisposable
                             }
                             catch { }
                         }
-                        // Lookup failed — dump all known switches so we can see if ID mismatch
                         try
                         {
                             var all = UnityEngine.Resources.FindObjectsOfTypeAll<NetworkSwitch>();
@@ -2278,6 +2388,45 @@ public partial class GameAPIManager : IDisposable
                                     string sid = sw.switchId ?? "<null>";
                                     bool active = sw.gameObject.activeInHierarchy;
                                     sb.Append($"[id={sid} active={active} inScene={inScene}] ");
+                                }
+                                catch { sb.Append("[err] "); }
+                            }
+                            CrashLog.Log(sb.ToString());
+                        }
+                        catch { }
+                        break;
+                    }
+                case 7: // PatchPanel
+                    {
+                        foreach (var pp in UnityEngine.Resources.FindObjectsOfTypeAll<PatchPanel>())
+                        {
+                            try
+                            {
+                                if (pp.gameObject.scene.name == null) continue;
+                                string val = fieldId switch
+                                {
+                                    4 => pp.patchPanelId ?? "",
+                                    3 => pp.gameObject.name ?? "",
+                                    _ => ""
+                                };
+                                if (val == targetId) return (ulong)pp.Pointer.ToInt64();
+                            }
+                            catch { }
+                        }
+                        // Lookup failed dump
+                        try
+                        {
+                            var all = UnityEngine.Resources.FindObjectsOfTypeAll<PatchPanel>();
+                            var sb = new System.Text.StringBuilder();
+                            sb.Append($"[FindById] PatchPanel '{targetId}' not found. Scene panels ({all.Count}): ");
+                            foreach (var pp in all)
+                            {
+                                try
+                                {
+                                    bool inScene = pp.gameObject.scene.name != null;
+                                    string pid = pp.patchPanelId ?? "<null>";
+                                    bool active = pp.gameObject.activeInHierarchy;
+                                    sb.Append($"[id={pid} active={active} inScene={inScene}] ");
                                 }
                                 catch { sb.Append("[err] "); }
                             }

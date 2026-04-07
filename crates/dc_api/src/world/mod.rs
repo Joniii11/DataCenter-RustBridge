@@ -1,7 +1,9 @@
 mod network_switch;
+mod patch_panel;
 mod server;
 
 pub use network_switch::NetworkSwitch;
+pub use patch_panel::PatchPanel;
 pub use server::Server;
 
 use crate::{Api, Quat, Vec3};
@@ -44,6 +46,8 @@ impl ObjectType {
     pub const SERVER: Self = Self(0);
     /// Network switch
     pub const NETWORK_SWITCH: Self = Self(4);
+    /// Patch panel
+    pub const PATCH_PANEL: Self = Self(7);
 }
 
 /// String field ID sent to C#'s `ObjGetStringFieldImpl` switch.
@@ -59,6 +63,8 @@ impl StringField {
     pub const RACK_POSITION_UID: Self = Self(2);
     /// GameObject.Name
     pub const GAME_OBJECT_NAME: Self = Self(3);
+    /// PatchPanel.PatchPanelId
+    pub const PATCH_PANEL_ID: Self = Self(4);
 }
 
 /// Trait for game world object types.
