@@ -203,6 +203,68 @@ pub trait WorldObject: Sized {
         self.set_kinematic(api, true);
         self.set_gravity(api, false);
     }
+
+    /// Parent this objects transform to `parent`
+    fn set_parent(&self, api: &Api, parent: ObjectHandle) -> bool {
+        api.obj_set_parent(self.handle(), parent)
+    }
+
+    /// Set the local position
+    fn set_local_position(&self, api: &Api, pos: Vec3) -> bool {
+        api.obj_set_local_position(self.handle(), pos)
+    }
+
+    /// Set the local rotation
+    fn set_local_rotation(&self, api: &Api, rot: Quat) -> bool {
+        api.obj_set_local_rotation(self.handle(), rot)
+    }
+
+    /// Install this object in a rack slot identified by `rack_position_uid`
+    fn install_in_rack(&self, api: &Api, rack_position_uid: i32) -> bool {
+        install_in_rack(api, self.handle(), rack_position_uid, Self::OBJECT_TYPE.0)
+    }
+
+    /// Remove this object from its current rack slot
+    fn remove_from_rack(&self, api: &Api) -> bool {
+        remove_from_rack(api, self.handle(), Self::OBJECT_TYPE.0)
+    }
+}
+
+pub fn install_in_rack(
+    api: &Api,
+    handle: ObjectHandle,
+    rack_position_uid: i32,
+    object_type: u8,
+) -> bool {
+    let rack_pos = api.rack_find_position(rack_position_uid);
+    if !rack_pos.is_valid() {
+        return false;
+    }
+
+    if !api.obj_is_active(handle) {
+        api.obj_set_active(handle, true);
+    }
+
+    if !api.rack_game_install(handle, rack_pos, object_type) {
+        return false;
+    }
+
+    api.obj_set_parent(handle, rack_pos);
+    api.obj_set_local_position(handle, Vec3::zero());
+    api.obj_set_local_rotation(handle, Quat::identity());
+    api.rb_set_kinematic(handle, true);
+    api.rb_set_gravity(handle, false);
+    true
+}
+
+/// Remove an object by handle from rack slot
+pub fn remove_from_rack(api: &Api, handle: ObjectHandle, object_type: u8) -> bool {
+    api.rack_game_uninstall(handle, object_type);
+    api.obj_set_parent_to_world(handle);
+    api.rb_set_kinematic(handle, false);
+    api.rb_set_gravity(handle, true);
+    api.rb_wake_up(handle);
+    true
 }
 
 #[cfg(test)]

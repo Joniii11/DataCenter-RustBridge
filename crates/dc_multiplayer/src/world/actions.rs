@@ -45,21 +45,33 @@ fn execute_world_action_inner(api: &dc_api::Api, action: &WorldAction) {
         }
         WorldAction::InstalledInRack {
             object_id,
+            object_type,
             rack_position_uid,
-            ..
         } => {
-            let ok = api.world_place_in_rack(object_id, *rack_position_uid);
-            dc_api::crash_log(&format!(
-                "[WORLD] Execute install '{}' in rack uid={} → {}",
-                object_id, rack_position_uid, ok
-            ));
+            let ok = objects::dispatch_remote_put_in_rack(
+                api,
+                object_id,
+                *rack_position_uid,
+                *object_type,
+            );
+            if !ok {
+                dc_api::crash_log(&format!(
+                    "[WORLD] remote install '{}' not found in any type",
+                    object_id
+                ));
+            }
         }
-        WorldAction::RemovedFromRack { object_id, .. } => {
-            let ok = api.world_remove_from_rack(object_id);
-            dc_api::crash_log(&format!(
-                "[WORLD] Execute remove from rack '{}' → {}",
-                object_id, ok
-            ));
+        WorldAction::RemovedFromRack {
+            object_id,
+            object_type,
+        } => {
+            let ok = objects::dispatch_remote_put_out_of_rack(api, object_id, *object_type);
+            if !ok {
+                dc_api::crash_log(&format!(
+                    "[WORLD] remote remove '{}' not found in any type",
+                    object_id
+                ));
+            }
         }
         WorldAction::PowerToggled { object_id, is_on } => {
             let ok = api.world_set_power(object_id, *is_on);

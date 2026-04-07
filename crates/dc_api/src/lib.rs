@@ -451,6 +451,14 @@ pub struct GameAPI {
         out_z: *mut f32,
         out_w: *mut f32,
     ) -> i32,
+
+    pub obj_set_parent: extern "C" fn(child: u64, parent: u64) -> i32,
+    pub obj_set_local_position: extern "C" fn(handle: u64, x: f32, y: f32, z: f32) -> i32,
+    pub obj_set_local_rotation: extern "C" fn(handle: u64, x: f32, y: f32, z: f32, w: f32) -> i32,
+    pub rack_find_position: extern "C" fn(uid: i32) -> u64,
+    pub rack_game_install:
+        extern "C" fn(obj_handle: u64, rack_pos_handle: u64, object_type: u8) -> i32,
+    pub rack_game_uninstall: extern "C" fn(obj_handle: u64, object_type: u8) -> i32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -1727,6 +1735,58 @@ impl Api {
         let (mut x, mut y, mut z, mut w) = (0f32, 0f32, 0f32, 0f32);
         (self.raw.obj_get_rotation)(handle.0, &mut x, &mut y, &mut z, &mut w);
         Quat::new(x, y, z, w)
+    }
+
+    /// Parent one
+    pub fn obj_set_parent(&self, child: world::ObjectHandle, parent: world::ObjectHandle) -> bool {
+        if self.version() < 17 {
+            return false;
+        }
+        (self.raw.obj_set_parent)(child.0, parent.0) == 1
+    }
+
+    /// Set the local position of an object
+    pub fn obj_set_local_position(&self, handle: world::ObjectHandle, pos: Vec3) -> bool {
+        if self.version() < 17 {
+            return false;
+        }
+        (self.raw.obj_set_local_position)(handle.0, pos.x, pos.y, pos.z) == 1
+    }
+
+    /// Set the local rotation of an object
+    pub fn obj_set_local_rotation(&self, handle: world::ObjectHandle, rot: Quat) -> bool {
+        if self.version() < 17 {
+            return false;
+        }
+        (self.raw.obj_set_local_rotation)(handle.0, rot.x, rot.y, rot.z, rot.w) == 1
+    }
+
+    /// Find a `RackPosition` by its global UID Returns an opaque handle
+    pub fn rack_find_position(&self, uid: i32) -> world::ObjectHandle {
+        if self.version() < 17 {
+            return world::ObjectHandle::INVALID;
+        }
+        world::ObjectHandle((self.raw.rack_find_position)(uid))
+    }
+
+    /// Execute the gamespecific part of a rack install
+    pub fn rack_game_install(
+        &self,
+        obj: world::ObjectHandle,
+        rack_pos: world::ObjectHandle,
+        object_type: u8,
+    ) -> bool {
+        if self.version() < 18 {
+            return false;
+        }
+        (self.raw.rack_game_install)(obj.0, rack_pos.0, object_type) == 1
+    }
+
+    pub fn rack_game_uninstall(&self, obj: world::ObjectHandle, object_type: u8) -> bool {
+        if self.version() < 18 {
+            return false;
+        }
+        (self.raw.rack_game_uninstall)(obj.0, object_type) == 1
     }
 }
 

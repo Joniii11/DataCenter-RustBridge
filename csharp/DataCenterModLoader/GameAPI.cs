@@ -152,11 +152,18 @@ public struct GameAPITable
     public IntPtr ObjFindById;
     public IntPtr GetHeldObject;
     public IntPtr ObjGetRotation;
+
+    public IntPtr ObjSetParent;
+    public IntPtr ObjSetLocalPosition;
+    public IntPtr ObjSetLocalRotation;
+    public IntPtr RackFindPosition;
+    public IntPtr RackGameInstall;
+    public IntPtr RackGameUninstall;
 }
 
 public partial class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 16;
+    public const uint API_VERSION = 18;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -284,6 +291,19 @@ public partial class GameAPIManager : IDisposable
     private delegate int GetHeldObjectDelegate(IntPtr outId, uint idMax, IntPtr outType);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int ObjGetRotationDelegate(ulong handle, IntPtr outX, IntPtr outY, IntPtr outZ, IntPtr outW);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjSetParentDelegate(ulong child, ulong parent);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjSetLocalPositionDelegate(ulong handle, float x, float y, float z);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjSetLocalRotationDelegate(ulong handle, float x, float y, float z, float w);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate ulong RackFindPositionDelegate(int rackUid);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RackGameInstallDelegate(ulong objHandle, ulong rackPosHandle, byte objectType);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int RackGameUninstallDelegate(ulong objHandle, byte objectType);
 
     [DllImport("steam_api64", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr SteamAPI_SteamNetworking_v006();
@@ -433,6 +453,13 @@ public partial class GameAPIManager : IDisposable
     private readonly GetHeldObjectDelegate _getHeldObject;
     private readonly ObjGetRotationDelegate _objGetRotation;
 
+    private readonly ObjSetParentDelegate _objSetParent;
+    private readonly ObjSetLocalPositionDelegate _objSetLocalPosition;
+    private readonly ObjSetLocalRotationDelegate _objSetLocalRotation;
+    private readonly RackFindPositionDelegate _rackFindPosition;
+    private readonly RackGameInstallDelegate _rackGameInstall;
+    private readonly RackGameUninstallDelegate _rackGameUninstall;
+
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
     private IntPtr _friendNamePtr = IntPtr.Zero;
@@ -570,6 +597,13 @@ public partial class GameAPIManager : IDisposable
         _getHeldObject = GetHeldObjectImpl;
         _objGetRotation = ObjGetRotationImpl;
 
+        _objSetParent = ObjSetParentImpl;
+        _objSetLocalPosition = ObjSetLocalPositionImpl;
+        _objSetLocalRotation = ObjSetLocalRotationImpl;
+        _rackFindPosition = RackFindPositionImpl;
+        _rackGameInstall = RackGameInstallImpl;
+        _rackGameUninstall = RackGameUninstallImpl;
+
         _table = new GameAPITable
         {
             ApiVersion = API_VERSION,
@@ -690,6 +724,13 @@ public partial class GameAPIManager : IDisposable
             ObjFindById = Marshal.GetFunctionPointerForDelegate(_objFindById),
             GetHeldObject = Marshal.GetFunctionPointerForDelegate(_getHeldObject),
             ObjGetRotation = Marshal.GetFunctionPointerForDelegate(_objGetRotation),
+
+            ObjSetParent = Marshal.GetFunctionPointerForDelegate(_objSetParent),
+            ObjSetLocalPosition = Marshal.GetFunctionPointerForDelegate(_objSetLocalPosition),
+            ObjSetLocalRotation = Marshal.GetFunctionPointerForDelegate(_objSetLocalRotation),
+            RackFindPosition = Marshal.GetFunctionPointerForDelegate(_rackFindPosition),
+            RackGameInstall = Marshal.GetFunctionPointerForDelegate(_rackGameInstall),
+            RackGameUninstall = Marshal.GetFunctionPointerForDelegate(_rackGameUninstall),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -1577,172 +1618,179 @@ public partial class GameAPIManager : IDisposable
         return 0;
     }
 
+
+    private Il2Cpp.RackPosition FindRackPosition(int rackUid)
+    {
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            var positions = UnityEngine.Object.FindObjectsOfType<Il2Cpp.RackPosition>();
+            foreach (var rp in positions)
+            {
+                try { if (rp.rackPosGlobalUID == rackUid) return rp; } catch { }
+            }
+
+            if (attempt == 0)
+            {
+                CrashLog.Log($"[WorldSync] FindRackPosition: uid={rackUid} not found, reassigning UIDs…");
+                GameHooks.EnsureAllRackPositionUIDs();
+            }
+        }
+        return null;
+    }
+
+    private int RackInstallBookkeeping(IntPtr ptr, Il2Cpp.RackPosition rackPos, byte objectType, string logPrefix)
+    {
+        int sizeInU = 1;
+
+        switch (objectType)
+        {
+            case 0: // Server1U
+            case 1: // (alias)
+            case 2: // Server7U
+            case 3: // Server3U
+                {
+                    var server = new Il2Cpp.Server(ptr);
+                    try
+                    {
+                        sizeInU = server.sizeInU > 0 ? server.sizeInU : 1;
+                        int rackUid = rackPos.rackPosGlobalUID;
+
+                        var sd = new Il2Cpp.ServerSaveData();
+                        sd.serverID = server.ServerID;
+                        sd.rackPositionUID = rackUid;
+                        sd.serverType = server.serverType;
+                        sd.position = rackPos.transform.position;
+                        sd.rotation = rackPos.transform.rotation;
+                        try { sd.isOn = server.isOn; } catch { sd.isOn = false; }
+                        try { sd.isBroken = server.isBroken; } catch { sd.isBroken = false; }
+
+                        server.ServerInsertedInRack(sd);
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[WorldSync] {logPrefix}: ServerInsertedInRack failed: {ex.Message}");
+                    }
+
+                    try
+                    {
+                        server.rackPositionUID = rackPos.rackPosGlobalUID;
+                        server.currentRackPosition = rackPos;
+                        server.objectInHands = false;
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[WorldSync] {logPrefix}: server field update failed: {ex.Message}");
+                    }
+                    break;
+                }
+
+            case 4: // NetworkSwitch
+                // no game-specific bookkeeping needed (yet)
+                break;
+
+            case 7: // PatchPanel
+                // TODO: add PatchPanel bookkeeping when needed
+                break;
+
+            default:
+                CrashLog.Log($"[WorldSync] {logPrefix}: unknown objectType={objectType}, no bookkeeping");
+                break;
+        }
+
+        return sizeInU;
+    }
+
+    private void RackUninstallBookkeeping(IntPtr ptr, byte objectType, string logPrefix)
+    {
+        switch (objectType)
+        {
+            case 0: // Server1U
+            case 1: // (alias)
+            case 2: // Server7U
+            case 3: // Server3U
+                {
+                    try
+                    {
+                        var server = new Il2Cpp.Server(ptr);
+                        server.rackPositionUID = 0;
+                        server.currentRackPosition = null;
+                        server.objectInHands = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        CrashLog.Log($"[WorldSync] {logPrefix}: server field clear failed: {ex.Message}");
+                    }
+                    break;
+                }
+
+            case 4: // NetworkSwitch
+                // no game-specific bookkeeping needed (yet)
+                break;
+
+            case 7: // PatchPanel
+                // TODO: add PatchPanel bookkeeping when needed
+                break;
+
+            default:
+                CrashLog.Log($"[WorldSync] {logPrefix}: unknown objectType={objectType}, no bookkeeping");
+                break;
+        }
+    }
+
     int WorldPlaceInRackImpl(IntPtr id, uint idLen, int rackUid)
     {
         try
         {
-            string serverId = ReadUtf8(id, idLen);
-            CrashLog.Log($"[WorldSync] PlaceInRack: id={serverId}, rackUid={rackUid}");
+            string objId = ReadUtf8(id, idLen);
+            CrashLog.Log($"[WorldSync] PlaceInRack: id={objId}, uid={rackUid}");
 
-            // ── 1. Find the server by its ServerID ──────────────────────────
-            var servers = UnityEngine.Resources.FindObjectsOfTypeAll<Il2Cpp.Server>();
-            Il2Cpp.Server targetServer = null;
-            foreach (var srv in servers)
+            ulong handle = FindHandleByStableId(objId);
+            if (handle == 0)
             {
-                try
-                {
-                    // Skip prefabs / assets (only want scene objects)
-                    if (srv.gameObject.scene.name == null) continue;
-                    if (srv.ServerID == serverId)
-                    {
-                        targetServer = srv;
-                        break;
-                    }
-                }
-                catch { }
+                CrashLog.Log($"[WorldSync] PlaceInRack: '{objId}' not found");
+                return 0;
             }
-
-            if (targetServer == null)
+            var comp = ResolveComponent(handle);
+            if (comp == null)
             {
-                // Count only scene servers for the log
-                int sceneCount = 0;
-                foreach (var srv in servers)
-                {
-                    try
-                    {
-                        if (srv.gameObject.scene.name == null) continue;
-                        sceneCount++;
-                    }
-                    catch { }
-                }
-                CrashLog.Log($"[WorldSync] PlaceInRack: server '{serverId}' not found among {sceneCount} servers");
-                foreach (var srv in servers)
-                {
-                    try
-                    {
-                        if (srv.gameObject.scene.name == null) continue;
-                        CrashLog.Log($"[WorldSync]   known server: '{srv.ServerID}' active={srv.gameObject.activeSelf}");
-                    }
-                    catch { }
-                }
+                CrashLog.Log($"[WorldSync] PlaceInRack: handle for '{objId}' resolved to null");
                 return 0;
             }
 
-            Il2Cpp.RackPosition targetRackPos = null;
-
-            var rackPositions = UnityEngine.Object.FindObjectsOfType<Il2Cpp.RackPosition>();
-            foreach (var rp in rackPositions)
+            var rackPos = FindRackPosition(rackUid);
+            if (rackPos == null)
             {
-                try
-                {
-                    if (rp.rackPosGlobalUID == rackUid)
-                    {
-                        targetRackPos = rp;
-                        break;
-                    }
-                }
-                catch { }
-            }
-
-            if (targetRackPos == null)
-            {
-                CrashLog.Log($"[WorldSync] PlaceInRack: UID={rackUid} not found among {rackPositions.Count} positions — force-reassigning UIDs...");
-                GameHooks.EnsureAllRackPositionUIDs();
-
-                rackPositions = UnityEngine.Object.FindObjectsOfType<Il2Cpp.RackPosition>();
-                foreach (var rp in rackPositions)
-                {
-                    try
-                    {
-                        if (rp.rackPosGlobalUID == rackUid)
-                        {
-                            targetRackPos = rp;
-                            break;
-                        }
-                    }
-                    catch { }
-                }
-            }
-
-            if (targetRackPos == null)
-            {
-                int minUid = int.MaxValue, maxUid = int.MinValue;
-                foreach (var rp in rackPositions)
-                {
-                    try
-                    {
-                        int u = rp.rackPosGlobalUID;
-                        if (u < minUid) minUid = u;
-                        if (u > maxUid) maxUid = u;
-                    }
-                    catch { }
-                }
-                CrashLog.Log($"[WorldSync] PlaceInRack: UID={rackUid} still not found. Existing UID range: [{minUid}..{maxUid}] across {rackPositions.Count} positions");
+                CrashLog.Log($"[WorldSync] PlaceInRack: rack uid={rackUid} not found");
                 return 0;
             }
-
-            Il2Cpp.Rack rack = targetRackPos.rack;
+            var rack = rackPos.rack;
             if (rack == null)
             {
-                CrashLog.Log($"[WorldSync] PlaceInRack: rackPosition UID={rackUid} has no parent Rack reference");
+                CrashLog.Log($"[WorldSync] PlaceInRack: rack uid={rackUid} has no parent Rack");
                 return 0;
             }
 
-            CrashLog.Log($"[WorldSync] PlaceInRack: found server '{serverId}' and rackPos UID={rackUid} (index={targetRackPos.positionIndex})");
+            if (!comp.gameObject.activeSelf)
+                comp.gameObject.SetActive(true);
 
-            // Reactivate if it was deactivated by a pickup
-            if (!targetServer.gameObject.activeSelf)
+            var ptr = new IntPtr((long)handle);
+
+            byte guessedType = 0;
+            try { var s = new Il2Cpp.Server(ptr); if (!string.IsNullOrEmpty(s.ServerID)) guessedType = (byte)s.serverType; } catch { }
+            if (guessedType == 0)
             {
-                targetServer.gameObject.SetActive(true);
-                CrashLog.Log($"[WorldSync] PlaceInRack: reactivated server '{serverId}' for rack install");
+                try { var sw = new Il2Cpp.NetworkSwitch(ptr); if (!string.IsNullOrEmpty(sw.switchId)) guessedType = 4; } catch { }
             }
+
+            int sizeInU = RackInstallBookkeeping(ptr, rackPos, guessedType, "PlaceInRack");
+
+            comp.transform.SetParent(rackPos.transform, false);
+            comp.transform.localPosition = UnityEngine.Vector3.zero;
+            comp.transform.localRotation = UnityEngine.Quaternion.identity;
 
             try
             {
-                var saveData = new Il2Cpp.ServerSaveData();
-                saveData.serverID = serverId;
-                saveData.rackPositionUID = rackUid;
-                saveData.serverType = targetServer.serverType;
-                saveData.position = targetRackPos.transform.position;
-                saveData.rotation = targetRackPos.transform.rotation;
-                try { saveData.isOn = targetServer.isOn; } catch { saveData.isOn = false; }
-                try { saveData.isBroken = targetServer.isBroken; } catch { saveData.isBroken = false; }
-
-                targetServer.ServerInsertedInRack(saveData);
-            }
-            catch (Exception ex)
-            {
-                CrashLog.Log($"[WorldSync] PlaceInRack: ServerInsertedInRack call failed (non-fatal): {ex.Message}");
-            }
-
-            // ── 4. Physical placement: parent + position the server ─────────
-            try
-            {
-                targetServer.transform.SetParent(targetRackPos.transform, false);
-                targetServer.transform.localPosition = UnityEngine.Vector3.zero;
-                targetServer.transform.localRotation = UnityEngine.Quaternion.identity;
-            }
-            catch (Exception ex)
-            {
-                CrashLog.Log($"[WorldSync] PlaceInRack: transform parenting failed: {ex.Message}");
-            }
-
-            // ── 5. Update server bookkeeping fields ─────────────────────────
-            try
-            {
-                targetServer.rackPositionUID = rackUid;
-                targetServer.currentRackPosition = targetRackPos;
-                targetServer.objectInHands = false;
-            }
-            catch (Exception ex)
-            {
-                CrashLog.Log($"[WorldSync] PlaceInRack: server field update failed: {ex.Message}");
-            }
-
-            // ── 6. Disable physics so the server doesn't fall ───────────────
-            try
-            {
-                var rb = targetServer.rb;
+                var rb = comp.GetComponent<UnityEngine.Rigidbody>();
                 if (rb != null)
                 {
                     rb.isKinematic = true;
@@ -1750,38 +1798,22 @@ public partial class GameAPIManager : IDisposable
                     rb.angularVelocity = UnityEngine.Vector3.zero;
                 }
             }
-            catch (Exception ex)
-            {
-                CrashLog.Log($"[WorldSync] PlaceInRack: rigidbody disable failed: {ex.Message}");
-            }
+            catch { }
 
-            try
-            {
-                int sizeInU = 1;
-                try { sizeInU = targetServer.sizeInU; } catch { }
-                if (sizeInU <= 0) sizeInU = 1;
-                Patch_Rack_MarkPositionAsUsed.SuppressEvents = true;
-                try
-                {
-                    rack.MarkPositionAsUsed(targetRackPos.positionIndex, sizeInU);
-                }
-                finally
-                {
-                    Patch_Rack_MarkPositionAsUsed.SuppressEvents = false;
-                }
-                CrashLog.Log($"[WorldSync] PlaceInRack: marked position index={targetRackPos.positionIndex} sizeInU={sizeInU} as used");
-            }
+            Patch_Rack_MarkPositionAsUsed.SuppressEvents = true;
+            try { rack.MarkPositionAsUsed(rackPos.positionIndex, sizeInU); }
             catch (Exception ex)
             {
-                Patch_Rack_MarkPositionAsUsed.SuppressEvents = false;
                 CrashLog.Log($"[WorldSync] PlaceInRack: MarkPositionAsUsed failed: {ex.Message}");
             }
+            finally { Patch_Rack_MarkPositionAsUsed.SuppressEvents = false; }
 
-            CrashLog.Log($"[WorldSync] PlaceInRack: '{serverId}' fully installed at UID={rackUid} OK");
+            CrashLog.Log($"[WorldSync] PlaceInRack: '{objId}' installed at uid={rackUid} OK");
             return 1;
         }
         catch (Exception ex)
         {
+            Patch_Rack_MarkPositionAsUsed.SuppressEvents = false;
             CrashLog.LogException("WorldPlaceInRackImpl", ex);
             return 0;
         }
@@ -1789,10 +1821,60 @@ public partial class GameAPIManager : IDisposable
 
     int WorldRemoveFromRackImpl(IntPtr id, uint idLen)
     {
-        // Phase 3 stub
-        string objId = ReadUtf8(id, idLen);
-        CrashLog.Log($"[WorldSync] RemoveFromRack stub: id={objId}");
-        return 0;
+        try
+        {
+            string objId = ReadUtf8(id, idLen);
+            CrashLog.Log($"[WorldSync] RemoveFromRack: id={objId}");
+
+            // ── 1. Find the object ──────────────────────────────────────────
+            ulong handle = FindHandleByStableId(objId);
+            if (handle == 0)
+            {
+                CrashLog.Log($"[WorldSync] RemoveFromRack: '{objId}' not found");
+                return 0;
+            }
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+
+            var ptr = new IntPtr((long)handle);
+            byte guessedType = 0;
+            try { var s = new Il2Cpp.Server(ptr); if (!string.IsNullOrEmpty(s.ServerID)) guessedType = (byte)s.serverType; } catch { }
+            if (guessedType == 0)
+            {
+                try { var sw = new Il2Cpp.NetworkSwitch(ptr); if (!string.IsNullOrEmpty(sw.switchId)) guessedType = 4; } catch { }
+            }
+            RackUninstallBookkeeping(ptr, guessedType, "RemoveFromRack");
+
+            // ── 3. Reparent to world ────────────────────────────────────────
+            try
+            {
+                var mgr = Il2Cpp.MainGameManager.instance;
+                if (mgr != null && mgr.parentUsableObjects != null)
+                    comp.transform.SetParent(mgr.parentUsableObjects, true);
+            }
+            catch { }
+
+            // ── 4. Re-enable physics ────────────────────────────────────────
+            try
+            {
+                var rb = comp.GetComponent<UnityEngine.Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = false;
+                    rb.useGravity = true;
+                    rb.WakeUp();
+                }
+            }
+            catch { }
+
+            CrashLog.Log($"[WorldSync] RemoveFromRack: '{objId}' removed OK");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("WorldRemoveFromRackImpl", ex);
+            return 0;
+        }
     }
 
     int WorldSetPowerImpl(IntPtr id, uint idLen, byte isOn)
@@ -2248,6 +2330,111 @@ public partial class GameAPIManager : IDisposable
             return 1;
         }
         catch { return 0; }
+    }
+
+    // ── v17: handle-based rack operations + generic transform primitives ──
+
+    int ObjSetParentImpl(ulong child, ulong parent)
+    {
+        try
+        {
+            var childComp = ResolveComponent(child);
+            var parentComp = ResolveComponent(parent);
+            if (childComp == null || parentComp == null) return 0;
+            childComp.transform.SetParent(parentComp.transform, false);
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    int ObjSetLocalPositionImpl(ulong handle, float x, float y, float z)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            comp.transform.localPosition = new UnityEngine.Vector3(x, y, z);
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    int ObjSetLocalRotationImpl(ulong handle, float x, float y, float z, float w)
+    {
+        try
+        {
+            var comp = ResolveComponent(handle);
+            if (comp == null) return 0;
+            comp.transform.localRotation = new UnityEngine.Quaternion(x, y, z, w);
+            return 1;
+        }
+        catch { return 0; }
+    }
+
+    ulong RackFindPositionImpl(int rackUid)
+    {
+        try
+        {
+            var rackPos = FindRackPosition(rackUid);
+            if (rackPos == null) return 0;
+            return (ulong)rackPos.Pointer.ToInt64();
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("RackFindPositionImpl", ex);
+            return 0;
+        }
+    }
+
+    int RackGameInstallImpl(ulong objHandle, ulong rackPosHandle, byte objectType)
+    {
+        try
+        {
+            var rackPos = new Il2Cpp.RackPosition(new IntPtr((long)rackPosHandle));
+            if (rackPos == null) return 0;
+
+            var rack = rackPos.rack;
+            if (rack == null)
+            {
+                CrashLog.Log($"[WorldSync] RackGameInstall: rackPos has no parent Rack");
+                return 0;
+            }
+
+            var ptr = new IntPtr((long)objHandle);
+            int sizeInU = RackInstallBookkeeping(ptr, rackPos, objectType, "RackGameInstall");
+
+            // Mark position as used (suppress re-entrant events)
+            Patch_Rack_MarkPositionAsUsed.SuppressEvents = true;
+            try { rack.MarkPositionAsUsed(rackPos.positionIndex, sizeInU); }
+            catch (Exception ex) { CrashLog.Log($"[WorldSync] RackGameInstall: MarkPositionAsUsed failed: {ex.Message}"); }
+            finally { Patch_Rack_MarkPositionAsUsed.SuppressEvents = false; }
+
+            CrashLog.Log($"[WorldSync] RackGameInstall: installed at uid={rackPos.rackPosGlobalUID} OK");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            Patch_Rack_MarkPositionAsUsed.SuppressEvents = false;
+            CrashLog.LogException("RackGameInstallImpl", ex);
+            return 0;
+        }
+    }
+
+    int RackGameUninstallImpl(ulong objHandle, byte objectType)
+    {
+        try
+        {
+            var ptr = new IntPtr((long)objHandle);
+            RackUninstallBookkeeping(ptr, objectType, "RackGameUninstall");
+
+            CrashLog.Log($"[WorldSync] RackGameUninstall: cleared rack fields OK");
+            return 1;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("RackGameUninstallImpl", ex);
+            return 0;
+        }
     }
 
     public void Dispose()

@@ -87,6 +87,15 @@ pub(super) fn detect_carry_transitions(api: &Api, cur_num: u8) {
             return;
         }
 
+        if let Some(action) = objects::dispatch_install_in_rack_action(api, &id, obj_type) {
+            dc_api::crash_log(&format!(
+                "[CARRY] fallback rack install: '{}' type={}",
+                id, obj_type
+            ));
+            crate::send_world_action(api, action);
+            return;
+        }
+
         let (pos, rot) = match objects::dispatch_find(api, &id) {
             Some(handle) => {
                 let p = api.obj_get_position(handle);

@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 
-use dc_api::world::{NetworkSwitch, ObjectHandle, Server, WorldObject};
+use dc_api::world::{NetworkSwitch, ObjectHandle, Server, StringField, WorldObject};
 use dc_api::{Api, Quat, Vec3};
 
 use crate::protocol::WorldAction;
 
 pub trait SyncedObject: WorldObject {
-    /// The `object_type` byte used in [`WorldAction`] protocol messages
+    /// The `object_type` byte used in [`WorldAction`] protocol messages.
     fn wire_type() -> u8;
 
     fn pickup_action(&self) -> WorldAction {
@@ -27,6 +27,21 @@ pub trait SyncedObject: WorldObject {
             rot_y: rot.y,
             rot_z: rot.z,
             rot_w: rot.w,
+        }
+    }
+
+    fn install_in_rack_action(&self, rack_position_uid: i32) -> WorldAction {
+        WorldAction::InstalledInRack {
+            object_id: self.id().to_string(),
+            object_type: Self::wire_type(),
+            rack_position_uid,
+        }
+    }
+
+    fn remove_from_rack_action(&self) -> WorldAction {
+        WorldAction::RemovedFromRack {
+            object_id: self.id().to_string(),
+            object_type: Self::wire_type(),
         }
     }
 
@@ -72,27 +87,10 @@ pub trait SyncedObject: WorldObject {
             false
         }
     }
-
-    fn put_in_rack(&self, api: &Api, rack_id: &str) -> bool {
-        return true;
-    }
-
-    fn put_out_of_rack(&self, api: &Api) -> bool {
-        return true;
-    }
-
-    fn remote_put_in_rack(&self, api: &Api, rack_id: &str) -> bool {
-        return true;
-    }
-
-    fn remote_put_out_of_rack(&self, api: &Api) -> bool {
-        return true;
-    }
 }
 
 impl SyncedObject for Server {
     fn wire_type() -> u8 {
-        // All server sizes (1U/3U/7U) share the Il2Cpp.Server component
         crate::protocol::object_types::SERVER_1U
     }
 }
@@ -117,4 +115,53 @@ pub fn dispatch_find(api: &Api, object_id: &str) -> Option<ObjectHandle> {
     Server::find_by_id(api, object_id)
         .map(|s| s.handle())
         .or_else(|| NetworkSwitch::find_by_id(api, object_id).map(|s| s.handle()))
+}
+
+pub fn dispatch_install_in_rack_action(
+    api: &Api,
+    object_id: &str,
+    object_type: u8,
+) -> Option<WorldAction> {
+    let handle = dispatch_find(api, object_id)?;
+    let uid = api
+        .obj_get_string_field(handle, StringField::RACK_POSITION_UID)
+        .parse::<i32>()
+        .ok()?;
+
+    Some(WorldAction::InstalledInRack {
+        object_id: object_id.to_string(),
+        object_type,
+        rack_position_uid: uid,
+    })
+}
+
+pub fn dispatch_remote_put_in_rack(
+    api: &Api,
+    object_id: &str,
+    rack_position_uid: i32,
+    object_type: u8,
+) -> bool {
+    if let Some(handle) = dispatch_find(api, object_id) {
+        let ok = dc_api::world::install_in_rack(api, handle, rack_position_uid, object_type);
+
+        dc_api::crash_log(&format!(
+            "[WORLD] remote install '{object_id}' uid={rack_position_uid} → {ok}"
+        ));
+
+        return ok;
+    }
+    false
+}
+
+pub fn dispatch_remote_put_out_of_rack(api: &Api, object_id: &str, object_type: u8) -> bool {
+    if let Some(handle) = dispatch_find(api, object_id) {
+        let ok = dc_api::world::remove_from_rack(api, handle, object_type);
+
+        dc_api::crash_log(&format!(
+            "[WORLD] remote remove '{object_id}' from rack → {ok}"
+        ));
+
+        return ok;
+    }
+    false
 }
