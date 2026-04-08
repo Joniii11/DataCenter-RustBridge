@@ -104,10 +104,6 @@ pub fn update(api: &Api, dt: f32) {
         }
     }
 
-    // Populate the object ID registry once on the host, after rack UIDs are
-    // ensured but before the save is read and sent to the client.  This
-    // writes stable IDs onto any objects that lack one, so those IDs end up
-    // in the save the client receives.
     let need_registry =
         with_state(|s| s.session.is_host && !s.session.registry_populated).unwrap_or(false);
     if need_registry {

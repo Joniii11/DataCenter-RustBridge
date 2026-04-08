@@ -124,9 +124,8 @@ internal static class Patch_Server_ServerInsertedInRack
 
             CrashLog.Log($"ServerInsertedInRack [diag]: instanceId={instanceId}, type={objectType}, rackUid={rackUid}");
 
-            // Restore original ID on clone if MarkPositionAsUsed recorded one
             var pending = Patch_Rack_MarkPositionAsUsed.PendingCloneRestore;
-            if (pending.HasValue && pending.Value.objectType <= 3) // Server types
+            if (pending.HasValue && pending.Value.objectType <= 3)
             {
                 Patch_Rack_MarkPositionAsUsed.PendingCloneRestore = null;
                 if (!string.IsNullOrEmpty(pending.Value.objectId) && instanceId != pending.Value.objectId)
@@ -212,12 +211,6 @@ internal static class Patch_PatchPanel_InsertedInRack
     }
 }
 
-/// <summary>
-/// PRIMARY hook for "server installed in rack" during gameplay.
-/// Fires ServerInstalled immediately when the object ID is known.
-/// Stores a PendingCloneRestore tuple so the InsertedInRack callbacks
-/// can restore the original ID on the clone Unity creates.
-/// </summary>
 [HarmonyPatch(typeof(Rack), nameof(Rack.MarkPositionAsUsed))]
 internal static class Patch_Rack_MarkPositionAsUsed
 {
@@ -243,7 +236,6 @@ internal static class Patch_Rack_MarkPositionAsUsed
             string objectId = null;
             byte objectType = 0;
 
-            // --- Try Server ---
             var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
             foreach (var srv in allServers)
             {
@@ -279,7 +271,6 @@ internal static class Patch_Rack_MarkPositionAsUsed
                 }
             }
 
-            // --- Try PatchPanel ---
             if (objectId == null)
             {
                 foreach (var pp in UnityEngine.Object.FindObjectsOfType<PatchPanel>())
@@ -306,7 +297,6 @@ internal static class Patch_Rack_MarkPositionAsUsed
 
             if (rackPosUid < 0) return;
 
-            // Store for clone-ID-restoration in InsertedInRack callbacks
             PendingCloneRestore = (objectId, objectType, rackPosUid);
 
             CrashLog.Log($"[WorldSync] MarkPositionAsUsed: '{objectId}' type={objectType} at rackUid={rackPosUid} (index={index}, sizeInU={sizeInU}) → firing event");
