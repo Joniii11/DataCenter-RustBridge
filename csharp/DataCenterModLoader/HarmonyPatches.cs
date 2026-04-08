@@ -346,7 +346,6 @@ internal static class Patch_Rack_MarkPositionAsUsed
             byte objectType = 0;
             bool pendingId = false;
 
-            // ── Search Server ──
             var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
             Server installedServer = null;
 
@@ -376,7 +375,6 @@ internal static class Patch_Rack_MarkPositionAsUsed
 
                 if (string.IsNullOrEmpty(objectId))
                 {
-                    // Game assigns ServerID later in ServerInsertedInRack (~2s).
                     int instId = installedServer.GetInstanceID();
                     PendingInstalls[instId] = (rackPosUid, objectType);
                     CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} uid={rackPosUid} instId={instId} — empty ServerID, stored pending");
@@ -388,7 +386,6 @@ internal static class Patch_Rack_MarkPositionAsUsed
                 }
             }
 
-            // ── Search NetworkSwitch ──
             if (objectId == null && !pendingId)
             {
                 foreach (var sw in UnityEngine.Object.FindObjectsOfType<NetworkSwitch>())
@@ -418,7 +415,6 @@ internal static class Patch_Rack_MarkPositionAsUsed
                 }
             }
 
-            // ── Search PatchPanel ──
             if (objectId == null && !pendingId)
             {
                 foreach (var pp in UnityEngine.Object.FindObjectsOfType<PatchPanel>())
@@ -501,9 +497,6 @@ internal static class Patch_RackPosition_InteractOnClick
         {
             CrashLog.Log($"[WorldSync] RackPosition.InteractOnClick: posIndex={__instance.positionIndex} rackPosGlobalUID={__instance.rackPosGlobalUID}");
 
-            // Detect install: player WAS holding something, the click is on a rack position
-            // The game will start a coroutine to install the item. We fire the event early
-            // so the Rust side knows about the install before carry.rs detects the drop.
             if (_prevNumObjects > 0 && _prevObjectInHand != 0)
             {
                 string heldId = Patch_UsableObject_InteractOnClick.GetHeldObjectId();
