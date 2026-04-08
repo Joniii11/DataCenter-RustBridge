@@ -162,9 +162,9 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\rust\\data center modloader\\inspect_tool\\inspect_tool.csproj",
-      "projectName": "inspect_tool",
-      "projectPath": "E:\\rust\\data center modloader\\inspect_tool\\inspect_tool.csproj",
+      "projectUniqueName": "E:\\rust\\data center modloader\\inspect_tool\\InspectTargeted.csproj",
+      "projectName": "InspectTargeted",
+      "projectPath": "E:\\rust\\data center modloader\\inspect_tool\\InspectTargeted.csproj",
       "packagesPath": "C:\\Users\\Jonas\\.nuget\\packages\\",
       "outputPath": "E:\\rust\\data center modloader\\inspect_tool\\obj\\",
       "projectStyle": "PackageReference",
