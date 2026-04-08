@@ -133,6 +133,19 @@ internal static class Patch_Server_ServerInsertedInRack
                 __0.rackPositionUID = expected.rackPosUid;
                 CrashLog.Log($"[WorldSync] ServerInsertedInRack Prefix: filled ID '{expected.objectId}' from ExpectedRackIds (instId={instId}, rackUid={expected.rackPosUid})");
             }
+            else if (Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.HasValue)
+            {
+                var last = Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.Value;
+                if (last.objectType <= 3)
+                {
+                    __0.serverID = last.objectId;
+                    __0.rackPositionUID = last.rackPosUid;
+                    if (instId != 0)
+                        Patch_Rack_MarkPositionAsUsed.ExpectedRackIds[instId] = last;
+                    Patch_Rack_MarkPositionAsUsed.LastExpectedInstall = null;
+                    CrashLog.Log($"[WorldSync] ServerInsertedInRack Prefix: filled ID '{last.objectId}' from LastExpectedInstall (new instId={instId}, rackUid={last.rackPosUid})");
+                }
+            }
         }
         catch { }
     }
@@ -237,6 +250,19 @@ internal static class Patch_NetworkSwitch_SwitchInsertedInRack
                 __0.rackPositionUID = expected.rackPosUid;
                 CrashLog.Log($"[WorldSync] SwitchInsertedInRack Prefix: filled ID '{expected.objectId}' from ExpectedRackIds (instId={instId}, rackUid={expected.rackPosUid})");
             }
+            else if (Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.HasValue)
+            {
+                var last = Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.Value;
+                if (last.objectType == 4)
+                {
+                    __0.switchID = last.objectId;
+                    __0.rackPositionUID = last.rackPosUid;
+                    if (instId != 0)
+                        Patch_Rack_MarkPositionAsUsed.ExpectedRackIds[instId] = last;
+                    Patch_Rack_MarkPositionAsUsed.LastExpectedInstall = null;
+                    CrashLog.Log($"[WorldSync] SwitchInsertedInRack Prefix: filled ID '{last.objectId}' from LastExpectedInstall (new instId={instId}, rackUid={last.rackPosUid})");
+                }
+            }
         }
         catch { }
     }
@@ -287,6 +313,19 @@ internal static class Patch_PatchPanel_InsertedInRack
                 __0.rackPositionUID = expected.rackPosUid;
                 CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack Prefix: filled ID '{expected.objectId}' from ExpectedRackIds (instId={instId}, rackUid={expected.rackPosUid})");
             }
+            else if (Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.HasValue)
+            {
+                var last = Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.Value;
+                if (last.objectType == 7)
+                {
+                    __0.patchPanelID = last.objectId;
+                    __0.rackPositionUID = last.rackPosUid;
+                    if (instId != 0)
+                        Patch_Rack_MarkPositionAsUsed.ExpectedRackIds[instId] = last;
+                    Patch_Rack_MarkPositionAsUsed.LastExpectedInstall = null;
+                    CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack Prefix: filled ID '{last.objectId}' from LastExpectedInstall (new instId={instId}, rackUid={last.rackPosUid})");
+                }
+            }
         }
         catch { }
     }
@@ -325,6 +364,7 @@ internal static class Patch_Rack_MarkPositionAsUsed
     internal static bool SuppressEvents = false;
     internal static readonly Dictionary<int, (int rackPosUid, byte objectType)> PendingInstalls = new();
     internal static readonly Dictionary<int, (string objectId, byte objectType, int rackPosUid)> ExpectedRackIds = new();
+    internal static (string objectId, byte objectType, int rackPosUid)? LastExpectedInstall = null;
 
     internal static void Postfix(Rack __instance, int __0, int __1)
     {
@@ -383,6 +423,7 @@ internal static class Patch_Rack_MarkPositionAsUsed
                 else
                 {
                     ExpectedRackIds[installedServer.GetInstanceID()] = (objectId, objectType, rackPosUid);
+                    LastExpectedInstall = (objectId, objectType, rackPosUid);
                 }
             }
 
@@ -408,6 +449,7 @@ internal static class Patch_Rack_MarkPositionAsUsed
                                 CrashLog.Log($"[WorldSync] MarkPositionAsUsed: assigned switchId '{objectId}'");
                             }
                             ExpectedRackIds[sw.GetInstanceID()] = (objectId, objectType, rackPosUid);
+                            LastExpectedInstall = (objectId, objectType, rackPosUid);
                             break;
                         }
                     }
@@ -437,6 +479,7 @@ internal static class Patch_Rack_MarkPositionAsUsed
                                 CrashLog.Log($"[WorldSync] MarkPositionAsUsed: assigned patchPanelId '{objectId}'");
                             }
                             ExpectedRackIds[pp.GetInstanceID()] = (objectId, objectType, rackPosUid);
+                            LastExpectedInstall = (objectId, objectType, rackPosUid);
                             break;
                         }
                     }

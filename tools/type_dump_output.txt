@@ -1,197 +1,373 @@
 ﻿==========================================================
   Data Center — Il2Cpp Type Dump
-  Generated: 2026-04-05 20:37:05
+  Generated: 2026-04-08 15:14:53
 ==========================================================
 
 ══════════════════════════════════════════════════════════
-  TYPE: Il2Cpp.Server
-  Base: Il2Cpp.UsableObject
+  TYPE: Il2Cpp.UsableObject
+  Base: Il2Cpp.Interact
   Public: True  Abstract: False  Sealed: False
 ══════════════════════════════════════════════════════════
 
   ── FIELDS ──
-    private static readonly IntPtr NativeFieldInfoPtr_activeLinks
-    private static readonly IntPtr NativeFieldInfoPtr_appID
-    private static readonly IntPtr NativeFieldInfoPtr_appLogo
-    private static readonly IntPtr NativeFieldInfoPtr_breakingRoutine
-    private static readonly IntPtr NativeFieldInfoPtr_cablelinks
-    private static readonly IntPtr NativeFieldInfoPtr_canvas
-    private static readonly IntPtr NativeFieldInfoPtr_currentProcessingSpeed
-    private static readonly IntPtr NativeFieldInfoPtr_customerLogo
-    private static readonly IntPtr NativeFieldInfoPtr_eolTime
-    private static readonly IntPtr NativeFieldInfoPtr_existingErrorSigns
-    private static readonly IntPtr NativeFieldInfoPtr_existingWarningSigns
-    private static readonly IntPtr NativeFieldInfoPtr_hasInitialized
-    private static readonly IntPtr NativeFieldInfoPtr_IP
-    private static readonly IntPtr NativeFieldInfoPtr_isBroken
-    private static readonly IntPtr NativeFieldInfoPtr_isOn
-    private static readonly IntPtr NativeFieldInfoPtr_isWarningCleared
-    private static readonly IntPtr NativeFieldInfoPtr_maxProcessingSpeed
-    private static readonly IntPtr NativeFieldInfoPtr_powerButton
-    private static readonly IntPtr NativeFieldInfoPtr_previousProcessingSpeed
-    private static readonly IntPtr NativeFieldInfoPtr_ServerID
-    private static readonly IntPtr NativeFieldInfoPtr_serverType
-    private static readonly IntPtr NativeFieldInfoPtr_timeToBrake
-    private static readonly IntPtr NativeFieldInfoPtr_txtIP
-    private static readonly IntPtr NativeFieldInfoPtr_txtServerScreen
+    private static readonly IntPtr NativeFieldInfoPtr_actionInHandStarted
+    private static readonly IntPtr NativeFieldInfoPtr_currentFrame
+    private static readonly IntPtr NativeFieldInfoPtr_currentRackPosition
+    private static readonly IntPtr NativeFieldInfoPtr_dropStarted
+    private static readonly IntPtr NativeFieldInfoPtr_freezeAllForcesInHands
+    private static readonly IntPtr NativeFieldInfoPtr_hasActionInHand
+    private static readonly IntPtr NativeFieldInfoPtr_hasSecondActionInHand
+    private static readonly IntPtr NativeFieldInfoPtr_impactSoundCooldown
+    private static readonly IntPtr NativeFieldInfoPtr_impactSoundVolume
+    private static readonly IntPtr NativeFieldInfoPtr_inHowManyFramesCanCheckDistance
+    private static readonly IntPtr NativeFieldInfoPtr_inputctrl
+    private static readonly IntPtr NativeFieldInfoPtr_isDropAllowed
+    private static readonly IntPtr NativeFieldInfoPtr_isModObject
+    private static readonly IntPtr NativeFieldInfoPtr_isOnTrolley
+    private static readonly IntPtr NativeFieldInfoPtr_item
+    private static readonly IntPtr NativeFieldInfoPtr_keepUpright
+    private static readonly IntPtr NativeFieldInfoPtr_kMaxDistanceSqr
+    private static readonly IntPtr NativeFieldInfoPtr_lastImpactSoundTime
+    private static readonly IntPtr NativeFieldInfoPtr_maxInHand
+    private static readonly IntPtr NativeFieldInfoPtr_minImpactVelocity
+    private static readonly IntPtr NativeFieldInfoPtr_modFolderName
+    private static readonly IntPtr NativeFieldInfoPtr_objectInHands
+    private static readonly IntPtr NativeFieldInfoPtr_objectInHandType
+    private static readonly IntPtr NativeFieldInfoPtr_offsetPivotPosition
+    private static readonly IntPtr NativeFieldInfoPtr_offsetPivotRotation
+    private static readonly IntPtr NativeFieldInfoPtr_outlineEffect
+    private static readonly IntPtr NativeFieldInfoPtr_pickupItem
+    private static readonly IntPtr NativeFieldInfoPtr_prefabID
+    private static readonly IntPtr NativeFieldInfoPtr_rackPositionUID
+    private static readonly IntPtr NativeFieldInfoPtr_rb
+    private static readonly IntPtr NativeFieldInfoPtr_secondActionHint
+    private static readonly IntPtr NativeFieldInfoPtr_secondActionStarted
+    private static readonly IntPtr NativeFieldInfoPtr_secondPosition
+    private static readonly IntPtr NativeFieldInfoPtr_secondRotation
+    private static readonly IntPtr NativeFieldInfoPtr_shopItemSO
+    private static readonly IntPtr NativeFieldInfoPtr_sizeInU
+    private static readonly IntPtr NativeFieldInfoPtr_storageUID
+    private static readonly IntPtr NativeFieldInfoPtr_storedPosition
+    private static readonly IntPtr NativeFieldInfoPtr_thirdPosition
+    private static readonly IntPtr NativeFieldInfoPtr_thirdRotation
+    private static readonly IntPtr NativeFieldInfoPtr_toolTipLocalisationID
+    private static readonly IntPtr NativeFieldInfoPtr_toolTipLocalisationIDDescription
+    private static readonly IntPtr NativeFieldInfoPtr_trolleySlotIndex
+    private static readonly IntPtr NativeFieldInfoPtr_wait3s
+    private static readonly IntPtr NativeMethodInfoPtr__Awake_b__43_0_Private_Void_CallbackContext_0
+    private static readonly IntPtr NativeMethodInfoPtr__Awake_b__43_1_Private_Void_CallbackContext_0
+    private static readonly IntPtr NativeMethodInfoPtr__Awake_b__43_2_Private_Void_CallbackContext_0
     private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr__InteractOnClick_b__32_0_Private_Boolean_RackPosition_0
-    private static readonly IntPtr NativeMethodInfoPtr__ValidateRackPosition_b__47_0_Private_Boolean_RackPosition_0
+    private static readonly IntPtr NativeMethodInfoPtr_ActionInHand_Public_Virtual_New_Void_0
     private static readonly IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_BrekingInProgress_Private_IEnumerator_0
-    private static readonly IntPtr NativeMethodInfoPtr_ButtonClickChangeCustomer_Public_Void_Boolean_0
-    private static readonly IntPtr NativeMethodInfoPtr_ButtonClickChangeIP_Public_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_ClearErrorSign_Public_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_ClearWarningSign_Public_Void_Boolean_0
-    private static readonly IntPtr NativeMethodInfoPtr_GetCustomerID_Public_Int32_0
-    private static readonly IntPtr NativeMethodInfoPtr_GetNextCustomerID_Private_Int32_Int32_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_CheckIfLost_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_DisalowDrop_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_DropObject_Public_Virtual_New_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_FixedUpdate_Private_Void_0
     private static readonly IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
     private static readonly IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
-    private static readonly IntPtr NativeMethodInfoPtr_IsAnyCableConnected_Public_Boolean_0
-    private static readonly IntPtr NativeMethodInfoPtr_ItIsBroken_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_OnDestroy_Public_Virtual_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_OnLoadingComplete_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_OnLoadingStarted_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_PowerButton_Public_Void_Boolean_0
-    private static readonly IntPtr NativeMethodInfoPtr_RegisterLink_Public_Void_CableLink_0
-    private static readonly IntPtr NativeMethodInfoPtr_RepairDevice_Public_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_ServerInsertedInRack_Public_Void_ServerSaveData_0
-    private static readonly IntPtr NativeMethodInfoPtr_SetIP_Public_Void_String_0
-    private static readonly IntPtr NativeMethodInfoPtr_SetPowerLightMaterial_Private_Void_Material_0
-    private static readonly IntPtr NativeMethodInfoPtr_Start_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_TurnOffCommonFunctions_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_TurnOnCommonFunction_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_UnregisterLink_Public_Void_CableLink_0
-    private static readonly IntPtr NativeMethodInfoPtr_UpdateAppID_Public_Void_Int32_0
-    private static readonly IntPtr NativeMethodInfoPtr_UpdateCustomer_Public_Void_Int32_0
-    private static readonly IntPtr NativeMethodInfoPtr_UpdateServerScreenUI_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_ValidateRackPosition_Public_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_MakeInteractableAgain_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_MoveBetweenPositions_Public_Void_Vector3_Vector3_0
+    private static readonly IntPtr NativeMethodInfoPtr_MoveToHand_Public_Virtual_New_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_MoveToStorage_Public_Virtual_New_Void_Transform_Int32_Int32_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnCollisionEnter_Private_Void_Collision_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnDestroy_Public_Virtual_New_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnHoverOver_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnLoadDestroy_Private_Void_0
 
   ── PROPERTIES ──
-    List<CableLink> activeLinks { get; set; }
-    int appID { get; set; }
-    Image appLogo { get; set; }
-    Coroutine breakingRoutine { get; set; }
-    Il2CppReferenceArray<CableLink> cablelinks { get; set; }
-    GameObject canvas { get; set; }
-    float currentProcessingSpeed { get; set; }
-    Image customerLogo { get; set; }
-    int eolTime { get; set; }
-    int existingErrorSigns { get; set; }
-    int existingWarningSigns { get; set; }
-    bool hasInitialized { get; set; }
-    string IP { get; set; }
-    bool isBroken { get; set; }
-    bool isOn { get; set; }
-    bool isWarningCleared { get; set; }
-    float maxProcessingSpeed { get; set; }
-    Renderer powerButton { get; set; }
-    float previousProcessingSpeed { get; set; }
-    string ServerID { get; set; }
-    int serverType { get; set; }
-    int timeToBrake { get; set; }
-    TextMeshProUGUI txtIP { get; set; }
-    TextMeshProUGUI txtServerScreen { get; set; }
+    Action<CallbackContext> actionInHandStarted { get; set; }
+    int currentFrame { get; set; }
+    RackPosition currentRackPosition { get; set; }
+    Action<CallbackContext> dropStarted { get; set; }
+    bool freezeAllForcesInHands { get; set; }
+    bool hasActionInHand { get; set; }
+    bool hasSecondActionInHand { get; set; }
+    float impactSoundCooldown { get; set; }
+    float impactSoundVolume { get; set; }
+    int inHowManyFramesCanCheckDistance { get; set; }
+    InputController inputctrl { get; set; }
+    bool isDropAllowed { get; set; }
+    bool isModObject { get; set; }
+    bool isOnTrolley { get; set; }
+    Item item { get; set; }
+    bool keepUpright { get; set; }
+    float kMaxDistanceSqr { get; set; }
+    float lastImpactSoundTime { get; set; }
+    int maxInHand { get; set; }
+    float minImpactVelocity { get; set; }
+    string modFolderName { get; set; }
+    bool objectInHands { get; set; }
+    ObjectInHand objectInHandType { get; set; }
+    Vector3 offsetPivotPosition { get; set; }
+    Vector3 offsetPivotRotation { get; set; }
+    Outlinable outlineEffect { get; set; }
+    AudioClip pickupItem { get; set; }
+    int prefabID { get; set; }
+    int rackPositionUID { get; set; }
+    Rigidbody rb { get; set; }
+    GameObject secondActionHint { get; set; }
+    Action<CallbackContext> secondActionStarted { get; set; }
+    Vector3 secondPosition { get; set; }
+    Vector3 secondRotation { get; set; }
+    ShopItemSO shopItemSO { get; set; }
+    int sizeInU { get; set; }
+    int storageUID { get; set; }
+    int storedPosition { get; set; }
+    Vector3 thirdPosition { get; set; }
+    Vector3 thirdRotation { get; set; }
+    int toolTipLocalisationID { get; set; }
+    int toolTipLocalisationIDDescription { get; set; }
+    int trolleySlotIndex { get; set; }
+    WaitForSeconds wait3s { get; set; }
 
   ── METHODS ──
-    public bool _InteractOnClick_b__32_0(RackPosition r)
-    public bool _ValidateRackPosition_b__47_0(RackPosition r)
+    public void _Awake_b__43_0(CallbackContext ctx)
+    public void _Awake_b__43_1(CallbackContext ctx)
+    public void _Awake_b__43_2(CallbackContext ctx)
+    public virtual void ActionInHand()
     public virtual void Awake()
-    public IEnumerator BrekingInProgress()
-    public void ButtonClickChangeCustomer(bool forward)
-    public void ButtonClickChangeIP()
-    public void ClearErrorSign()
-    public void ClearWarningSign(bool isPreserved)
-    public int GetCustomerID()
-    public int GetNextCustomerID(int currentCustomerID, bool forward)
+    public IEnumerator CheckIfLost()
+    public IEnumerator DisalowDrop()
+    public virtual void DropObject()
+    public void FixedUpdate()
     public virtual void InteractOnClick()
     public virtual void InteractOnHover(RaycastHit hit)
-    public bool IsAnyCableConnected()
-    public void ItIsBroken()
+    public IEnumerator MakeInteractableAgain()
+    public void MoveBetweenPositions(Vector3 _position, Vector3 _rotation)
+    public virtual void MoveToHand()
+    public virtual void MoveToStorage(Transform _pos, int _positionIndex, int _storageUid)
+    public void OnCollisionEnter(Collision collision)
     public virtual void OnDestroy()
-    public void OnLoadingComplete()
-    public void OnLoadingStarted()
-    public void PowerButton(bool forceState)
-    public void RegisterLink(CableLink link)
-    public void RepairDevice()
-    public void ServerInsertedInRack(ServerSaveData serverSaveData)
-    public void SetIP(string _ip)
-    public void SetPowerLightMaterial(Material material)
-    public void Start()
-    public void TurnOffCommonFunctions()
-    public void TurnOnCommonFunction()
-    public void UnregisterLink(CableLink link)
-    public void UpdateAppID(int _appID)
-    public void UpdateCustomer(int newCustomerID)
-    public void UpdateServerScreenUI()
-    public bool ValidateRackPosition()
+    public virtual void OnHoverOver()
+    public void OnLoadDestroy()
 
   ── NESTED TYPES ──
-    class _BrekingInProgress_d__45
+    class _CheckIfLost_d__55
+    class _DisalowDrop_d__51
+    class _MakeInteractableAgain_d__48
 
 
 ══════════════════════════════════════════════════════════
-  TYPE: Il2Cpp.ShopCartItem
+  TYPE: Il2Cpp.RackPosition
+  Base: Il2Cpp.Interact
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr_outlineEffect
+    private static readonly IntPtr NativeFieldInfoPtr_positionIndex
+    private static readonly IntPtr NativeFieldInfoPtr_rack
+    private static readonly IntPtr NativeFieldInfoPtr_rackPosGlobalUID
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_InsertItemInRack_Private_IEnumerator_0
+    private static readonly IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+    private static readonly IntPtr NativeMethodInfoPtr_IsAllowedItem_Private_Boolean_Boolean_0
+    private static readonly IntPtr NativeMethodInfoPtr_OnHoverOver_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_SecondActionOnClick_Public_Virtual_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_SetUsed_Public_Void_Boolean_0
+
+  ── PROPERTIES ──
+    Outlinable outlineEffect { get; set; }
+    int positionIndex { get; set; }
+    Rack rack { get; set; }
+    int rackPosGlobalUID { get; set; }
+
+  ── METHODS ──
+    public virtual void Awake()
+    public IEnumerator InsertItemInRack()
+    public virtual void InteractOnClick()
+    public virtual void InteractOnHover(RaycastHit hit)
+    public bool IsAllowedItem(bool checkAvailability)
+    public virtual void OnHoverOver()
+    public virtual void SecondActionOnClick()
+    public void SetUsed(bool used)
+
+  ── NESTED TYPES ──
+    class __c__DisplayClass7_0
+    class _InsertItemInRack_d__7
+
+
+══════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.ServerSaveData
+  Base: Il2CppSystem.Object
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr_customerID
+    private static readonly IntPtr NativeFieldInfoPtr_eolTime
+    private static readonly IntPtr NativeFieldInfoPtr_ip
+    private static readonly IntPtr NativeFieldInfoPtr_isBroken
+    private static readonly IntPtr NativeFieldInfoPtr_isOn
+    private static readonly IntPtr NativeFieldInfoPtr_isWarningCleared
+    private static readonly IntPtr NativeFieldInfoPtr_position
+    private static readonly IntPtr NativeFieldInfoPtr_prefabID
+    private static readonly IntPtr NativeFieldInfoPtr_rackPositionUID
+    private static readonly IntPtr NativeFieldInfoPtr_rotation
+    private static readonly IntPtr NativeFieldInfoPtr_serverID
+    private static readonly IntPtr NativeFieldInfoPtr_serverType
+    private static readonly IntPtr NativeFieldInfoPtr_timeToBrake
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+
+  ── PROPERTIES ──
+    int customerID { get; set; }
+    int eolTime { get; set; }
+    string ip { get; set; }
+    bool isBroken { get; set; }
+    bool isOn { get; set; }
+    bool isWarningCleared { get; set; }
+    Vector3 position { get; set; }
+    int prefabID { get; set; }
+    int rackPositionUID { get; set; }
+    Quaternion rotation { get; set; }
+    string serverID { get; set; }
+    int serverType { get; set; }
+    int timeToBrake { get; set; }
+
+  ── METHODS ──
+    (none)
+
+
+══════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.SwitchSaveData
+  Base: Il2CppSystem.Object
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr_eolTime
+    private static readonly IntPtr NativeFieldInfoPtr_isBroken
+    private static readonly IntPtr NativeFieldInfoPtr_isOn
+    private static readonly IntPtr NativeFieldInfoPtr_isWarningCleared
+    private static readonly IntPtr NativeFieldInfoPtr_label
+    private static readonly IntPtr NativeFieldInfoPtr_position
+    private static readonly IntPtr NativeFieldInfoPtr_rackPositionUID
+    private static readonly IntPtr NativeFieldInfoPtr_rotation
+    private static readonly IntPtr NativeFieldInfoPtr_switchID
+    private static readonly IntPtr NativeFieldInfoPtr_switchType
+    private static readonly IntPtr NativeFieldInfoPtr_timeToBrake
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+
+  ── PROPERTIES ──
+    int eolTime { get; set; }
+    bool isBroken { get; set; }
+    bool isOn { get; set; }
+    bool isWarningCleared { get; set; }
+    string label { get; set; }
+    Vector3 position { get; set; }
+    int rackPositionUID { get; set; }
+    Quaternion rotation { get; set; }
+    string switchID { get; set; }
+    int switchType { get; set; }
+    int timeToBrake { get; set; }
+
+  ── METHODS ──
+    (none)
+
+
+══════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.PatchPanelSaveData
+  Base: Il2CppSystem.Object
+  Public: True  Abstract: False  Sealed: False
+══════════════════════════════════════════════════════════
+
+  ── FIELDS ──
+    private static readonly IntPtr NativeFieldInfoPtr_patchPanelID
+    private static readonly IntPtr NativeFieldInfoPtr_patchPanelType
+    private static readonly IntPtr NativeFieldInfoPtr_position
+    private static readonly IntPtr NativeFieldInfoPtr_rackPositionUID
+    private static readonly IntPtr NativeFieldInfoPtr_rotation
+    private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+
+  ── PROPERTIES ──
+    string patchPanelID { get; set; }
+    int patchPanelType { get; set; }
+    Vector3 position { get; set; }
+    int rackPositionUID { get; set; }
+    Quaternion rotation { get; set; }
+
+  ── METHODS ──
+    (none)
+
+
+══════════════════════════════════════════════════════════
+  TYPE: Il2Cpp.PlayerManager
   Base: UnityEngine.MonoBehaviour
   Public: True  Abstract: False  Sealed: False
 ══════════════════════════════════════════════════════════
 
   ── FIELDS ──
-    private static readonly IntPtr NativeFieldInfoPtr_btnAdd
-    private static readonly IntPtr NativeFieldInfoPtr_btnRemove
-    private static readonly IntPtr NativeFieldInfoPtr_hasCustomColor
-    private static readonly IntPtr NativeFieldInfoPtr_itemColor
-    private static readonly IntPtr NativeFieldInfoPtr_itemID
-    private static readonly IntPtr NativeFieldInfoPtr_itemName
-    private static readonly IntPtr NativeFieldInfoPtr_itemType
-    private static readonly IntPtr NativeFieldInfoPtr_price
-    private static readonly IntPtr NativeFieldInfoPtr_shop
-    private static readonly IntPtr NativeFieldInfoPtr_spawnedItemUIDs
-    private static readonly IntPtr NativeFieldInfoPtr_txtAmount
-    private static readonly IntPtr NativeFieldInfoPtr_txtItemName
-    private static readonly IntPtr NativeFieldInfoPtr_txtPrice
+    private static readonly IntPtr NativeFieldInfoPtr_audioSource
+    private static readonly IntPtr NativeFieldInfoPtr_cc
+    private static readonly IntPtr NativeFieldInfoPtr_defaultActionAudioClip
+    private static readonly IntPtr NativeFieldInfoPtr_defaultActionDustParticle
+    private static readonly IntPtr NativeFieldInfoPtr_enabledMouseMovement
+    private static readonly IntPtr NativeFieldInfoPtr_enabledPlayerMovement
+    private static readonly IntPtr NativeFieldInfoPtr_enabledRayLookInteract
+    private static readonly IntPtr NativeFieldInfoPtr_fpc
+    private static readonly IntPtr NativeFieldInfoPtr_imageWaitForAction
+    private static readonly IntPtr NativeFieldInfoPtr_instance
+    private static readonly IntPtr NativeFieldInfoPtr_iopsGainParticleSystem
+    private static readonly IntPtr NativeFieldInfoPtr_isGamePaused
+    private static readonly IntPtr NativeFieldInfoPtr_moveItemPosition
+    private static readonly IntPtr NativeFieldInfoPtr_numberOfObjectsInHand
+    private static readonly IntPtr NativeFieldInfoPtr_objectInHand
+    private static readonly IntPtr NativeFieldInfoPtr_objectInHandGO
+    private static readonly IntPtr NativeFieldInfoPtr_objectInHandPositionGO
+    private static readonly IntPtr NativeFieldInfoPtr_playerClass
+    private static readonly IntPtr NativeFieldInfoPtr_playerGO
+    private static readonly IntPtr NativeFieldInfoPtr_playerIsSitting
+    private static readonly IntPtr NativeFieldInfoPtr_rope
+    private static readonly IntPtr NativeFieldInfoPtr_vcam
     private static readonly IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_AddSpawnedItem_Public_Void_Int32_0
-    private static readonly IntPtr NativeMethodInfoPtr_ClearAllUIDs_Public_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_get_ItemID_Public_get_Int32_0
-    private static readonly IntPtr NativeMethodInfoPtr_get_ItemType_Public_get_ObjectInHand_0
-    private static readonly IntPtr NativeMethodInfoPtr_get_Quantity_Public_get_Int32_0
-    private static readonly IntPtr NativeMethodInfoPtr_get_RemoveButton_Public_get_ButtonExtended_0
-    private static readonly IntPtr NativeMethodInfoPtr_get_TotalPrice_Public_get_Int32_0
-    private static readonly IntPtr NativeMethodInfoPtr_Initialize_Public_Void_ComputerShop_String_Int32_Int32_ObjectInHand_Int32_Nullable_1_Color_0
-    private static readonly IntPtr NativeMethodInfoPtr_OnAddClicked_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_OnDestroy_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_OnRemoveClicked_Private_Void_0
-    private static readonly IntPtr NativeMethodInfoPtr_RemoveLastSpawnedItem_Public_Int32_0
-    private static readonly IntPtr NativeMethodInfoPtr_UpdateDisplay_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_Awake_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_ConfinedCursorforUI_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_DefaultActionEffect_Public_Void_Vector3_Single_0
+    private static readonly IntPtr NativeMethodInfoPtr_GainIOPSEffect_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_LockedCursorForPlayerMovement_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_PlayerStopMovement_Public_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_Start_Private_Void_0
+    private static readonly IntPtr NativeMethodInfoPtr_WaitForActionToFinish_Private_IEnumerator_Vector3_Single_0
 
   ── PROPERTIES ──
-    ButtonExtended btnAdd { get; set; }
-    ButtonExtended btnRemove { get; set; }
-    bool hasCustomColor { get; set; }
-    Color itemColor { get; set; }
-    int itemID { get; set; }
-    int ItemID { get; }
-    string itemName { get; set; }
-    ObjectInHand itemType { get; set; }
-    ObjectInHand ItemType { get; }
-    int price { get; set; }
-    int Quantity { get; }
-    ButtonExtended RemoveButton { get; }
-    ComputerShop shop { get; set; }
-    List<int> spawnedItemUIDs { get; set; }
-    int TotalPrice { get; }
-    TextMeshProUGUI txtAmount { get; set; }
-    TextMeshProUGUI txtItemName { get; set; }
-    TextMeshProUGUI txtPrice { get; set; }
+    AudioSource audioSource { get; set; }
+    CharacterController cc { get; set; }
+    AudioClip defaultActionAudioClip { get; set; }
+    GameObject defaultActionDustParticle { get; set; }
+    bool enabledMouseMovement { get; set; }
+    bool enabledPlayerMovement { get; set; }
+    bool enabledRayLookInteract { get; set; }
+    FirstPersonController fpc { get; set; }
+    Image imageWaitForAction { get; set; }
+    PlayerManager static instance { get; set; }
+    ParticleSystem iopsGainParticleSystem { get; set; }
+    bool isGamePaused { get; set; }
+    Transform moveItemPosition { get; set; }
+    int numberOfObjectsInHand { get; set; }
+    ObjectInHand objectInHand { get; set; }
+    Il2CppReferenceArray<GameObject> objectInHandGO { get; set; }
+    GameObject objectInHandPositionGO { get; set; }
+    Player playerClass { get; set; }
+    GameObject playerGO { get; set; }
+    bool playerIsSitting { get; set; }
+    Rope rope { get; set; }
+    CinemachineCamera vcam { get; set; }
 
   ── METHODS ──
-    public void AddSpawnedItem(int uid)
-    public void ClearAllUIDs()
-    public void Initialize(ComputerShop shop, string itemName, int itemID, int price, ObjectInHand itemType, int firstSpawnUID, Nullable<Color> customColor)
-    public void OnAddClicked()
-    public void OnDestroy()
-    public void OnRemoveClicked()
-    public int RemoveLastSpawnedItem()
-    public void UpdateDisplay()
+    public void Awake()
+    public void ConfinedCursorforUI()
+    public void DefaultActionEffect(Vector3 _position, float _time)
+    public void GainIOPSEffect()
+    public void LockedCursorForPlayerMovement()
+    public void PlayerStopMovement()
+    public void Start()
+    public IEnumerator WaitForActionToFinish(Vector3 _position, float _time)
+
+  ── NESTED TYPES ──
+    class _WaitForActionToFinish_d__30
+    enum ObjectInHand
+    class OnBuyingWall
 
