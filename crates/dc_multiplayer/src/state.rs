@@ -62,6 +62,7 @@ pub struct SessionState {
     pub last_sent_player_state: PlayerStateSnapshot,
     pub player_state_heartbeat_timer: f32,
     pub rack_uids_ensured: bool,
+    pub registry_populated: bool,
 }
 
 impl SessionState {
@@ -84,6 +85,7 @@ impl SessionState {
             last_sent_player_state: PlayerStateSnapshot::default(),
             player_state_heartbeat_timer: 0.0,
             rack_uids_ensured: false,
+            registry_populated: false,
         }
     }
 }

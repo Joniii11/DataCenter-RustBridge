@@ -2,6 +2,9 @@ mod network_switch;
 mod patch_panel;
 mod server;
 
+pub mod registry;
+pub use registry::ObjectIdRegistry;
+
 pub use network_switch::NetworkSwitch;
 pub use patch_panel::PatchPanel;
 pub use server::Server;

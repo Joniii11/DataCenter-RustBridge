@@ -459,6 +459,8 @@ pub struct GameAPI {
     pub rack_game_install:
         extern "C" fn(obj_handle: u64, rack_pos_handle: u64, object_type: u8) -> i32,
     pub rack_game_uninstall: extern "C" fn(obj_handle: u64, object_type: u8) -> i32,
+    pub obj_set_string_field:
+        extern "C" fn(handle: u64, field_id: u16, value: *const u8, value_len: u32) -> i32,
 }
 
 unsafe impl Send for GameAPI {}
@@ -1787,6 +1789,19 @@ impl Api {
             return false;
         }
         (self.raw.rack_game_uninstall)(obj.0, object_type) == 1
+    }
+
+    /// Write a string field on a game object by handle.
+    pub fn obj_set_string_field(
+        &self,
+        handle: world::ObjectHandle,
+        field: world::StringField,
+        value: &str,
+    ) -> bool {
+        if self.version() < 19 {
+            return false;
+        }
+        (self.raw.obj_set_string_field)(handle.0, field.0, value.as_ptr(), value.len() as u32) == 1
     }
 }
 

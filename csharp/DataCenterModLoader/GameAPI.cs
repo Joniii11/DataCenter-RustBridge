@@ -159,11 +159,12 @@ public struct GameAPITable
     public IntPtr RackFindPosition;
     public IntPtr RackGameInstall;
     public IntPtr RackGameUninstall;
+    public IntPtr ObjSetStringField;
 }
 
 public partial class GameAPIManager : IDisposable
 {
-    public const uint API_VERSION = 18;
+    public const uint API_VERSION = 19;
 
     private IntPtr _tablePtr;
     private GameAPITable _table;
@@ -265,6 +266,8 @@ public partial class GameAPIManager : IDisposable
     private delegate uint ObjFindByTypeDelegate(byte typeId, IntPtr outHandles, uint max);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate uint ObjGetStringFieldDelegate(ulong handle, ushort fieldId, IntPtr outBuf, uint max);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int ObjSetStringFieldDelegate(ulong handle, ushort fieldId, IntPtr value, uint valueLen);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate int ObjIsActiveDelegate(ulong handle);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -459,6 +462,7 @@ public partial class GameAPIManager : IDisposable
     private readonly RackFindPositionDelegate _rackFindPosition;
     private readonly RackGameInstallDelegate _rackGameInstall;
     private readonly RackGameUninstallDelegate _rackGameUninstall;
+    private readonly ObjSetStringFieldDelegate _objSetStringField2;
 
     private readonly MelonLogger.Instance _logger;
     private IntPtr _currentScenePtr = IntPtr.Zero;
@@ -603,6 +607,7 @@ public partial class GameAPIManager : IDisposable
         _rackFindPosition = RackFindPositionImpl;
         _rackGameInstall = RackGameInstallImpl;
         _rackGameUninstall = RackGameUninstallImpl;
+        _objSetStringField2 = ObjSetStringFieldImpl;
 
         _table = new GameAPITable
         {
@@ -731,6 +736,7 @@ public partial class GameAPIManager : IDisposable
             RackFindPosition = Marshal.GetFunctionPointerForDelegate(_rackFindPosition),
             RackGameInstall = Marshal.GetFunctionPointerForDelegate(_rackGameInstall),
             RackGameUninstall = Marshal.GetFunctionPointerForDelegate(_rackGameUninstall),
+            ObjSetStringField = Marshal.GetFunctionPointerForDelegate(_objSetStringField2),
         };
 
         _tablePtr = Marshal.AllocHGlobal(Marshal.SizeOf<GameAPITable>());
@@ -2220,15 +2226,21 @@ public partial class GameAPIManager : IDisposable
                 case 1: // SwitchId
                     try { var sw = new NetworkSwitch(ptr); value = sw?.switchId ?? ""; } catch { }
                     break;
-                case 2:
-                    try { var srv = new Server(ptr); value = srv?.rackPositionUID.ToString() ?? ""; } catch { }
-                    if (string.IsNullOrEmpty(value) || value == "0")
+                case 2: // RACK_POSITION_UID
                     {
-                        try { var sw = new NetworkSwitch(ptr); value = sw?.rackPositionUID.ToString() ?? ""; } catch { }
-                    }
-                    if (string.IsNullOrEmpty(value) || value == "0")
-                    {
-                        try { var pp = new PatchPanel(ptr); value = pp?.rackPositionUID.ToString() ?? ""; } catch { }
+                        // Try each type, but filter negative values which indicate
+                        // we're reading the wrong Il2Cpp field offset (type confusion).
+                        int bestUid = 0;
+                        try { var srv = new Server(ptr); int uid = srv.rackPositionUID; if (uid > 0) bestUid = uid; } catch { }
+                        if (bestUid == 0)
+                        {
+                            try { var sw = new NetworkSwitch(ptr); int uid = sw.rackPositionUID; if (uid > 0) bestUid = uid; } catch { }
+                        }
+                        if (bestUid == 0)
+                        {
+                            try { var pp = new PatchPanel(ptr); int uid = pp.rackPositionUID; if (uid > 0) bestUid = uid; } catch { }
+                        }
+                        value = bestUid.ToString();
                     }
                     break;
                 case 3: // GameObjectName
@@ -2247,6 +2259,41 @@ public partial class GameAPIManager : IDisposable
         catch (Exception ex)
         {
             CrashLog.LogException("ObjGetStringFieldImpl", ex);
+            return 0;
+        }
+    }
+
+    int ObjSetStringFieldImpl(ulong handle, ushort fieldId, IntPtr value, uint valueLen)
+    {
+        try
+        {
+            if (handle == 0) return 0;
+            var ptr = new IntPtr((long)handle);
+            string newValue = "";
+            if (value != IntPtr.Zero && valueLen > 0)
+            {
+                byte[] buf = new byte[valueLen];
+                Marshal.Copy(value, buf, 0, (int)valueLen);
+                newValue = System.Text.Encoding.UTF8.GetString(buf);
+            }
+
+            switch (fieldId)
+            {
+                case 0: // ServerID
+                    try { var srv = new Server(ptr); srv.ServerID = newValue; return 1; } catch { }
+                    break;
+                case 1: // SwitchId
+                    try { var sw = new NetworkSwitch(ptr); sw.switchId = newValue; return 1; } catch { }
+                    break;
+                case 4: // PatchPanelId
+                    try { var pp = new PatchPanel(ptr); pp.patchPanelId = newValue; return 1; } catch { }
+                    break;
+            }
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("ObjSetStringFieldImpl", ex);
             return 0;
         }
     }

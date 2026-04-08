@@ -111,95 +111,29 @@ internal static class Patch_Server_RepairDevice
 [HarmonyPatch(typeof(Server), nameof(Server.ServerInsertedInRack))]
 internal static class Patch_Server_ServerInsertedInRack
 {
-
-    [ThreadStatic] private static bool _gameOwnedCall;
-
-    internal static void Prefix(Server __instance, ServerSaveData __0)
-    {
-        _gameOwnedCall = false;
-        try
-        {
-            if (__0 == null) return;
-            if (!string.IsNullOrEmpty(__0.serverID)) return;
-
-            _gameOwnedCall = true;
-
-            int instId = 0;
-            try { instId = __instance.GetInstanceID(); } catch { }
-            if (instId != 0 && Patch_Rack_MarkPositionAsUsed.ExpectedRackIds.TryGetValue(instId, out var expected)
-                && expected.objectType <= 3)
-            {
-                __0.serverID = expected.objectId;
-                __0.rackPositionUID = expected.rackPosUid;
-                CrashLog.Log($"[WorldSync] ServerInsertedInRack Prefix: filled ID '{expected.objectId}' from ExpectedRackIds (instId={instId}, rackUid={expected.rackPosUid})");
-            }
-            else if (Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.HasValue)
-            {
-                var last = Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.Value;
-                if (last.objectType <= 3)
-                {
-                    __0.serverID = last.objectId;
-                    __0.rackPositionUID = last.rackPosUid;
-                    if (instId != 0)
-                        Patch_Rack_MarkPositionAsUsed.ExpectedRackIds[instId] = last;
-                    Patch_Rack_MarkPositionAsUsed.LastExpectedInstall = null;
-                    CrashLog.Log($"[WorldSync] ServerInsertedInRack Prefix: filled ID '{last.objectId}' from LastExpectedInstall (new instId={instId}, rackUid={last.rackPosUid})");
-                }
-            }
-        }
-        catch { }
-    }
-
     internal static void Postfix(Server __instance, ServerSaveData __0)
     {
         try
         {
             string instanceId = "";
-            string saveDataId = "";
             byte objectType = 0;
             int rackUid = -1;
-
             try { instanceId = __instance?.ServerID ?? ""; } catch { }
-            try { saveDataId = __0?.serverID ?? ""; } catch { }
             try { objectType = (byte)(__instance?.serverType ?? 0); } catch { }
             try { rackUid = __0?.rackPositionUID ?? -1; } catch { }
 
-            string serverId = !string.IsNullOrEmpty(instanceId) ? instanceId : saveDataId;
+            CrashLog.Log($"ServerInsertedInRack [diag]: instanceId={instanceId}, type={objectType}, rackUid={rackUid}");
 
-            CrashLog.Log($"ServerInsertedInRack [diag]: instanceId={instanceId}, saveDataId={saveDataId}, resolved={serverId}, type={objectType}, rackUid={rackUid}");
-
-            // When the game assigns a ServerID to a newly placed server,
-            // check if MarkPositionAsUsed stored a pending install for it.
-            // If so, fire ObjectSpawned + ServerInstalled now that we have the ID.
-            if (_gameOwnedCall && !string.IsNullOrEmpty(instanceId))
+            // Restore original ID on clone if MarkPositionAsUsed recorded one
+            var pending = Patch_Rack_MarkPositionAsUsed.PendingCloneRestore;
+            if (pending.HasValue && pending.Value.objectType <= 3) // Server types
             {
-                int instId = 0;
-                try { instId = __instance.GetInstanceID(); } catch { }
-
-                if (instId != 0 && Patch_Rack_MarkPositionAsUsed.PendingInstalls.Remove(instId, out var pending))
+                Patch_Rack_MarkPositionAsUsed.PendingCloneRestore = null;
+                if (!string.IsNullOrEmpty(pending.Value.objectId) && instanceId != pending.Value.objectId)
                 {
-                    int prefabId = FindServerPrefabIndex(__instance);
-                    var pos = __instance.transform.position;
-                    var rot = __instance.transform.rotation;
-
-                    CrashLog.Log($"[WorldSync] ServerInsertedInRack: deferred sync for '{instanceId}' at uid={pending.rackPosUid} prefab={prefabId}");
-                    EventDispatcher.FireObjectSpawned(instanceId, pending.objectType, prefabId, pos, rot);
-                    EventDispatcher.FireServerInstalled(instanceId, pending.objectType, pending.rackPosUid);
-                }
-            }
-
-            if (_gameOwnedCall)
-            {
-                int instId2 = 0;
-                try { instId2 = __instance.GetInstanceID(); } catch { }
-                if (instId2 != 0 && Patch_Rack_MarkPositionAsUsed.ExpectedRackIds.Remove(instId2, out var expected2)
-                    && expected2.objectType <= 3)
-                {
-                    if (instanceId != expected2.objectId)
-                    {
-                        __instance.ServerID = expected2.objectId;
-                        CrashLog.Log($"[WorldSync] ServerInsertedInRack Postfix: fixed ID '{instanceId}' → '{expected2.objectId}' (instId={instId2})");
-                    }
+                    try { __instance.ServerID = pending.Value.objectId; } catch { }
+                    try { __instance.rackPositionUID = pending.Value.rackPosUid; } catch { }
+                    CrashLog.Log($"[WorldSync] ServerInsertedInRack: restored clone ID '{instanceId}' → '{pending.Value.objectId}' rackUid={pending.Value.rackPosUid}");
                 }
             }
         }
@@ -229,142 +163,66 @@ internal static class Patch_Server_ServerInsertedInRack
 [HarmonyPatch(typeof(NetworkSwitch), nameof(NetworkSwitch.SwitchInsertedInRack))]
 internal static class Patch_NetworkSwitch_SwitchInsertedInRack
 {
-    [ThreadStatic] private static bool _gameOwnedCall;
-
-    internal static void Prefix(NetworkSwitch __instance, SwitchSaveData __0)
-    {
-        _gameOwnedCall = false;
-        try
-        {
-            if (__0 == null) return;
-            if (!string.IsNullOrEmpty(__0.switchID)) return;
-
-            _gameOwnedCall = true;
-
-            int instId = 0;
-            try { instId = __instance.GetInstanceID(); } catch { }
-            if (instId != 0 && Patch_Rack_MarkPositionAsUsed.ExpectedRackIds.TryGetValue(instId, out var expected)
-                && expected.objectType == 4)
-            {
-                __0.switchID = expected.objectId;
-                __0.rackPositionUID = expected.rackPosUid;
-                CrashLog.Log($"[WorldSync] SwitchInsertedInRack Prefix: filled ID '{expected.objectId}' from ExpectedRackIds (instId={instId}, rackUid={expected.rackPosUid})");
-            }
-            else if (Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.HasValue)
-            {
-                var last = Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.Value;
-                if (last.objectType == 4)
-                {
-                    __0.switchID = last.objectId;
-                    __0.rackPositionUID = last.rackPosUid;
-                    if (instId != 0)
-                        Patch_Rack_MarkPositionAsUsed.ExpectedRackIds[instId] = last;
-                    Patch_Rack_MarkPositionAsUsed.LastExpectedInstall = null;
-                    CrashLog.Log($"[WorldSync] SwitchInsertedInRack Prefix: filled ID '{last.objectId}' from LastExpectedInstall (new instId={instId}, rackUid={last.rackPosUid})");
-                }
-            }
-        }
-        catch { }
-    }
-
     internal static void Postfix(NetworkSwitch __instance, SwitchSaveData __0)
     {
-        if (!_gameOwnedCall) return;
         try
         {
-            int instId2 = 0;
-            try { instId2 = __instance.GetInstanceID(); } catch { }
-            if (instId2 != 0 && Patch_Rack_MarkPositionAsUsed.ExpectedRackIds.Remove(instId2, out var expected2)
-                && expected2.objectType == 4)
+            string currentId = __instance?.switchId ?? "";
+            CrashLog.Log($"SwitchInsertedInRack [diag]: switchId={currentId}");
+
+            var pending = Patch_Rack_MarkPositionAsUsed.PendingCloneRestore;
+            if (pending.HasValue && pending.Value.objectType == 4)
             {
-                string currentId = __instance.switchId ?? "";
-                if (currentId != expected2.objectId)
+                Patch_Rack_MarkPositionAsUsed.PendingCloneRestore = null;
+                if (!string.IsNullOrEmpty(pending.Value.objectId) && currentId != pending.Value.objectId)
                 {
-                    __instance.switchId = expected2.objectId;
-                    CrashLog.Log($"[WorldSync] SwitchInsertedInRack Postfix: fixed ID '{currentId}' → '{expected2.objectId}' (instId={instId2})");
+                    try { __instance.switchId = pending.Value.objectId; } catch { }
+                    try { __instance.rackPositionUID = pending.Value.rackPosUid; } catch { }
+                    CrashLog.Log($"[WorldSync] SwitchInsertedInRack: restored clone ID '{currentId}' → '{pending.Value.objectId}' rackUid={pending.Value.rackPosUid}");
                 }
             }
         }
-        catch (Exception ex) { CrashLog.Log($"[WorldSync] SwitchInsertedInRack Postfix error: {ex.Message}"); }
+        catch (Exception ex) { EventDispatcher.LogError($"SwitchInsertedInRack: {ex.Message}"); }
     }
 }
 
 [HarmonyPatch(typeof(PatchPanel), nameof(PatchPanel.InsertedInRack))]
 internal static class Patch_PatchPanel_InsertedInRack
 {
-    [ThreadStatic] private static bool _gameOwnedCall;
-
-    internal static void Prefix(PatchPanel __instance, PatchPanelSaveData __0)
-    {
-        _gameOwnedCall = false;
-        try
-        {
-            if (__0 == null) return;
-            if (!string.IsNullOrEmpty(__0.patchPanelID)) return;
-
-            _gameOwnedCall = true;
-
-            int instId = 0;
-            try { instId = __instance.GetInstanceID(); } catch { }
-            if (instId != 0 && Patch_Rack_MarkPositionAsUsed.ExpectedRackIds.TryGetValue(instId, out var expected)
-                && expected.objectType == 7)
-            {
-                __0.patchPanelID = expected.objectId;
-                __0.rackPositionUID = expected.rackPosUid;
-                CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack Prefix: filled ID '{expected.objectId}' from ExpectedRackIds (instId={instId}, rackUid={expected.rackPosUid})");
-            }
-            else if (Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.HasValue)
-            {
-                var last = Patch_Rack_MarkPositionAsUsed.LastExpectedInstall.Value;
-                if (last.objectType == 7)
-                {
-                    __0.patchPanelID = last.objectId;
-                    __0.rackPositionUID = last.rackPosUid;
-                    if (instId != 0)
-                        Patch_Rack_MarkPositionAsUsed.ExpectedRackIds[instId] = last;
-                    Patch_Rack_MarkPositionAsUsed.LastExpectedInstall = null;
-                    CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack Prefix: filled ID '{last.objectId}' from LastExpectedInstall (new instId={instId}, rackUid={last.rackPosUid})");
-                }
-            }
-        }
-        catch { }
-    }
-
     internal static void Postfix(PatchPanel __instance, PatchPanelSaveData __0)
     {
-        if (!_gameOwnedCall) return;
         try
         {
-            int instId2 = 0;
-            try { instId2 = __instance.GetInstanceID(); } catch { }
-            if (instId2 != 0 && Patch_Rack_MarkPositionAsUsed.ExpectedRackIds.Remove(instId2, out var expected2)
-                && expected2.objectType == 7)
+            string currentId = __instance?.patchPanelId ?? "";
+            CrashLog.Log($"PatchPanel.InsertedInRack [diag]: patchPanelId={currentId}");
+
+            var pending = Patch_Rack_MarkPositionAsUsed.PendingCloneRestore;
+            if (pending.HasValue && pending.Value.objectType == 7)
             {
-                string currentId = __instance.patchPanelId ?? "";
-                if (currentId != expected2.objectId)
+                Patch_Rack_MarkPositionAsUsed.PendingCloneRestore = null;
+                if (!string.IsNullOrEmpty(pending.Value.objectId) && currentId != pending.Value.objectId)
                 {
-                    __instance.patchPanelId = expected2.objectId;
-                    CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack Postfix: fixed ID '{currentId}' → '{expected2.objectId}' (instId={instId2})");
+                    try { __instance.patchPanelId = pending.Value.objectId; } catch { }
+                    try { __instance.rackPositionUID = pending.Value.rackPosUid; } catch { }
+                    CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack: restored clone ID '{currentId}' → '{pending.Value.objectId}' rackUid={pending.Value.rackPosUid}");
                 }
             }
         }
-        catch (Exception ex) { CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack Postfix error: {ex.Message}"); }
+        catch (Exception ex) { EventDispatcher.LogError($"PatchPanel.InsertedInRack: {ex.Message}"); }
     }
 }
 
 /// <summary>
 /// PRIMARY hook for "server installed in rack" during gameplay.
-/// Fires ServerInstalled immediately when ServerID is known.
-/// When ServerID is empty (newly purchased), stores a pending entry
-/// that ServerInsertedInRack picks up once the game assigns the ID.
+/// Fires ServerInstalled immediately when the object ID is known.
+/// Stores a PendingCloneRestore tuple so the InsertedInRack callbacks
+/// can restore the original ID on the clone Unity creates.
 /// </summary>
 [HarmonyPatch(typeof(Rack), nameof(Rack.MarkPositionAsUsed))]
 internal static class Patch_Rack_MarkPositionAsUsed
 {
     internal static bool SuppressEvents = false;
-    internal static readonly Dictionary<int, (int rackPosUid, byte objectType)> PendingInstalls = new();
-    internal static readonly Dictionary<int, (string objectId, byte objectType, int rackPosUid)> ExpectedRackIds = new();
-    internal static (string objectId, byte objectType, int rackPosUid)? LastExpectedInstall = null;
+    internal static (string objectId, byte objectType, int rackPosUid)? PendingCloneRestore = null;
 
     internal static void Postfix(Rack __instance, int __0, int __1)
     {
@@ -384,50 +242,26 @@ internal static class Patch_Rack_MarkPositionAsUsed
 
             string objectId = null;
             byte objectType = 0;
-            bool pendingId = false;
 
+            // --- Try Server ---
             var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
-            Server installedServer = null;
-
             foreach (var srv in allServers)
             {
                 try
                 {
-                    if (srv.currentRackPosition != null &&
-                        srv.currentRackPosition.rackPosGlobalUID == rackPosUid)
-                    { installedServer = srv; break; }
+                    if ((srv.currentRackPosition != null && srv.currentRackPosition.rackPosGlobalUID == rackPosUid)
+                        || srv.rackPositionUID == rackPosUid)
+                    {
+                        objectId = srv.ServerID ?? "";
+                        objectType = (byte)srv.serverType;
+                        break;
+                    }
                 }
                 catch { }
             }
-            if (installedServer == null)
-            {
-                foreach (var srv in allServers)
-                {
-                    try { if (srv.rackPositionUID == rackPosUid) { installedServer = srv; break; } }
-                    catch { }
-                }
-            }
 
-            if (installedServer != null)
-            {
-                objectId = installedServer.ServerID ?? "";
-                objectType = (byte)installedServer.serverType;
-
-                if (string.IsNullOrEmpty(objectId))
-                {
-                    int instId = installedServer.GetInstanceID();
-                    PendingInstalls[instId] = (rackPosUid, objectType);
-                    CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} uid={rackPosUid} instId={instId} — empty ServerID, stored pending");
-                    pendingId = true;
-                }
-                else
-                {
-                    ExpectedRackIds[installedServer.GetInstanceID()] = (objectId, objectType, rackPosUid);
-                    LastExpectedInstall = (objectId, objectType, rackPosUid);
-                }
-            }
-
-            if (objectId == null && !pendingId)
+            // --- Try NetworkSwitch ---
+            if (objectId == null)
             {
                 foreach (var sw in UnityEngine.Object.FindObjectsOfType<NetworkSwitch>())
                 {
@@ -438,18 +272,6 @@ internal static class Patch_Rack_MarkPositionAsUsed
                         {
                             objectId = sw.switchId ?? "";
                             objectType = 4;
-                            if (string.IsNullOrEmpty(objectId))
-                            {
-                                int instId = sw.GetInstanceID();
-                                string objName = sw.gameObject?.name ?? "Switch";
-                                if (objName.EndsWith("(Clone)"))
-                                    objName = objName.Substring(0, objName.Length - 7);
-                                objectId = $"{objName}_{instId}";
-                                sw.switchId = objectId;
-                                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: assigned switchId '{objectId}'");
-                            }
-                            ExpectedRackIds[sw.GetInstanceID()] = (objectId, objectType, rackPosUid);
-                            LastExpectedInstall = (objectId, objectType, rackPosUid);
                             break;
                         }
                     }
@@ -457,7 +279,8 @@ internal static class Patch_Rack_MarkPositionAsUsed
                 }
             }
 
-            if (objectId == null && !pendingId)
+            // --- Try PatchPanel ---
+            if (objectId == null)
             {
                 foreach (var pp in UnityEngine.Object.FindObjectsOfType<PatchPanel>())
                 {
@@ -468,18 +291,6 @@ internal static class Patch_Rack_MarkPositionAsUsed
                         {
                             objectId = pp.patchPanelId ?? "";
                             objectType = 7;
-                            if (string.IsNullOrEmpty(objectId))
-                            {
-                                int instId = pp.GetInstanceID();
-                                string objName = pp.gameObject?.name ?? "PatchPanel";
-                                if (objName.EndsWith("(Clone)"))
-                                    objName = objName.Substring(0, objName.Length - 7);
-                                objectId = $"{objName}_{instId}";
-                                pp.patchPanelId = objectId;
-                                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: assigned patchPanelId '{objectId}'");
-                            }
-                            ExpectedRackIds[pp.GetInstanceID()] = (objectId, objectType, rackPosUid);
-                            LastExpectedInstall = (objectId, objectType, rackPosUid);
                             break;
                         }
                     }
@@ -487,24 +298,19 @@ internal static class Patch_Rack_MarkPositionAsUsed
                 }
             }
 
-            if (pendingId)
-            {
-                CarryStateMonitor.SuppressNextDrop();
-                Patch_UsableObject_InteractOnClick.ClearHeldObject();
-                return;
-            }
-
             if (string.IsNullOrEmpty(objectId))
             {
-                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} uid={rackPosUid} — could not find installed object in any type");
+                CrashLog.Log($"[WorldSync] MarkPositionAsUsed: index={index} uid={rackPosUid} — could not identify installed object");
                 return;
             }
 
             if (rackPosUid < 0) return;
 
+            // Store for clone-ID-restoration in InsertedInRack callbacks
+            PendingCloneRestore = (objectId, objectType, rackPosUid);
+
             CrashLog.Log($"[WorldSync] MarkPositionAsUsed: '{objectId}' type={objectType} at rackUid={rackPosUid} (index={index}, sizeInU={sizeInU}) → firing event");
             EventDispatcher.FireServerInstalled(objectId, objectType, rackPosUid);
-            // Suppress carry state monitor so it doesn't fire a false drop event
             CarryStateMonitor.SuppressNextDrop();
             Patch_UsableObject_InteractOnClick.ClearHeldObject();
         }
@@ -680,7 +486,7 @@ internal static class Patch_ComputerShop_SpawnPhysicalItem
                         string objName = sw.gameObject?.name ?? "Switch";
                         if (objName.EndsWith("(Clone)"))
                             objName = objName.Substring(0, objName.Length - 7);
-                        switchId = $"{objName}_{instId}";
+                        switchId = Patch_UsableObject_InteractOnClick.GenerateDeterministicId(objName, sw.transform.position);
                         sw.switchId = switchId;
                     }
 
@@ -734,7 +540,7 @@ internal static class Patch_ComputerShop_SpawnPhysicalItem
                         string objName = pp.gameObject?.name ?? "PatchPanel";
                         if (objName.EndsWith("(Clone)"))
                             objName = objName.Substring(0, objName.Length - 7);
-                        panelId = $"{objName}_{instId}";
+                        panelId = Patch_UsableObject_InteractOnClick.GenerateDeterministicId(objName, pp.transform.position);
                         pp.patchPanelId = panelId;
                     }
 
@@ -1165,13 +971,12 @@ internal static class Patch_UsableObject_InteractOnClick
                             objectId = patchPanel.patchPanelId ?? "";
                             if (string.IsNullOrEmpty(objectId))
                             {
-                                int instId = patchPanel.GetInstanceID();
                                 string objName = patchPanel.gameObject?.name ?? "PatchPanel";
                                 if (objName.EndsWith("(Clone)"))
                                     objName = objName.Substring(0, objName.Length - 7);
-                                objectId = $"{objName}_{instId}";
+                                objectId = GenerateDeterministicId(objName, patchPanel.transform.position);
                                 patchPanel.patchPanelId = objectId;
-                                CrashLog.Log($"[WorldSync] InteractOnClick: assigned patchPanelId '{objectId}'");
+                                CrashLog.Log($"[WorldSync] InteractOnClick: assigned patchPanelId '{objectId}' (position-based)");
                             }
                             objectType = (byte)(int)__instance.objectInHandType;
                         }
@@ -1208,6 +1013,21 @@ internal static class Patch_UsableObject_InteractOnClick
             }
         }
         catch (Exception ex) { CrashLog.Log($"[WorldSync] InteractOnClick Postfix error: {ex.Message}"); }
+    }
+
+    /// <summary>
+    /// Generates a deterministic object ID based on position instead of Unity instance ID.
+    /// This ensures host and client produce the same ID for the same physical object.
+    /// </summary>
+    internal static string GenerateDeterministicId(string baseName, UnityEngine.Vector3 pos)
+    {
+        // Round to centimeters to avoid floating-point differences between host/client
+        int px = Mathf.RoundToInt(pos.x * 100);
+        int py = Mathf.RoundToInt(pos.y * 100);
+        int pz = Mathf.RoundToInt(pos.z * 100);
+        // Combine into a hash that's unlikely to collide for objects at different positions
+        uint hash = (uint)(px * 73856093 ^ py * 19349663 ^ pz * 83492791);
+        return $"{baseName}_{hash}";
     }
 
     /// <summary>

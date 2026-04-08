@@ -5,6 +5,7 @@ mod world;
 use crate::net;
 use crate::protocol::Message;
 use crate::state::*;
+use dc_api::world::registry::reset_registry;
 use dc_api::Api;
 
 pub fn process_relay_event(api: &Api, event: net::RelayEvent) {
@@ -129,6 +130,8 @@ pub fn get_my_steam_name(api: &Api) -> String {
 }
 
 pub fn do_disconnect_cleanup() -> Vec<u32> {
+    reset_registry();
+
     with_state(|s| {
         let entity_ids = s.tracker.get_all_entity_ids();
 

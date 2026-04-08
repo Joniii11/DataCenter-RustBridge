@@ -2,6 +2,7 @@ use crate::net;
 use crate::player::{PlayerTracker, RemotePlayerData};
 use crate::protocol::Message;
 use crate::state::*;
+use dc_api::world::registry::{reset_registry, with_registry_mut};
 use std::ffi::c_char;
 
 #[no_mangle]
@@ -197,6 +198,7 @@ pub extern "C" fn mp_disconnect() -> i32 {
         s.session.hello_retry_timer = 0.0;
         s.session.hello_retry_count = 0;
         s.session.rack_uids_ensured = false;
+        s.session.registry_populated = false;
         s.tracker = PlayerTracker::new();
         s.save.skip_next_request = false;
 
@@ -212,6 +214,7 @@ pub extern "C" fn mp_disconnect() -> i32 {
         s.save.up_to_date = false;
         s.session.join_state = JoinState::Idle;
     });
+    reset_registry();
     1
 }
 
@@ -242,6 +245,8 @@ pub extern "C" fn mp_set_join_state(state: u32) {
                     "[MP] Pre-assigned {} rack position UIDs after load",
                     assigned
                 ));
+                with_registry_mut(|r| r.populate_from_game(&api));
+                dc_api::crash_log("[MP] Client: Object ID registry populated after load");
             }
         }
     });
