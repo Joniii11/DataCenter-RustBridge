@@ -61,6 +61,7 @@ pub struct SessionState {
     pub pos_timer: f32,
     pub last_sent_player_state: PlayerStateSnapshot,
     pub player_state_heartbeat_timer: f32,
+    pub rack_uids_ensured: bool,
 }
 
 impl SessionState {
@@ -82,6 +83,7 @@ impl SessionState {
             pos_timer: 0.0,
             last_sent_player_state: PlayerStateSnapshot::default(),
             player_state_heartbeat_timer: 0.0,
+            rack_uids_ensured: false,
         }
     }
 }
@@ -125,6 +127,8 @@ pub struct CarryState {
     pub held_id: String,
     pub held_type: u8,
     pub suppress_next_drop: bool,
+    pub last_install_id: String,
+    pub last_install_time: f32,
 }
 
 impl CarryState {
@@ -134,6 +138,8 @@ impl CarryState {
             held_id: String::new(),
             held_type: 0,
             suppress_next_drop: false,
+            last_install_id: String::new(),
+            last_install_time: 0.0,
         }
     }
 }

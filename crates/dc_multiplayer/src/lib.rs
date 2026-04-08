@@ -60,7 +60,11 @@ fn handle_event(api: &Api, event: Event) {
             object_type,
             rack_position_uid,
         } => {
-            state::with_state(|s| s.carry.suppress_next_drop = true);
+            state::with_state(|s| {
+                s.carry.suppress_next_drop = true;
+                s.carry.last_install_id = server_id.clone();
+                s.carry.last_install_time = s.world_sync.game_time;
+            });
             Some(protocol::WorldAction::InstalledInRack {
                 object_id: server_id,
                 object_type,

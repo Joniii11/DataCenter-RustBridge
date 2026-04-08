@@ -87,12 +87,34 @@ pub(super) fn detect_carry_transitions(api: &Api, cur_num: u8) {
             return;
         }
 
-        if let Some(action) = objects::dispatch_install_in_rack_action(api, &id, obj_type) {
+        let already_sent = with_state(|s| {
+            let game_time = s.world_sync.game_time;
+            s.carry.last_install_id == id && (game_time - s.carry.last_install_time) < 2.0
+        })
+        .unwrap_or(false);
+
+        if !already_sent {
+            if let Some(action) = objects::dispatch_install_in_rack_action(api, &id, obj_type) {
+                dc_api::crash_log(&format!(
+                    "[CARRY] fallback rack install: '{}' type={}",
+                    id, obj_type
+                ));
+                with_state(|s| {
+                    s.carry.last_install_id = id.clone();
+                    s.carry.last_install_time = s.world_sync.game_time;
+                });
+                crate::send_world_action(api, action);
+                return;
+            }
+        } else {
             dc_api::crash_log(&format!(
-                "[CARRY] fallback rack install: '{}' type={}",
+                "[CARRY] fallback rack install skipped (dedup): '{}' type={}",
                 id, obj_type
             ));
-            crate::send_world_action(api, action);
+            with_state(|s| {
+                s.carry.held_id.clear();
+                s.carry.held_type = 0;
+            });
             return;
         }
 

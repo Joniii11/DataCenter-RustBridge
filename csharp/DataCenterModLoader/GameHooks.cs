@@ -96,6 +96,64 @@ public static class GameHooks
                 CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs: server ref update failed: {ex.Message}");
             }
 
+            try
+            {
+                var switches = UnityEngine.Object.FindObjectsOfType<Il2Cpp.NetworkSwitch>();
+                int swUpdated = 0;
+                foreach (var sw in switches)
+                {
+                    try
+                    {
+                        if (sw.currentRackPosition != null)
+                        {
+                            int oldUid = sw.rackPositionUID;
+                            int newUid = sw.currentRackPosition.rackPosGlobalUID;
+                            if (oldUid != newUid)
+                            {
+                                sw.rackPositionUID = newUid;
+                                swUpdated++;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+                if (swUpdated > 0)
+                    CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs: updated {swUpdated} switch rackPositionUID references");
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs: switch ref update failed: {ex.Message}");
+            }
+
+            try
+            {
+                var panels = UnityEngine.Object.FindObjectsOfType<Il2Cpp.PatchPanel>();
+                int ppUpdated = 0;
+                foreach (var pp in panels)
+                {
+                    try
+                    {
+                        if (pp.currentRackPosition != null)
+                        {
+                            int oldUid = pp.rackPositionUID;
+                            int newUid = pp.currentRackPosition.rackPosGlobalUID;
+                            if (oldUid != newUid)
+                            {
+                                pp.rackPositionUID = newUid;
+                                ppUpdated++;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+                if (ppUpdated > 0)
+                    CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs: updated {ppUpdated} patchpanel rackPositionUID references");
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs: patchpanel ref update failed: {ex.Message}");
+            }
+
             CrashLog.Log($"[WorldSync] EnsureAllRackPositionUIDs: assigned {assigned}/{sorted.Count} positions (counter now {mgr.lastUsedRackPositionGlobalUID})");
             return assigned;
         }

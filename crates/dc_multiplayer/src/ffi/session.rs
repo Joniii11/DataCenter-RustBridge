@@ -196,6 +196,7 @@ pub extern "C" fn mp_disconnect() -> i32 {
         s.session.join_ok_received = false;
         s.session.hello_retry_timer = 0.0;
         s.session.hello_retry_count = 0;
+        s.session.rack_uids_ensured = false;
         s.tracker = PlayerTracker::new();
         s.save.skip_next_request = false;
 

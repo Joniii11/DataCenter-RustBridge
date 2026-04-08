@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 
-use dc_api::world::{NetworkSwitch, ObjectHandle, PatchPanel, Server, StringField, WorldObject};
+use dc_api::world::{
+    remove_from_rack, NetworkSwitch, ObjectHandle, PatchPanel, Server, StringField, WorldObject,
+};
 use dc_api::{Api, Quat, Vec3};
 
 use crate::protocol::WorldAction;
@@ -47,6 +49,15 @@ pub trait SyncedObject: WorldObject {
 
     fn execute_remote_pickup(api: &Api, object_id: &str) -> bool {
         if let Some(obj) = Self::find_by_id(api, object_id) {
+            let rack_uid_str =
+                api.obj_get_string_field(obj.handle(), StringField::RACK_POSITION_UID);
+            if !rack_uid_str.is_empty() && rack_uid_str != "0" {
+                dc_api::crash_log(&format!(
+                    "[WORLD] pickup '{}' was in rack (uid={}), removing first",
+                    object_id, rack_uid_str
+                ));
+                remove_from_rack(api, obj.handle(), Self::wire_type());
+            }
             let ok = obj.pickup(api);
             dc_api::crash_log(&format!(
                 "[WORLD] pickup '{}' (type={}) → {}",
@@ -136,6 +147,14 @@ pub fn dispatch_install_in_rack_action(
         .obj_get_string_field(handle, StringField::RACK_POSITION_UID)
         .parse::<i32>()
         .ok()?;
+
+    if uid <= 0 {
+        dc_api::crash_log(&format!(
+            "[CARRY] dispatch_install_in_rack_action: '{}' has invalid uid={}, skipping",
+            object_id, uid
+        ));
+        return None;
+    }
 
     Some(WorldAction::InstalledInRack {
         object_id: object_id.to_string(),

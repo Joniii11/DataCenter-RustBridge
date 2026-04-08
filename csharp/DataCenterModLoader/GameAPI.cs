@@ -1475,6 +1475,17 @@ public partial class GameAPIManager : IDisposable
                     CrashLog.Log($"[WorldSync] SpawnObject: switchesPrefabs lookup failed: {ex.Message}");
                 }
             }
+            else if (objectType == 7)
+            {
+                try
+                {
+                    prefab = mgr.GetPatchPanelPrefab(prefabId);
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[WorldSync] SpawnObject: GetPatchPanelPrefab failed: {ex.Message}");
+                }
+            }
             else
             {
                 try
@@ -1539,6 +1550,54 @@ public partial class GameAPIManager : IDisposable
                 catch (Exception ex)
                 {
                     CrashLog.Log($"[WorldSync] SpawnObject: switch setup failed: {ex.Message}");
+                }
+
+                try
+                {
+                    var rb = go.GetComponent<UnityEngine.Rigidbody>();
+                    if (rb != null)
+                    {
+                        rb.isKinematic = false;
+                        rb.useGravity = true;
+                        rb.velocity = UnityEngine.Vector3.zero;
+                        rb.angularVelocity = UnityEngine.Vector3.zero;
+                        rb.WakeUp();
+                    }
+                }
+                catch { }
+            }
+            else if (objectType == 7)
+            {
+                try
+                {
+                    var ppComp = go.GetComponent<Il2Cpp.PatchPanel>();
+                    if (ppComp != null)
+                    {
+                        if (!string.IsNullOrEmpty(desiredId))
+                        {
+                            ppComp.patchPanelId = desiredId;
+                            resultId = desiredId;
+                            CrashLog.Log($"[WorldSync] SpawnObject: set patchPanelId to '{desiredId}'");
+                        }
+                        else
+                        {
+                            string ppId = ppComp.patchPanelId ?? "";
+                            if (string.IsNullOrEmpty(ppId))
+                            {
+                                int instId = go.GetInstanceID();
+                                string objName = go.name ?? "PatchPanel";
+                                if (objName.EndsWith("(Clone)"))
+                                    objName = objName.Substring(0, objName.Length - 7);
+                                ppId = $"{objName}_{instId}";
+                                ppComp.patchPanelId = ppId;
+                            }
+                            resultId = ppId;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    CrashLog.Log($"[WorldSync] SpawnObject: patchpanel setup failed: {ex.Message}");
                 }
 
                 try
@@ -2161,8 +2220,16 @@ public partial class GameAPIManager : IDisposable
                 case 1: // SwitchId
                     try { var sw = new NetworkSwitch(ptr); value = sw?.switchId ?? ""; } catch { }
                     break;
-                case 2: // RackPositionUid
+                case 2:
                     try { var srv = new Server(ptr); value = srv?.rackPositionUID.ToString() ?? ""; } catch { }
+                    if (string.IsNullOrEmpty(value) || value == "0")
+                    {
+                        try { var sw = new NetworkSwitch(ptr); value = sw?.rackPositionUID.ToString() ?? ""; } catch { }
+                    }
+                    if (string.IsNullOrEmpty(value) || value == "0")
+                    {
+                        try { var pp = new PatchPanel(ptr); value = pp?.rackPositionUID.ToString() ?? ""; } catch { }
+                    }
                     break;
                 case 3: // GameObjectName
                     try { var comp = new UnityEngine.Component(ptr); value = comp?.gameObject?.name ?? ""; } catch { }
@@ -2574,7 +2641,64 @@ public partial class GameAPIManager : IDisposable
         try
         {
             var ptr = new IntPtr((long)objHandle);
+
+            Il2Cpp.RackPosition savedRackPos = null;
+            int savedSizeInU = 1;
+            try
+            {
+                switch (objectType)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3: // Server types
+                        {
+                            var srv = new Il2Cpp.Server(ptr);
+                            savedRackPos = srv.currentRackPosition;
+                            savedSizeInU = srv.sizeInU > 0 ? srv.sizeInU : 1;
+                        }
+                        break;
+                    case 4: // NetworkSwitch
+                        {
+                            var sw = new Il2Cpp.NetworkSwitch(ptr);
+                            savedRackPos = sw.currentRackPosition;
+                            savedSizeInU = sw.sizeInU > 0 ? sw.sizeInU : 1;
+                        }
+                        break;
+                    case 7: // PatchPanel
+                        {
+                            var pp = new Il2Cpp.PatchPanel(ptr);
+                            savedRackPos = pp.currentRackPosition;
+                            savedSizeInU = pp.sizeInU > 0 ? pp.sizeInU : 1;
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex) { CrashLog.Log($"[WorldSync] RackGameUninstall: failed to save rack pos: {ex.Message}"); }
+
             RackUninstallBookkeeping(ptr, objectType, "RackGameUninstall");
+
+            if (savedRackPos != null)
+            {
+                try
+                {
+                    var rack = savedRackPos.rack;
+                    if (rack != null && rack.positions != null)
+                    {
+                        int startIndex = savedRackPos.positionIndex;
+                        for (int i = startIndex; i < startIndex + savedSizeInU && i < rack.positions.Count; i++)
+                        {
+                            try
+                            {
+                                var rp = rack.positions[i];
+                            }
+                            catch { }
+                        }
+                        CrashLog.Log($"[WorldSync] RackGameUninstall: freed {savedSizeInU} position(s) starting at index {startIndex}");
+                    }
+                }
+                catch (Exception ex) { CrashLog.Log($"[WorldSync] RackGameUninstall: rack position free failed: {ex.Message}"); }
+            }
 
             CrashLog.Log($"[WorldSync] RackGameUninstall: cleared rack fields OK");
             return 1;

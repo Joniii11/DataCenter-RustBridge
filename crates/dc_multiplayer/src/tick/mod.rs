@@ -90,6 +90,19 @@ pub fn update(api: &Api, dt: f32) {
 
     check_world_action_timeouts(api, dt);
 
+    let need_rack_uids =
+        with_state(|s| s.session.is_host && !s.session.rack_uids_ensured).unwrap_or(false);
+    if need_rack_uids {
+        let assigned = api.world_ensure_rack_uids();
+        if assigned > 0 {
+            with_state(|s| s.session.rack_uids_ensured = true);
+            dc_api::crash_log(&format!(
+                "[MP] Host lazy-ensured {} rack position UIDs",
+                assigned
+            ));
+        }
+    }
+
     let should_send = with_state(|s| {
         s.session.pos_timer += dt;
         if s.session.pos_timer >= POSITION_SEND_INTERVAL {
