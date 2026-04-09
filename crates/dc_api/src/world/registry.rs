@@ -4,9 +4,6 @@
 //! assigns a new instance ID, breaking multiplayer sync. This registry
 //! maintains a stable mapping so every side can refer to the same logical
 //! object by a persistent string key.
-//!
-//! The registry lives in `dc_api` (not in a specific mod) so **every** mod
-//! — regardless of language — can query or mutate it through the public API.
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -14,12 +11,9 @@ use std::sync::Mutex;
 use crate::world::{ObjectHandle, WorldObject};
 use crate::Api;
 
-// ── Global singleton ───────────────────────────────────────────────────────
-
 static REGISTRY: Mutex<Option<ObjectIdRegistry>> = Mutex::new(None);
 
 /// Run a closure with shared read access to the global registry.
-/// Returns `None` if the registry has not been initialised yet.
 pub fn with_registry<F, R>(f: F) -> Option<R>
 where
     F: FnOnce(&ObjectIdRegistry) -> R,
@@ -29,7 +23,6 @@ where
 }
 
 /// Run a closure with exclusive write access to the global registry.
-/// Initialises an empty registry on first call.
 pub fn with_registry_mut<F, R>(f: F) -> Option<R>
 where
     F: FnOnce(&mut ObjectIdRegistry) -> R,
@@ -41,32 +34,25 @@ where
     guard.as_mut().map(f)
 }
 
-/// Reset the global registry (e.g. on scene change / disconnect).
+/// Reset the global registry
 pub fn reset_registry() {
     if let Ok(mut guard) = REGISTRY.lock() {
         *guard = None;
     }
 }
 
-// ── Registry types ─────────────────────────────────────────────────────────
-
-/// One entry in the registry.
+/// One entry in the registry
 #[derive(Debug, Clone)]
 pub struct RegistryEntry {
-    /// Current Il2Cpp handle (may change when the game clones an object).
     pub handle: ObjectHandle,
-    /// Wire‑level object type (0‑3 = server, 4 = switch, 7 = patch panel).
     pub object_type: u8,
 }
 
-/// Maps stable string IDs ↔ volatile Unity handles.
+/// Maps stable string IDs
 #[derive(Debug)]
 pub struct ObjectIdRegistry {
-    /// stable_id → entry
     by_id: HashMap<String, RegistryEntry>,
-    /// handle → stable_id  (reverse index, kept in sync)
     by_handle: HashMap<ObjectHandle, String>,
-    /// Monotonic counter used when generating IDs for objects that have none.
     next_generated: u32,
 }
 
@@ -79,19 +65,17 @@ impl ObjectIdRegistry {
         }
     }
 
-    // ── Queries ────────────────────────────────────────────────────────
-
-    /// Look up an entry by its stable ID.
+    /// Look up an entry by its id
     pub fn find_by_id(&self, stable_id: &str) -> Option<&RegistryEntry> {
         self.by_id.get(stable_id)
     }
 
-    /// Look up the stable ID for a given handle.
+    /// Look up the id for a given handle
     pub fn find_id_by_handle(&self, handle: ObjectHandle) -> Option<&str> {
         self.by_handle.get(&handle).map(|s| s.as_str())
     }
 
-    /// Total number of tracked objects.
+    /// Total number of tracked objects
     pub fn len(&self) -> usize {
         self.by_id.len()
     }
@@ -100,18 +84,12 @@ impl ObjectIdRegistry {
         self.by_id.is_empty()
     }
 
-    /// Iterate over all `(stable_id, entry)` pairs.
+    /// Iterate over all `(id, entry)` pairs
     pub fn iter(&self) -> impl Iterator<Item = (&str, &RegistryEntry)> {
         self.by_id.iter().map(|(k, v)| (k.as_str(), v))
     }
 
-    // ── Mutations ──────────────────────────────────────────────────────
-
-    /// Register (or update) an object.
-    ///
-    /// If `stable_id` already exists the handle is updated.
-    /// If the old handle pointed to a different ID, that reverse entry is
-    /// cleaned up.
+    /// Register (or update) an object
     pub fn register(
         &mut self,
         stable_id: impl Into<String>,
@@ -120,15 +98,13 @@ impl ObjectIdRegistry {
     ) {
         let stable_id = stable_id.into();
 
-        // Remove stale reverse entry for the same handle (could point to a
-        // different ID if the game reused an address).
+        // Remove stale reverse entry for the same handle
         if let Some(old_id) = self.by_handle.remove(&handle) {
             if old_id != stable_id {
                 self.by_id.remove(&old_id);
             }
         }
 
-        // Remove stale reverse entry for the old handle of this ID.
         if let Some(old_entry) = self.by_id.get(&stable_id) {
             self.by_handle.remove(&old_entry.handle);
         }
@@ -143,11 +119,9 @@ impl ObjectIdRegistry {
         );
     }
 
-    /// Update only the handle for an existing stable ID (clone event).
-    /// Returns `true` if the ID existed and was updated.
+    /// Update only the handle for an existing id
     pub fn update_handle(&mut self, stable_id: &str, new_handle: ObjectHandle) -> bool {
         if let Some(entry) = self.by_id.get_mut(stable_id) {
-            // Remove old reverse
             self.by_handle.remove(&entry.handle);
             entry.handle = new_handle;
             self.by_handle.insert(new_handle, stable_id.to_string());
@@ -157,7 +131,7 @@ impl ObjectIdRegistry {
         }
     }
 
-    /// Remove an entry by stable ID.
+    /// Remove an entry by id
     pub fn remove(&mut self, stable_id: &str) -> Option<RegistryEntry> {
         if let Some(entry) = self.by_id.remove(stable_id) {
             self.by_handle.remove(&entry.handle);
@@ -167,28 +141,20 @@ impl ObjectIdRegistry {
         }
     }
 
-    /// Remove all entries.
+    /// Remove all entries
     pub fn clear(&mut self) {
         self.by_id.clear();
         self.by_handle.clear();
     }
 
-    /// Generate a new unique stable ID with the given prefix.
-    /// E.g. `generate_id("PatchPanel")` → `"PatchPanel__g0001"`.
+    /// Generate a new unique id with the given prefix
     pub fn generate_id(&mut self, prefix: &str) -> String {
         let id = format!("{}__g{:04}", prefix, self.next_generated);
         self.next_generated += 1;
         id
     }
 
-    // ── Bulk population ────────────────────────────────────────────────
-
-    /// Scan all game objects through the API and register them.
-    ///
-    /// * Objects that already have a non‑empty game ID keep it as their
-    ///   stable ID.
-    /// * Objects with an empty ID get a generated one, which is also
-    ///   written back to the game via `obj_set_string_field`.
+    /// Scan all game objects through the API and register them
     pub fn populate_from_game(&mut self, api: &Api) {
         self.populate_type::<super::Server>(api, "Server");
         self.populate_type::<super::NetworkSwitch>(api, "Switch");
@@ -208,7 +174,6 @@ impl ObjectIdRegistry {
 
             let stable_id = if game_id.is_empty() {
                 let generated = self.generate_id(prefix);
-                // Write the generated ID back to the game object
                 api.obj_set_string_field(handle, T::ID_FIELD, &generated);
                 crate::crash_log(&format!(
                     "[Registry] Assigned '{}' to {} at handle {:?}",
@@ -229,8 +194,6 @@ impl Default for ObjectIdRegistry {
         Self::new()
     }
 }
-
-// ── Tests ──────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
 mod tests {
