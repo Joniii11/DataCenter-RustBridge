@@ -186,18 +186,8 @@ pub trait WorldObject: Sized {
         self.set_active(api, false)
     }
 
-    /// Drop: reactivate at position with physics enabled
     fn drop_at(&self, api: &Api, pos: Vec3, rot: Quat) -> bool {
-        if !self.set_active(api, true) {
-            return false;
-        }
-        self.set_position(api, pos);
-        self.set_rotation(api, rot);
-        self.reparent_to_world(api);
-        self.set_kinematic(api, false);
-        self.set_gravity(api, true);
-        self.wake_up(api);
-        true
+        api.world_drop_object(self.id(), pos, rot.x, rot.y, rot.z, rot.w)
     }
 
     /// Enable physics

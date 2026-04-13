@@ -1,4 +1,4 @@
-=== ALL TYPES IN Assembly-CSharp.dll (478 total) ===
+=== ALL TYPES IN Assembly-CSharp.dll (491 total) ===
 
   public class Il2Cpp.__JobReflectionRegistrationOutput__1221673671587648887
   public class Il2Cpp.__UnmanagedPostProcessorOutput__1221673671587648887
@@ -43,23 +43,24 @@
   public class Il2Cpp.CheckIfTouchingWall : MonoBehaviour
   public class Il2Cpp.CheckIfTouchingWall+_DelayedOverlapCheck_d__6
   public class Il2Cpp.ColorSerializationSurrogate
+  public class Il2Cpp.CommandCenterOperator : MonoBehaviour
   public class Il2Cpp.ComputerShop : Interact
   public class Il2Cpp.ComputerShop+__c
   public class Il2Cpp.ComputerShop+__c__DisplayClass48_0
   public class Il2Cpp.ComputerShop+__c__DisplayClass62_0
   public class Il2Cpp.CustomerBase : MonoBehaviour
-  public class Il2Cpp.CustomerBase+__c
-  public class Il2Cpp.CustomerBase+__c__DisplayClass39_0
-  public class Il2Cpp.CustomerBase+_CheckIfAppRequirementsAreMet_d__35
-  public class Il2Cpp.CustomerBase+_DelayedAppDoorOpening_d__45
-  public class Il2Cpp.CustomerBase+_UpdateMoney_d__36
-  public class Il2Cpp.CustomerBase+AppConnectionInfo
+  public class Il2Cpp.CustomerBase+_CheckIfAppRequirementsAreMet_d__36
+  public class Il2Cpp.CustomerBase+_DelayedAppDoorOpening_d__47
+  public class Il2Cpp.CustomerBase+_UpdateMoney_d__37
   public class Il2Cpp.CustomerBaseDoor : Interact
   public class Il2Cpp.CustomerBaseSaveData
   public class Il2Cpp.CustomerCard : MonoBehaviour
   public class Il2Cpp.CustomerColor
   public class Il2Cpp.CustomerItem : ScriptableObject
   public class Il2Cpp.CustomerRecordSaveData
+  public class Il2Cpp.DeviceTimerManager : MonoBehaviour
+  public class Il2Cpp.DeviceTimerManager+_TimerLoop_d__7
+  public class Il2Cpp.DllEntry
   public class Il2Cpp.DropdownSample : MonoBehaviour
   public class Il2Cpp.Dumpster : Interact
   public class Il2Cpp.EnvMapAnimator : MonoBehaviour
@@ -87,6 +88,7 @@
   public class Il2Cpp.GODMOD+_DelayedLoad_d__7
   public class Il2Cpp.GODMOD+_GODMOD_delayed_d__10
   public class Il2Cpp.HRSystem : MonoBehaviour
+  public class Il2Cpp.IModPlugin : Il2CppObjectBase
   public class Il2Cpp.InputController
   public class Il2Cpp.InputController+IPlayerActions : Il2CppObjectBase
   public class Il2Cpp.InputController+IUIActions : Il2CppObjectBase
@@ -98,6 +100,7 @@
   public class Il2Cpp.Interact : MonoBehaviour
   public class Il2Cpp.InteractObjectData
   public class Il2Cpp.Item : ScriptableObject
+  public class Il2Cpp.ITimedDevice : Il2CppObjectBase
   public class Il2Cpp.KeyHint : MonoBehaviour
   public class Il2Cpp.LACPGroupSaveData
   public class Il2Cpp.LanguageObject
@@ -123,12 +126,13 @@
   public class Il2Cpp.MainGameManager+__c__DisplayClass71_0
   public class Il2Cpp.MainGameManager+__c__DisplayClass76_0
   public class Il2Cpp.MainGameManager+__c__DisplayClass78_0
-  public class Il2Cpp.MainGameManager+_AutoSaveCoroutine_d__92
+  public class Il2Cpp.MainGameManager+_AutoSaveCoroutine_d__93
   public class Il2Cpp.MainMenu : MonoBehaviour
   public class Il2Cpp.MainMenuCamera : MonoBehaviour
-  public class Il2Cpp.ModConfig
   public class Il2Cpp.ModItemSaveData
   public class Il2Cpp.ModLoader : MonoBehaviour
+  public class Il2Cpp.ModLoader+_SyncWorkshopThenLoadAll_d__11
+  public class Il2Cpp.ModPackConfig
   public class Il2Cpp.ModShopItem : MonoBehaviour
   public class Il2Cpp.MonthlySnapshotSaveData
   public class Il2Cpp.MusicPlayer : Interact
@@ -139,11 +143,8 @@
   public class Il2Cpp.NetworkMap+LACPGroup
   public class Il2Cpp.NetworkSaveData
   public class Il2Cpp.NetworkSwitch : UsableObject
-  public class Il2Cpp.NetworkSwitch+_BrekingInProgress_d__29
   public class Il2Cpp.NetworkSwitchConfiguration : MonoBehaviour
   public class Il2Cpp.NetworkSwitchConfiguration+__c
-  public class Il2Cpp.NetworkSwitchConfiguration+__c__DisplayClass16_0
-  public class Il2Cpp.NetworkSwitchConfiguration+__c__DisplayClass9_0
   public class Il2Cpp.ObjectiveObject : MonoBehaviour
   public class Il2Cpp.Objectives : MonoBehaviour
   public class Il2Cpp.Objectives+__c__DisplayClass32_0
@@ -153,6 +154,7 @@
   public class Il2Cpp.ObjImporter
   public class Il2Cpp.OpenURL : MonoBehaviour
   public struct Il2Cpp.PacketComponent
+  public struct Il2Cpp.PacketSettings
   public class Il2Cpp.PacketSpawnerAuthoring : MonoBehaviour
   public class Il2Cpp.PacketSpawnerAuthoring+Baker : Baker`1
   public class Il2Cpp.PacketSpawnerComponent
@@ -161,6 +163,10 @@
   public class Il2Cpp.PacketSpawnerSystem+IFE_23355594_0+Enumerator
   public struct Il2Cpp.PacketSpawnerSystem+IFE_23355594_0+ResolvedChunk
   public class Il2Cpp.PacketSpawnerSystem+IFE_23355594_0+TypeHandle
+  public struct Il2Cpp.PacketSpawnerSystem+IFE_23355594_1
+  public class Il2Cpp.PacketSpawnerSystem+IFE_23355594_1+Enumerator
+  public struct Il2Cpp.PacketSpawnerSystem+IFE_23355594_1+ResolvedChunk
+  public class Il2Cpp.PacketSpawnerSystem+IFE_23355594_1+TypeHandle
   public class Il2Cpp.PacketSpawnerSystem+MulticastDelegateNInternalSealedVoInA_InVoObseA_stBe0 : MulticastDelegate
   public class Il2Cpp.PacketSpawnerSystem+MulticastDelegateNInternalSealedVoInA_InVoObseA_stBe1 : MulticastDelegate
   public class Il2Cpp.PacketSpawnerSystem+ObjectNInternalAbstractSealedInPoGeVoA_ObseGeInVo0
@@ -176,7 +182,7 @@
   public class Il2Cpp.PauseMenu : MonoBehaviour
   public class Il2Cpp.PauseMenu_TabButton : MonoBehaviour
   public class Il2Cpp.PauseMenu_TabGroup : MonoBehaviour
-  public class Il2Cpp.PauseMenu+_LoadWithOverlay_d__45
+  public class Il2Cpp.PauseMenu+_LoadWithOverlay_d__42
   public class Il2Cpp.PauseMenu+OnPauseMenuClose : MulticastDelegate
   public class Il2Cpp.PauseMenu+OnPauseMenuOpen : MulticastDelegate
   public class Il2Cpp.PauseMenuVideoTutorial : MonoBehaviour
@@ -200,6 +206,7 @@
   public class Il2Cpp.RackAudioCuller+__c
   public class Il2Cpp.RackAudioCuller+_CullLoop_d__13
   public class Il2Cpp.RackDoor : Interact
+  public class Il2Cpp.RackDoor+_DelayedTrigger_d__8
   public class Il2Cpp.RackMount : Interact
   public class Il2Cpp.RackMount+__c
   public class Il2Cpp.RackMount+__c__DisplayClass6_0
@@ -223,12 +230,15 @@
   public class Il2Cpp.SaveData
   public class Il2Cpp.SaveSystem
   public class Il2Cpp.SaveSystem+__c
-  public class Il2Cpp.SaveSystem+__c__DisplayClass20_0
+  public class Il2Cpp.SaveSystem+__c__DisplayClass13_0
+  public class Il2Cpp.SaveSystem+__c__DisplayClass18_0
+  public class Il2Cpp.SaveSystem+__c__DisplayClass24_0
+  public class Il2Cpp.SaveSystem+__c__DisplayClass25_0
   public class Il2Cpp.SaveSystem+OnLoadingData : MulticastDelegate
   public class Il2Cpp.SaveSystem+OnLoadingDataLater : MulticastDelegate
   public class Il2Cpp.SaveSystem+OnSavingData : MulticastDelegate
+  public class Il2Cpp.SaveSystem+SaveMeta
   public class Il2Cpp.Server : UsableObject
-  public class Il2Cpp.Server+_BrekingInProgress_d__45
   public class Il2Cpp.ServerSaveData
   public class Il2Cpp.SetIP : MonoBehaviour
   public class Il2Cpp.SettingsControls : MonoBehaviour
@@ -236,7 +246,8 @@
   public class Il2Cpp.SettingsGameplay+__c
   public class Il2Cpp.SettingsGraphics : MonoBehaviour
   public class Il2Cpp.SettingsGraphics+__c
-  public class Il2Cpp.SettingsGraphics+_AvailableRefreshRatesAfterFrame_d__32
+  public class Il2Cpp.SettingsGraphics+_AvailableRefreshRatesAfterFrame_d__35
+  public class Il2Cpp.SettingsGraphics+_MoveToMonitorCoroutine_d__52
   public class Il2Cpp.SettingsSingleton : MonoBehaviour
   public class Il2Cpp.SettingsSingleton+_DisableOnAfterFirstSettingUp_d__5
   public class Il2Cpp.SettingsSingleton+OnTurnOffPublic : MulticastDelegate
@@ -248,11 +259,13 @@
   public class Il2Cpp.SFPSaveData
   public class Il2Cpp.ShopCartItem : MonoBehaviour
   public class Il2Cpp.ShopItem : MonoBehaviour
+  public class Il2Cpp.ShopItemConfig
   public class Il2Cpp.ShopItemSO : ScriptableObject
   public class Il2Cpp.StaminaOverlayOnEnable : MonoBehaviour
+  public class Il2Cpp.StaticItemConfig
   public class Il2Cpp.StaticUIElements : MonoBehaviour
-  public class Il2Cpp.StaticUIElements+_UpdateCoinsAndPrestige_TopLeft_d__48
-  public class Il2Cpp.StaticUIElements+_UpdateMessagesCoroutine_d__55
+  public class Il2Cpp.StaticUIElements+_UpdateCoinsAndPrestige_TopLeft_d__54
+  public class Il2Cpp.StaticUIElements+_UpdateMessagesCoroutine_d__61
   public class Il2Cpp.SteamLeaderboards
   public class Il2Cpp.SteamManager : MonoBehaviour
   public class Il2Cpp.SteamStatsOnMainMenuTop : MonoBehaviour
@@ -268,8 +281,8 @@
   public class Il2Cpp.Technician+_ThrowingOutServer_d__32
   public enum Il2Cpp.Technician+TechnicianState
   public class Il2Cpp.TechnicianManager : MonoBehaviour
-  public class Il2Cpp.TechnicianManager+__c__DisplayClass26_0
-  public class Il2Cpp.TechnicianManager+_ProcessDispatchQueue_d__21
+  public class Il2Cpp.TechnicianManager+__c__DisplayClass27_0
+  public class Il2Cpp.TechnicianManager+_ProcessDispatchQueue_d__22
   public class Il2Cpp.TechnicianManager+RepairJob
   public class Il2Cpp.TechnicianSaveData
   public class Il2Cpp.TerrainDetector
@@ -300,15 +313,15 @@
   public class Il2Cpp.Vector3SerializationSurrogate
   public class Il2Cpp.Wall : Interact
   public class Il2Cpp.WaypointInitializationSystem : SystemBase
-  public class Il2Cpp.WaypointInitializationSystem+___LoadNetworkStateCoroutine_592A83D2_d__46
+  public class Il2Cpp.WaypointInitializationSystem+___LoadNetworkStateCoroutine_592A83D2_d__51
   public class Il2Cpp.WaypointInitializationSystem+__c
-  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass12_0
-  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass12_1
-  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass24_0
-  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass27_0
-  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass46_0
-  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass46_1
-  public class Il2Cpp.WaypointInitializationSystem+_LoadNetworkStateCoroutine_d__12
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass14_0
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass14_1
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass29_0
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass32_0
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass51_0
+  public class Il2Cpp.WaypointInitializationSystem+__c__DisplayClass51_1
+  public class Il2Cpp.WaypointInitializationSystem+_LoadNetworkStateCoroutine_d__14
   public class Il2Cpp.WaypointInitializationSystem+CableEndpoint
   public class Il2Cpp.WaypointInitializationSystem+CableInfo
   public class Il2Cpp.WaypointInitializationSystem+CustomerNetworkInfo
@@ -481,7 +494,1504 @@
 
 === FILTERED: Menu, Button, Setting, Local, Panel, UI, Config, Save, Load, Option, Preference, Language, Input, Keybind, Resolution, Audio, Volume, Graphics, Quality ===
 
-Matching types: 133
+
+=== RACK / PHYSICS DEEP DUMP ===
+
+Rack/physics types to dump: 45
+
+  public class Il2Cpp.BalanceSheet : UnityEngine.MonoBehaviour
+    -- Fields (30) --
+      private static IntPtr NativeFieldInfoPtr_instance
+      private static IntPtr NativeFieldInfoPtr_history
+      private static IntPtr NativeFieldInfoPtr_currentRecords
+      private static IntPtr NativeFieldInfoPtr_totalMonthlySalary
+      private static IntPtr NativeFieldInfoPtr_currentSalaryExpense
+      private static IntPtr NativeFieldInfoPtr_rowPrefab
+      private static IntPtr NativeFieldInfoPtr_rowContainer
+      private static IntPtr NativeFieldInfoPtr_activeRows
+      private static IntPtr NativeFieldInfoPtr_trackFinancesCoroutine
+      private static IntPtr NativeMethodInfoPtr_Awake_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_Start_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnDestroy_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_GetOrCreateRecord_Private_CustomerRecord_CustomerItem_0
+      private static IntPtr NativeMethodInfoPtr_RegisterSalary_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_TrackFinances_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_CountFailingApps_Private_Int32_CustomerBase_0
+      private static IntPtr NativeMethodInfoPtr_SaveSnapshot_Private_Void_Int32_DateTime_0
+      private static IntPtr NativeMethodInfoPtr_GetLatestSnapshot_Public_MonthlySnapshot_0
+      private static IntPtr NativeMethodInfoPtr_FillInBalanceSheet_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_AddRow_Private_Void_String_Single_Single_Single_Sprite_0
+      private static IntPtr NativeMethodInfoPtr_AddSalaryRow_Private_Void_Single_0
+      private static IntPtr NativeMethodInfoPtr_AddTotalRow_Private_Void_Single_Single_Single_0
+      private static IntPtr NativeMethodInfoPtr_AddHeaderRow_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_AddSectionTitle_Private_Void_String_0
+      private static IntPtr NativeMethodInfoPtr_InstantiateRow_Private_BalanceSheetRow_0
+      private static IntPtr NativeMethodInfoPtr_ClearRows_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_GetSaveData_Public_BalanceSheetSaveData_0
+      private static IntPtr NativeMethodInfoPtr_LoadFromSave_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_RestoreRecord_Private_CustomerRecord_CustomerRecordSaveData_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (9) --
+      BalanceSheet instance { get; set; }
+      List`1 history { get; set; }
+      Dictionary`2 currentRecords { get; set; }
+      Single totalMonthlySalary { get; set; }
+      Single currentSalaryExpense { get; set; }
+      GameObject rowPrefab { get; set; }
+      Transform rowContainer { get; set; }
+      List`1 activeRows { get; set; }
+      Coroutine trackFinancesCoroutine { get; set; }
+    -- Methods (20) --
+      public Void Awake()
+      public Void Start()
+      public Void OnDestroy()
+      public CustomerRecord GetOrCreateRecord(CustomerItem item)
+      public Void RegisterSalary(Int32 monthlySalary)
+      public IEnumerator TrackFinances()
+      public Int32 CountFailingApps(CustomerBase cb)
+      public Void SaveSnapshot(Int32 month, DateTime snapshotTime)
+      public MonthlySnapshot GetLatestSnapshot()
+      public Void FillInBalanceSheet()
+      public Void AddRow(String name, Single revenue, Single penalties, Single total, Sprite logo)
+      public Void AddSalaryRow(Single salaryExpense)
+      public Void AddTotalRow(Single revenue, Single penalties, Single total)
+      public Void AddHeaderRow()
+      public Void AddSectionTitle(String title)
+      public BalanceSheetRow InstantiateRow()
+      public Void ClearRows()
+      public BalanceSheetSaveData GetSaveData()
+      public Void LoadFromSave()
+      public CustomerRecord RestoreRecord(CustomerRecordSaveData recData)
+    -- Nested types (3) --
+      CustomerRecord
+      MonthlySnapshot
+      _TrackFinances_d__16
+
+  public class Il2Cpp.BalanceSheet+_TrackFinances_d__16 : Il2CppSystem.Object
+    -- Fields (11) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeFieldInfoPtr__lastSnapshotTime_5__2
+      private static IntPtr NativeFieldInfoPtr__currentMonth_5__3
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (7) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      BalanceSheet __4__this { get; set; }
+      DateTime _lastSnapshotTime_5__2 { get; set; }
+      Int32 _currentMonth_5__3 { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.BalanceSheet+CustomerRecord : Il2CppSystem.Object
+    -- Fields (7) --
+      private static IntPtr NativeFieldInfoPtr_customerID
+      private static IntPtr NativeFieldInfoPtr_customerName
+      private static IntPtr NativeFieldInfoPtr_customerLogo
+      private static IntPtr NativeFieldInfoPtr_revenue
+      private static IntPtr NativeFieldInfoPtr_penalties
+      private static IntPtr NativeMethodInfoPtr_get_Total_Public_get_Single_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (6) --
+      Int32 customerID { get; set; }
+      String customerName { get; set; }
+      Sprite customerLogo { get; set; }
+      Single revenue { get; set; }
+      Single penalties { get; set; }
+      Single Total { get;  }
+
+  public class Il2Cpp.BalanceSheet+MonthlySnapshot : Il2CppSystem.Object
+    -- Fields (8) --
+      private static IntPtr NativeFieldInfoPtr_month
+      private static IntPtr NativeFieldInfoPtr_day
+      private static IntPtr NativeFieldInfoPtr_records
+      private static IntPtr NativeFieldInfoPtr_salaryExpense
+      private static IntPtr NativeMethodInfoPtr_get_TotalRevenue_Public_get_Single_0
+      private static IntPtr NativeMethodInfoPtr_get_TotalPenalties_Public_get_Single_0
+      private static IntPtr NativeMethodInfoPtr_get_GrandTotal_Public_get_Single_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (7) --
+      Int32 month { get; set; }
+      Int32 day { get; set; }
+      List`1 records { get; set; }
+      Single salaryExpense { get; set; }
+      Single TotalRevenue { get;  }
+      Single TotalPenalties { get;  }
+      Single GrandTotal { get;  }
+    -- Nested types (1) --
+      __c
+
+  public class Il2Cpp.CommandCenterOperator : UnityEngine.MonoBehaviour
+    -- Fields (4) --
+      private static IntPtr NativeFieldInfoPtr_technicianID
+      private static IntPtr NativeFieldInfoPtr_technicianName
+      private static IntPtr NativeFieldInfoPtr_salary
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (3) --
+      Int32 technicianID { get; set; }
+      String technicianName { get; set; }
+      Int32 salary { get; set; }
+
+  public class Il2Cpp.HRSystem : UnityEngine.MonoBehaviour
+    -- Fields (14) --
+      private static IntPtr NativeFieldInfoPtr_confirmHireOverlay
+      private static IntPtr NativeFieldInfoPtr_confirmFireOverlay
+      private static IntPtr NativeFieldInfoPtr_buttonReturn
+      private static IntPtr NativeFieldInfoPtr_buttonsHireEmployees
+      private static IntPtr NativeFieldInfoPtr_buttonsFireEmployees
+      private static IntPtr NativeFieldInfoPtr_employeeRequiredReputations
+      private static IntPtr NativeFieldInfoPtr_selectedEmployeeIndex
+      private static IntPtr NativeMethodInfoPtr_OnEnable_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_ButtonHireEmployee_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_ButtonCancelBuying_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_ButtonConfirmHire_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_ButtonFireEmployee_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_ButtonConfirmFireEmployee_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (7) --
+      GameObject confirmHireOverlay { get; set; }
+      GameObject confirmFireOverlay { get; set; }
+      ButtonExtended buttonReturn { get; set; }
+      Il2CppReferenceArray`1 buttonsHireEmployees { get; set; }
+      Il2CppReferenceArray`1 buttonsFireEmployees { get; set; }
+      Il2CppStructArray`1 employeeRequiredReputations { get; set; }
+      Int32 selectedEmployeeIndex { get; set; }
+    -- Methods (6) --
+      public Void OnEnable()
+      public Void ButtonHireEmployee(Int32 i)
+      public Void ButtonCancelBuying()
+      public Void ButtonConfirmHire()
+      public Void ButtonFireEmployee(Int32 i)
+      public Void ButtonConfirmFireEmployee()
+
+  public class Il2Cpp.Interact : UnityEngine.MonoBehaviour
+    -- Fields (22) --
+      private static IntPtr NativeFieldInfoPtr_hasSecondAction
+      private static IntPtr NativeFieldInfoPtr_SecondActionTextUID
+      private static IntPtr NativeFieldInfoPtr_uid
+      private static IntPtr NativeFieldInfoPtr_saveValue
+      private static IntPtr NativeFieldInfoPtr_saveIntArray
+      private static IntPtr NativeFieldInfoPtr_saveIntArray2
+      private static IntPtr NativeFieldInfoPtr_timeForAction
+      private static IntPtr NativeFieldInfoPtr_isOnInteractEveryFrame
+      private static IntPtr NativeFieldInfoPtr_isHoldToInteract
+      private static IntPtr NativeFieldInfoPtr_isHoldToSecondAction
+      private static IntPtr NativeFieldInfoPtr_secondActionHoldTextUID
+      private static IntPtr NativeFieldInfoPtr_onHoverTextUID
+      private static IntPtr NativeFieldInfoPtr_holdDuration
+      private static IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_IsAllowedToDoSecondAction_Public_Virtual_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_SecondActionOnClick_Public_Virtual_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_New_Void_RaycastHit_0
+      private static IntPtr NativeMethodInfoPtr_OnHoverOver_Public_Virtual_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_CloseInteractionMenu_Public_Virtual_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnLoad_Public_Virtual_New_Void_InteractObjectData_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (13) --
+      Boolean hasSecondAction { get; set; }
+      Int32 SecondActionTextUID { get; set; }
+      Int32 uid { get; set; }
+      Il2CppStructArray`1 saveValue { get; set; }
+      Il2CppStructArray`1 saveIntArray { get; set; }
+      Il2CppStructArray`1 saveIntArray2 { get; set; }
+      Single timeForAction { get; set; }
+      Boolean isOnInteractEveryFrame { get; set; }
+      Boolean isHoldToInteract { get; set; }
+      Boolean isHoldToSecondAction { get; set; }
+      Int32 secondActionHoldTextUID { get; set; }
+      Int32 onHoverTextUID { get; set; }
+      Single holdDuration { get; set; }
+    -- Methods (8) --
+      public virtual Void Awake()
+      public virtual Void InteractOnClick()
+      public virtual Boolean IsAllowedToDoSecondAction()
+      public virtual Void SecondActionOnClick()
+      public virtual Void InteractOnHover(RaycastHit hit)
+      public virtual Void OnHoverOver()
+      public virtual Void CloseInteractionMenu()
+      public virtual Void OnLoad(InteractObjectData data)
+
+  public class Il2Cpp.NetworkSwitch : Il2Cpp.UsableObject
+    -- Fields (43) --
+      private static IntPtr NativeFieldInfoPtr_canvas
+      private static IntPtr NativeFieldInfoPtr_txtScreen
+      private static IntPtr NativeFieldInfoPtr_cableLinkSwitchPorts
+      private static IntPtr NativeFieldInfoPtr_switchId
+      private static IntPtr NativeFieldInfoPtr_switchType
+      private static IntPtr NativeFieldInfoPtr_isOn
+      private static IntPtr NativeFieldInfoPtr_label
+      private static IntPtr NativeFieldInfoPtr_timeToBrake
+      private static IntPtr NativeFieldInfoPtr_eolTime
+      private static IntPtr NativeFieldInfoPtr_isBroken
+      private static IntPtr NativeFieldInfoPtr_existingWarningSigns
+      private static IntPtr NativeFieldInfoPtr_existingErrorSigns
+      private static IntPtr NativeFieldInfoPtr_isWarningCleared
+      private static IntPtr NativeFieldInfoPtr_powerButton
+      private static IntPtr NativeFieldInfoPtr_temporarilyDisconnectedCables
+      private static IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_Start_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_PowerButton_Public_Void_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_TurnOffCommonFunctions_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_TurnOnCommonFunction_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_IsAnyCableConnected_Public_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+      private static IntPtr NativeMethodInfoPtr_SwitchInsertedInRack_Public_Void_SwitchSaveData_0
+      private static IntPtr NativeMethodInfoPtr_DisconnectCablesWhenSwitchIsOff_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_HandleNewCableWhileOff_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_GetConnectedDevices_Public_List_1_ValueTuple_2_String_Int32_0
+      private static IntPtr NativeMethodInfoPtr_GetSwitchId_Public_String_0
+      private static IntPtr NativeMethodInfoPtr_TickTimer_Public_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_UpdateScreenUI_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_ItIsBroken_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_DisconnectCables_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_ReconnectCables_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_ValidateRackPosition_Public_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_ButtonShowNetworkSwitchConfig_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_ClearWarningSign_Public_Void_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_ClearErrorSign_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnDestroy_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_SetPowerLightMaterial_Private_Void_Material_0
+      private static IntPtr NativeMethodInfoPtr_RepairDevice_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__InteractOnClick_b__21_0_Private_Boolean_RackPosition_0
+      private static IntPtr NativeMethodInfoPtr__ValidateRackPosition_b__33_0_Private_Boolean_RackPosition_0
+    -- Properties (15) --
+      GameObject canvas { get; set; }
+      TextMeshProUGUI txtScreen { get; set; }
+      Il2CppReferenceArray`1 cableLinkSwitchPorts { get; set; }
+      String switchId { get; set; }
+      Int32 switchType { get; set; }
+      Boolean isOn { get; set; }
+      String label { get; set; }
+      Int32 timeToBrake { get; set; }
+      Int32 eolTime { get; set; }
+      Boolean isBroken { get; set; }
+      Int32 existingWarningSigns { get; set; }
+      Int32 existingErrorSigns { get; set; }
+      Boolean isWarningCleared { get; set; }
+      Renderer powerButton { get; set; }
+      List`1 temporarilyDisconnectedCables { get; set; }
+    -- Methods (27) --
+      public virtual Void Awake()
+      public Void Start()
+      public Void PowerButton(Boolean forceState)
+      public Void TurnOffCommonFunctions()
+      public Void TurnOnCommonFunction()
+      public Boolean IsAnyCableConnected()
+      public virtual Void InteractOnClick()
+      public virtual Void InteractOnHover(RaycastHit hit)
+      public Void SwitchInsertedInRack(SwitchSaveData switchSaveData)
+      public Void DisconnectCablesWhenSwitchIsOff()
+      public Void HandleNewCableWhileOff(Int32 cableId)
+      public List`1 GetConnectedDevices()
+      public String GetSwitchId()
+      public virtual Void TickTimer()
+      public Void UpdateScreenUI()
+      public Void ItIsBroken()
+      public Void DisconnectCables()
+      public Void ReconnectCables()
+      public Boolean ValidateRackPosition()
+      public Void ButtonShowNetworkSwitchConfig()
+      public Void ClearWarningSign(Boolean isPreserved)
+      public Void ClearErrorSign()
+      public virtual Void OnDestroy()
+      public Void SetPowerLightMaterial(Material material)
+      public Void RepairDevice()
+      public Boolean _InteractOnClick_b__21_0(RackPosition r)
+      public Boolean _ValidateRackPosition_b__33_0(RackPosition r)
+
+  public class Il2Cpp.PatchPanel : Il2Cpp.UsableObject
+    -- Fields (14) --
+      private static IntPtr NativeFieldInfoPtr_cableLinkPorts
+      private static IntPtr NativeFieldInfoPtr_patchPanelId
+      private static IntPtr NativeFieldInfoPtr_patchPanelType
+      private static IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_GetPairedLink_Public_CableLink_CableLink_0
+      private static IntPtr NativeMethodInfoPtr_IsAnyCableConnected_Public_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+      private static IntPtr NativeMethodInfoPtr_InsertedInRack_Public_Void_PatchPanelSaveData_0
+      private static IntPtr NativeMethodInfoPtr_ValidateRackPosition_Public_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_OnDestroy_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__InteractOnClick_b__6_0_Private_Boolean_RackPosition_0
+      private static IntPtr NativeMethodInfoPtr__ValidateRackPosition_b__9_0_Private_Boolean_RackPosition_0
+    -- Properties (3) --
+      Il2CppReferenceArray`1 cableLinkPorts { get; set; }
+      String patchPanelId { get; set; }
+      Int32 patchPanelType { get; set; }
+    -- Methods (10) --
+      public virtual Void Awake()
+      public CableLink GetPairedLink(CableLink link)
+      public Boolean IsAnyCableConnected()
+      public virtual Void InteractOnClick()
+      public virtual Void InteractOnHover(RaycastHit hit)
+      public Void InsertedInRack(PatchPanelSaveData saveData)
+      public Boolean ValidateRackPosition()
+      public virtual Void OnDestroy()
+      public Boolean _InteractOnClick_b__6_0(RackPosition r)
+      public Boolean _ValidateRackPosition_b__9_0(RackPosition r)
+    -- Nested types (1) --
+      __c
+
+  public class Il2Cpp.PatchPanel+__c : Il2CppSystem.Object
+    -- Fields (4) --
+      private static IntPtr NativeFieldInfoPtr___9
+      private static IntPtr NativeFieldInfoPtr___9__8_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__InsertedInRack_b__8_0_Internal_String_CableLink_0
+    -- Properties (2) --
+      __c __9 { get; set; }
+      Func`2 __9__8_0 { get; set; }
+    -- Methods (1) --
+      public String _InsertedInRack_b__8_0(CableLink link)
+
+  public class Il2Cpp.PatchPanelSaveData : Il2CppSystem.Object
+    -- Fields (6) --
+      private static IntPtr NativeFieldInfoPtr_patchPanelID
+      private static IntPtr NativeFieldInfoPtr_position
+      private static IntPtr NativeFieldInfoPtr_rotation
+      private static IntPtr NativeFieldInfoPtr_rackPositionUID
+      private static IntPtr NativeFieldInfoPtr_patchPanelType
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (5) --
+      String patchPanelID { get; set; }
+      Vector3 position { get; set; }
+      Quaternion rotation { get; set; }
+      Int32 rackPositionUID { get; set; }
+      Int32 patchPanelType { get; set; }
+
+  public class Il2Cpp.Rack : UnityEngine.MonoBehaviour
+    -- Fields (22) --
+      private static IntPtr NativeFieldInfoPtr_positions
+      private static IntPtr NativeFieldInfoPtr_isPositionUsed
+      private static IntPtr NativeFieldInfoPtr_rackMount
+      private static IntPtr NativeFieldInfoPtr_audioSource
+      private static IntPtr NativeFieldInfoPtr_effectAudioSource
+      private static IntPtr NativeFieldInfoPtr_arePositionTurnedOff
+      private static IntPtr NativeFieldInfoPtr_buttonRackPositionsRendererer
+      private static IntPtr NativeFieldInfoPtr_targetVolume
+      private static IntPtr NativeMethodInfoPtr_Awake_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_Start_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_IsPositionAvailable_Public_Boolean_Int32_Int32_0
+      private static IntPtr NativeMethodInfoPtr_MarkPositionAsUsed_Public_Void_Int32_Int32_0
+      private static IntPtr NativeMethodInfoPtr_MarkPositionAsUnused_Public_Void_Int32_Int32_0
+      private static IntPtr NativeMethodInfoPtr_UpdateAudioVolume_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_InitializeLoadedRack_Public_Void_Il2CppStructArray_1_Int32_0
+      private static IntPtr NativeMethodInfoPtr_ButtonDisablePositionsInRack_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_SetDisablePositionsButtonMaterial_Private_Void_Material_0
+      private static IntPtr NativeMethodInfoPtr_ButtonUnmountRack_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_UnmountRack_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_OnLoad_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnDestroy_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (8) --
+      Il2CppReferenceArray`1 positions { get; set; }
+      Il2CppStructArray`1 isPositionUsed { get; set; }
+      RackMount rackMount { get; set; }
+      AudioSource audioSource { get; set; }
+      AudioSource effectAudioSource { get; set; }
+      Boolean arePositionTurnedOff { get; set; }
+      Renderer buttonRackPositionsRendererer { get; set; }
+      Single targetVolume { get; set; }
+    -- Methods (13) --
+      public Void Awake()
+      public Void Start()
+      public Boolean IsPositionAvailable(Int32 index, Int32 sizeInU)
+      public Void MarkPositionAsUsed(Int32 index, Int32 sizeInU)
+      public Void MarkPositionAsUnused(Int32 index, Int32 sizeInU)
+      public Void UpdateAudioVolume()
+      public Void InitializeLoadedRack(Il2CppStructArray`1 loadedPositions)
+      public Void ButtonDisablePositionsInRack()
+      public Void SetDisablePositionsButtonMaterial(Material material)
+      public Void ButtonUnmountRack()
+      public IEnumerator UnmountRack()
+      public Void OnLoad()
+      public Void OnDestroy()
+    -- Nested types (2) --
+      __c
+      _UnmountRack_d__18
+
+  public class Il2Cpp.Rack+__c : Il2CppSystem.Object
+    -- Fields (6) --
+      private static IntPtr NativeFieldInfoPtr___9
+      private static IntPtr NativeFieldInfoPtr___9__13_0
+      private static IntPtr NativeFieldInfoPtr___9__17_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__UpdateAudioVolume_b__13_0_Internal_Boolean_Int32_0
+      private static IntPtr NativeMethodInfoPtr__ButtonUnmountRack_b__17_0_Internal_Boolean_Int32_0
+    -- Properties (3) --
+      __c __9 { get; set; }
+      Func`2 __9__13_0 { get; set; }
+      Func`2 __9__17_0 { get; set; }
+    -- Methods (2) --
+      public Boolean _UpdateAudioVolume_b__13_0(Int32 p)
+      public Boolean _ButtonUnmountRack_b__17_0(Int32 p)
+
+  public class Il2Cpp.Rack+_UnmountRack_d__18 : Il2CppSystem.Object
+    -- Fields (10) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeFieldInfoPtr__boxedRackUO_5__2
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (6) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      Rack __4__this { get; set; }
+      UsableObject _boxedRackUO_5__2 { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.RackDoor : Il2Cpp.Interact
+    -- Fields (12) --
+      private static IntPtr NativeFieldInfoPtr_isOpened
+      private static IntPtr NativeFieldInfoPtr_outlineEffect
+      private static IntPtr NativeFieldInfoPtr_initialRotation
+      private static IntPtr NativeFieldInfoPtr_openRotation
+      private static IntPtr NativeFieldInfoPtr_openDuration
+      private static IntPtr NativeFieldInfoPtr_boxCollider
+      private static IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_DelayedTrigger_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+      private static IntPtr NativeMethodInfoPtr_OnHoverOver_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (6) --
+      Boolean isOpened { get; set; }
+      Outlinable outlineEffect { get; set; }
+      Vector3 initialRotation { get; set; }
+      Vector3 openRotation { get; set; }
+      Single openDuration { get; set; }
+      BoxCollider boxCollider { get; set; }
+    -- Methods (5) --
+      public virtual Void Awake()
+      public virtual Void InteractOnClick()
+      public IEnumerator DelayedTrigger()
+      public virtual Void InteractOnHover(RaycastHit hit)
+      public virtual Void OnHoverOver()
+    -- Nested types (1) --
+      _DelayedTrigger_d__8
+
+  public class Il2Cpp.RackDoor+_DelayedTrigger_d__8 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      RackDoor __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.RackMount : Il2Cpp.Interact
+    -- Fields (15) --
+      private static IntPtr NativeFieldInfoPtr_outlineEffect
+      private static IntPtr NativeFieldInfoPtr_isRackInstantiated
+      private static IntPtr NativeFieldInfoPtr_disolveMaterial
+      private static IntPtr NativeFieldInfoPtr_originalRackMaterial
+      private static IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_InstallRack_Private_IEnumerator_Boolean_Int32_0
+      private static IntPtr NativeMethodInfoPtr_InstantiateRack_Public_GameObject_InteractObjectData_0
+      private static IntPtr NativeMethodInfoPtr_ApplyMaterialToLODs_Private_Void_GameObject_Material_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+      private static IntPtr NativeMethodInfoPtr_OnHoverOver_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnLoad_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnDestroy_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_CheatInsertRack_Private_Void_GameObject_Int32_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (4) --
+      Outlinable outlineEffect { get; set; }
+      Boolean isRackInstantiated { get; set; }
+      Material disolveMaterial { get; set; }
+      Material originalRackMaterial { get; set; }
+    -- Methods (10) --
+      public virtual Void Awake()
+      public virtual Void InteractOnClick()
+      public IEnumerator InstallRack(Boolean cheat, Int32 type)
+      public GameObject InstantiateRack(InteractObjectData saveData)
+      public Void ApplyMaterialToLODs(GameObject rackGO, Material mat)
+      public virtual Void InteractOnHover(RaycastHit hit)
+      public virtual Void OnHoverOver()
+      public Void OnLoad()
+      public Void OnDestroy()
+      public Void CheatInsertRack(GameObject go, Int32 type)
+    -- Nested types (3) --
+      __c
+      __c__DisplayClass6_0
+      _InstallRack_d__6
+
+  public class Il2Cpp.RackMount+__c : Il2CppSystem.Object
+    -- Fields (4) --
+      private static IntPtr NativeFieldInfoPtr___9
+      private static IntPtr NativeFieldInfoPtr___9__6_1
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__InstallRack_b__6_1_Internal_Void_0
+    -- Properties (2) --
+      __c __9 { get; set; }
+      Action __9__6_1 { get; set; }
+    -- Methods (1) --
+      public Void _InstallRack_b__6_1()
+
+  public class Il2Cpp.RackMount+__c__DisplayClass6_0 : Il2CppSystem.Object
+    -- Fields (8) --
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeFieldInfoPtr_boxedRackRenderer
+      private static IntPtr NativeFieldInfoPtr_cutoffPropertyName
+      private static IntPtr NativeFieldInfoPtr_rackRenderer
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__InstallRack_b__0_Internal_Void_Single_0
+      private static IntPtr NativeMethodInfoPtr__InstallRack_b__2_Internal_Void_Single_0
+      private static IntPtr NativeMethodInfoPtr__InstallRack_b__3_Internal_Void_0
+    -- Properties (4) --
+      RackMount __4__this { get; set; }
+      Renderer boxedRackRenderer { get; set; }
+      String cutoffPropertyName { get; set; }
+      Renderer rackRenderer { get; set; }
+    -- Methods (3) --
+      public Void _InstallRack_b__0(Single val)
+      public Void _InstallRack_b__2(Single val)
+      public Void _InstallRack_b__3()
+
+  public class Il2Cpp.RackMount+_InstallRack_d__6 : Il2CppSystem.Object
+    -- Fields (15) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeFieldInfoPtr_cheat
+      private static IntPtr NativeFieldInfoPtr_type
+      private static IntPtr NativeFieldInfoPtr___8__1
+      private static IntPtr NativeFieldInfoPtr__customColor_5__2
+      private static IntPtr NativeFieldInfoPtr__go_5__3
+      private static IntPtr NativeFieldInfoPtr__lodGroup_5__4
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (11) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      RackMount __4__this { get; set; }
+      Boolean cheat { get; set; }
+      Int32 type { get; set; }
+      __c__DisplayClass6_0 __8__1 { get; set; }
+      Nullable`1 _customColor_5__2 { get; set; }
+      GameObject _go_5__3 { get; set; }
+      LODGroup _lodGroup_5__4 { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.RackPosition : Il2Cpp.Interact
+    -- Fields (13) --
+      private static IntPtr NativeFieldInfoPtr_outlineEffect
+      private static IntPtr NativeFieldInfoPtr_rack
+      private static IntPtr NativeFieldInfoPtr_positionIndex
+      private static IntPtr NativeFieldInfoPtr_rackPosGlobalUID
+      private static IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_IsAllowedItem_Private_Boolean_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_InsertItemInRack_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_SetUsed_Public_Void_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+      private static IntPtr NativeMethodInfoPtr_OnHoverOver_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_SecondActionOnClick_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (4) --
+      Outlinable outlineEffect { get; set; }
+      Rack rack { get; set; }
+      Int32 positionIndex { get; set; }
+      Int32 rackPosGlobalUID { get; set; }
+    -- Methods (8) --
+      public virtual Void Awake()
+      public virtual Void InteractOnClick()
+      public Boolean IsAllowedItem(Boolean checkAvailability)
+      public IEnumerator InsertItemInRack()
+      public Void SetUsed(Boolean used)
+      public virtual Void InteractOnHover(RaycastHit hit)
+      public virtual Void OnHoverOver()
+      public virtual Void SecondActionOnClick()
+    -- Nested types (2) --
+      __c__DisplayClass7_0
+      _InsertItemInRack_d__7
+
+  public class Il2Cpp.RackPosition+__c__DisplayClass7_0 : Il2CppSystem.Object
+    -- Fields (6) --
+      private static IntPtr NativeFieldInfoPtr_server
+      private static IntPtr NativeFieldInfoPtr_networkSwitch
+      private static IntPtr NativeFieldInfoPtr_patchPanel
+      private static IntPtr NativeFieldInfoPtr_startPosGO
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__InsertItemInRack_b__0_Internal_Void_0
+    -- Properties (4) --
+      Server server { get; set; }
+      NetworkSwitch networkSwitch { get; set; }
+      PatchPanel patchPanel { get; set; }
+      GameObject startPosGO { get; set; }
+    -- Methods (1) --
+      public Void _InsertItemInRack_b__0()
+
+  public class Il2Cpp.RackPosition+_InsertItemInRack_d__7 : Il2CppSystem.Object
+    -- Fields (11) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeFieldInfoPtr___8__1
+      private static IntPtr NativeFieldInfoPtr__uo_5__2
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (7) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      RackPosition __4__this { get; set; }
+      __c__DisplayClass7_0 __8__1 { get; set; }
+      UsableObject _uo_5__2 { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.RepairJobSaveData : Il2CppSystem.ValueType
+    -- Fields (2) --
+      private static IntPtr NativeFieldInfoPtr_serverID
+      private static IntPtr NativeFieldInfoPtr_switchID
+    -- Properties (2) --
+      String serverID { get; set; }
+      String switchID { get; set; }
+
+  public class Il2Cpp.Server : Il2Cpp.UsableObject
+    -- Fields (55) --
+      private static IntPtr NativeFieldInfoPtr_canvas
+      private static IntPtr NativeFieldInfoPtr_txtIP
+      private static IntPtr NativeFieldInfoPtr_txtServerScreen
+      private static IntPtr NativeFieldInfoPtr_maxProcessingSpeed
+      private static IntPtr NativeFieldInfoPtr_currentProcessingSpeed
+      private static IntPtr NativeFieldInfoPtr_previousProcessingSpeed
+      private static IntPtr NativeFieldInfoPtr_activeLinks
+      private static IntPtr NativeFieldInfoPtr_cablelinks
+      private static IntPtr NativeFieldInfoPtr_ServerID
+      private static IntPtr NativeFieldInfoPtr_appID
+      private static IntPtr NativeFieldInfoPtr_IP
+      private static IntPtr NativeFieldInfoPtr_serverType
+      private static IntPtr NativeFieldInfoPtr_timeToBrake
+      private static IntPtr NativeFieldInfoPtr_eolTime
+      private static IntPtr NativeFieldInfoPtr_isBroken
+      private static IntPtr NativeFieldInfoPtr_existingWarningSigns
+      private static IntPtr NativeFieldInfoPtr_existingErrorSigns
+      private static IntPtr NativeFieldInfoPtr_isWarningCleared
+      private static IntPtr NativeFieldInfoPtr_customerLogo
+      private static IntPtr NativeFieldInfoPtr_appLogo
+      private static IntPtr NativeFieldInfoPtr_isOn
+      private static IntPtr NativeFieldInfoPtr_powerButton
+      private static IntPtr NativeFieldInfoPtr_hasInitialized
+      private static IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_Start_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnLoadingStarted_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnLoadingComplete_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_PowerButton_Public_Void_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_TurnOffCommonFunctions_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_TurnOnCommonFunction_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_IsAnyCableConnected_Public_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+      private static IntPtr NativeMethodInfoPtr_ServerInsertedInRack_Public_Void_ServerSaveData_0
+      private static IntPtr NativeMethodInfoPtr_RegisterLink_Public_Void_CableLink_0
+      private static IntPtr NativeMethodInfoPtr_UnregisterLink_Public_Void_CableLink_0
+      private static IntPtr NativeMethodInfoPtr_UpdateServerScreenUI_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_ButtonClickChangeCustomer_Public_Void_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_GetNextCustomerID_Private_Int32_Int32_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_ButtonClickChangeIP_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_SetIP_Public_Void_String_0
+      private static IntPtr NativeMethodInfoPtr_GetCustomerID_Public_Int32_0
+      private static IntPtr NativeMethodInfoPtr_UpdateCustomer_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_UpdateAppID_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_TickTimer_Public_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_ItIsBroken_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_ValidateRackPosition_Public_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_ClearWarningSign_Public_Void_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_ClearErrorSign_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnDestroy_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_SetPowerLightMaterial_Private_Void_Material_0
+      private static IntPtr NativeMethodInfoPtr_RepairDevice_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__InteractOnClick_b__31_0_Private_Boolean_RackPosition_0
+      private static IntPtr NativeMethodInfoPtr__ValidateRackPosition_b__46_0_Private_Boolean_RackPosition_0
+    -- Properties (23) --
+      GameObject canvas { get; set; }
+      TextMeshProUGUI txtIP { get; set; }
+      TextMeshProUGUI txtServerScreen { get; set; }
+      Single maxProcessingSpeed { get; set; }
+      Single currentProcessingSpeed { get; set; }
+      Single previousProcessingSpeed { get; set; }
+      List`1 activeLinks { get; set; }
+      Il2CppReferenceArray`1 cablelinks { get; set; }
+      String ServerID { get; set; }
+      Int32 appID { get; set; }
+      String IP { get; set; }
+      Int32 serverType { get; set; }
+      Int32 timeToBrake { get; set; }
+      Int32 eolTime { get; set; }
+      Boolean isBroken { get; set; }
+      Int32 existingWarningSigns { get; set; }
+      Int32 existingErrorSigns { get; set; }
+      Boolean isWarningCleared { get; set; }
+      Image customerLogo { get; set; }
+      Image appLogo { get; set; }
+      Boolean isOn { get; set; }
+      Renderer powerButton { get; set; }
+      Boolean hasInitialized { get; set; }
+    -- Methods (31) --
+      public virtual Void Awake()
+      public Void Start()
+      public Void OnLoadingStarted()
+      public Void OnLoadingComplete()
+      public Void PowerButton(Boolean forceState)
+      public Void TurnOffCommonFunctions()
+      public Void TurnOnCommonFunction()
+      public Boolean IsAnyCableConnected()
+      public virtual Void InteractOnClick()
+      public virtual Void InteractOnHover(RaycastHit hit)
+      public Void ServerInsertedInRack(ServerSaveData serverSaveData)
+      public Void RegisterLink(CableLink link)
+      public Void UnregisterLink(CableLink link)
+      public Void UpdateServerScreenUI()
+      public Void ButtonClickChangeCustomer(Boolean forward)
+      public Int32 GetNextCustomerID(Int32 currentCustomerID, Boolean forward)
+      public Void ButtonClickChangeIP()
+      public Void SetIP(String _ip)
+      public Int32 GetCustomerID()
+      public Void UpdateCustomer(Int32 newCustomerID)
+      public Void UpdateAppID(Int32 _appID)
+      public virtual Void TickTimer()
+      public Void ItIsBroken()
+      public Boolean ValidateRackPosition()
+      public Void ClearWarningSign(Boolean isPreserved)
+      public Void ClearErrorSign()
+      public virtual Void OnDestroy()
+      public Void SetPowerLightMaterial(Material material)
+      public Void RepairDevice()
+      public Boolean _InteractOnClick_b__31_0(RackPosition r)
+      public Boolean _ValidateRackPosition_b__46_0(RackPosition r)
+
+  public class Il2Cpp.ServerSaveData : Il2CppSystem.Object
+    -- Fields (14) --
+      private static IntPtr NativeFieldInfoPtr_serverID
+      private static IntPtr NativeFieldInfoPtr_customerID
+      private static IntPtr NativeFieldInfoPtr_ip
+      private static IntPtr NativeFieldInfoPtr_serverType
+      private static IntPtr NativeFieldInfoPtr_position
+      private static IntPtr NativeFieldInfoPtr_rotation
+      private static IntPtr NativeFieldInfoPtr_rackPositionUID
+      private static IntPtr NativeFieldInfoPtr_prefabID
+      private static IntPtr NativeFieldInfoPtr_isOn
+      private static IntPtr NativeFieldInfoPtr_isBroken
+      private static IntPtr NativeFieldInfoPtr_timeToBrake
+      private static IntPtr NativeFieldInfoPtr_eolTime
+      private static IntPtr NativeFieldInfoPtr_isWarningCleared
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (13) --
+      String serverID { get; set; }
+      Int32 customerID { get; set; }
+      String ip { get; set; }
+      Int32 serverType { get; set; }
+      Vector3 position { get; set; }
+      Quaternion rotation { get; set; }
+      Int32 rackPositionUID { get; set; }
+      Int32 prefabID { get; set; }
+      Boolean isOn { get; set; }
+      Boolean isBroken { get; set; }
+      Int32 timeToBrake { get; set; }
+      Int32 eolTime { get; set; }
+      Boolean isWarningCleared { get; set; }
+
+  public class Il2Cpp.SwitchSaveData : Il2CppSystem.Object
+    -- Fields (12) --
+      private static IntPtr NativeFieldInfoPtr_switchID
+      private static IntPtr NativeFieldInfoPtr_switchType
+      private static IntPtr NativeFieldInfoPtr_position
+      private static IntPtr NativeFieldInfoPtr_rotation
+      private static IntPtr NativeFieldInfoPtr_rackPositionUID
+      private static IntPtr NativeFieldInfoPtr_isOn
+      private static IntPtr NativeFieldInfoPtr_label
+      private static IntPtr NativeFieldInfoPtr_isBroken
+      private static IntPtr NativeFieldInfoPtr_timeToBrake
+      private static IntPtr NativeFieldInfoPtr_eolTime
+      private static IntPtr NativeFieldInfoPtr_isWarningCleared
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (11) --
+      String switchID { get; set; }
+      Int32 switchType { get; set; }
+      Vector3 position { get; set; }
+      Quaternion rotation { get; set; }
+      Int32 rackPositionUID { get; set; }
+      Boolean isOn { get; set; }
+      String label { get; set; }
+      Boolean isBroken { get; set; }
+      Int32 timeToBrake { get; set; }
+      Int32 eolTime { get; set; }
+      Boolean isWarningCleared { get; set; }
+
+  public class Il2Cpp.Technician : UnityEngine.MonoBehaviour
+    -- Fields (39) --
+      private static IntPtr NativeFieldInfoPtr_technicianID
+      private static IntPtr NativeFieldInfoPtr_technicianName
+      private static IntPtr NativeFieldInfoPtr_salary
+      private static IntPtr NativeFieldInfoPtr_transformIdle
+      private static IntPtr NativeFieldInfoPtr_transformContainer
+      private static IntPtr NativeFieldInfoPtr_transformDumpster
+      private static IntPtr NativeFieldInfoPtr_transformInHandPosition
+      private static IntPtr NativeFieldInfoPtr_transformDeviceSpawnPosition
+      private static IntPtr NativeFieldInfoPtr_characterControl
+      private static IntPtr NativeFieldInfoPtr_positionOfDeviceToBeReplaced
+      private static IntPtr NativeFieldInfoPtr_deviceInHand
+      private static IntPtr NativeFieldInfoPtr_networkSwitch
+      private static IntPtr NativeFieldInfoPtr_server
+      private static IntPtr NativeFieldInfoPtr_leftHandIK
+      private static IntPtr NativeFieldInfoPtr_rightHandIK
+      private static IntPtr NativeFieldInfoPtr_leftHandTarget
+      private static IntPtr NativeFieldInfoPtr_rightHandTarget
+      private static IntPtr NativeFieldInfoPtr_currentState
+      private static IntPtr NativeFieldInfoPtr_isBusy
+      private static IntPtr NativeFieldInfoPtr_currentJob
+      private static IntPtr NativeMethodInfoPtr_get_CurrentJob_Public_get_Nullable_1_RepairJob_0
+      private static IntPtr NativeMethodInfoPtr_Awake_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_Start_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_RequestJobDelayed_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_AssignJob_Public_Void_RepairJob_0
+      private static IntPtr NativeMethodInfoPtr_Update_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_StartTextingAnimation_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_SendToContainer_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_GettingNewServer_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_ReplacingServer_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_ThrowingOutServer_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_RepairDevice_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_GetCorrectDevicePrefab_Private_GameObject_0
+      private static IntPtr NativeMethodInfoPtr_RotateTowardsGoal_Private_Void_Vector3_0
+      private static IntPtr NativeMethodInfoPtr_SetHandIKWeight_Private_IEnumerator_Single_Single_0
+      private static IntPtr NativeMethodInfoPtr_PositionHandTargetsOnDevice_Private_Void_GameObject_0
+      private static IntPtr NativeMethodInfoPtr_OnLoadingStarted_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnDestroy_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (21) --
+      Int32 technicianID { get; set; }
+      String technicianName { get; set; }
+      Int32 salary { get; set; }
+      Transform transformIdle { get; set; }
+      Transform transformContainer { get; set; }
+      Transform transformDumpster { get; set; }
+      Transform transformInHandPosition { get; set; }
+      Transform transformDeviceSpawnPosition { get; set; }
+      AICharacterControl characterControl { get; set; }
+      Transform positionOfDeviceToBeReplaced { get; set; }
+      GameObject deviceInHand { get; set; }
+      NetworkSwitch networkSwitch { get; set; }
+      Server server { get; set; }
+      TwoBoneIKConstraint leftHandIK { get; set; }
+      TwoBoneIKConstraint rightHandIK { get; set; }
+      Transform leftHandTarget { get; set; }
+      Transform rightHandTarget { get; set; }
+      TechnicianState currentState { get; set; }
+      Boolean isBusy { get; set; }
+      Nullable`1 currentJob { get; set; }
+      Nullable`1 CurrentJob { get;  }
+    -- Methods (17) --
+      public Void Awake()
+      public Void Start()
+      public IEnumerator RequestJobDelayed()
+      public Void AssignJob(RepairJob job)
+      public Void Update()
+      public IEnumerator StartTextingAnimation()
+      public IEnumerator SendToContainer()
+      public IEnumerator GettingNewServer()
+      public IEnumerator ReplacingServer()
+      public IEnumerator ThrowingOutServer()
+      public Void RepairDevice()
+      public GameObject GetCorrectDevicePrefab()
+      public Void RotateTowardsGoal(Vector3 goal)
+      public IEnumerator SetHandIKWeight(Single targetWeight, Single duration)
+      public Void PositionHandTargetsOnDevice(GameObject device)
+      public Void OnLoadingStarted()
+      public Void OnDestroy()
+    -- Nested types (8) --
+      TechnicianState
+      _GettingNewServer_d__30
+      _ReplacingServer_d__31
+      _RequestJobDelayed_d__25
+      _SendToContainer_d__29
+      _SetHandIKWeight_d__36
+      _StartTextingAnimation_d__28
+      _ThrowingOutServer_d__32
+
+  public class Il2Cpp.Technician+_GettingNewServer_d__30 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      Technician __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.Technician+_ReplacingServer_d__31 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      Technician __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.Technician+_RequestJobDelayed_d__25 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      Technician __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.Technician+_SendToContainer_d__29 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      Technician __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.Technician+_SetHandIKWeight_d__36 : Il2CppSystem.Object
+    -- Fields (14) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeFieldInfoPtr_duration
+      private static IntPtr NativeFieldInfoPtr_targetWeight
+      private static IntPtr NativeFieldInfoPtr__startLeft_5__2
+      private static IntPtr NativeFieldInfoPtr__startRight_5__3
+      private static IntPtr NativeFieldInfoPtr__elapsed_5__4
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (10) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      Technician __4__this { get; set; }
+      Single duration { get; set; }
+      Single targetWeight { get; set; }
+      Single _startLeft_5__2 { get; set; }
+      Single _startRight_5__3 { get; set; }
+      Single _elapsed_5__4 { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.Technician+_StartTextingAnimation_d__28 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      Technician __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.Technician+_ThrowingOutServer_d__32 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      Technician __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public enum Il2Cpp.Technician+TechnicianState : System.Enum [implements: IComparable, ISpanFormattable, IFormattable, IConvertible]
+    -- Fields (6) --
+      public Int32 value__
+      public static TechnicianState Idle
+      public static TechnicianState GoingForNewServer
+      public static TechnicianState BringingNewServer
+      public static TechnicianState GoingBackWithOldServer
+      public static TechnicianState EndingHisWork
+
+  public class Il2Cpp.TechnicianManager : UnityEngine.MonoBehaviour
+    -- Fields (27) --
+      private static IntPtr NativeFieldInfoPtr_instance
+      private static IntPtr NativeFieldInfoPtr_technicians
+      private static IntPtr NativeFieldInfoPtr_commandCenterOperator
+      private static IntPtr NativeFieldInfoPtr_transformIdle
+      private static IntPtr NativeFieldInfoPtr_transformContainer
+      private static IntPtr NativeFieldInfoPtr_transformDumpster
+      private static IntPtr NativeFieldInfoPtr_transformDeviceSpawnPosition
+      private static IntPtr NativeFieldInfoPtr_lastAssignedIndex
+      private static IntPtr NativeFieldInfoPtr_hiredTechnicians
+      private static IntPtr NativeFieldInfoPtr_jobQueue
+      private static IntPtr NativeFieldInfoPtr_DISPATCH_INTERVAL
+      private static IntPtr NativeFieldInfoPtr_lastDispatchTime
+      private static IntPtr NativeFieldInfoPtr_pendingDispatches
+      private static IntPtr NativeFieldInfoPtr_dispatchCoroutine
+      private static IntPtr NativeMethodInfoPtr_get_QueuedJobCount_Public_get_Int32_0
+      private static IntPtr NativeMethodInfoPtr_Awake_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_AddTechnician_Public_Void_Technician_0
+      private static IntPtr NativeMethodInfoPtr_SendTechnician_Public_Void_NetworkSwitch_Server_0
+      private static IntPtr NativeMethodInfoPtr_RequestNextJob_Public_Void_Technician_0
+      private static IntPtr NativeMethodInfoPtr_EnqueueDispatch_Private_Void_RepairJob_0
+      private static IntPtr NativeMethodInfoPtr_ProcessDispatchQueue_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_GetQueuedJobs_Public_List_1_RepairJob_0
+      private static IntPtr NativeMethodInfoPtr_GetActiveJobs_Public_List_1_RepairJob_0
+      private static IntPtr NativeMethodInfoPtr_IsDeviceAlreadyAssigned_Public_Boolean_NetworkSwitch_Server_0
+      private static IntPtr NativeMethodInfoPtr_RestoreJobQueue_Public_Void_List_1_RepairJobSaveData_0
+      private static IntPtr NativeMethodInfoPtr_FireTechnician_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (15) --
+      TechnicianManager instance { get; set; }
+      List`1 technicians { get; set; }
+      List`1 commandCenterOperator { get; set; }
+      Il2CppReferenceArray`1 transformIdle { get; set; }
+      Transform transformContainer { get; set; }
+      Transform transformDumpster { get; set; }
+      Transform transformDeviceSpawnPosition { get; set; }
+      Int32 lastAssignedIndex { get; set; }
+      Il2CppStructArray`1 hiredTechnicians { get; set; }
+      Queue`1 jobQueue { get; set; }
+      Single DISPATCH_INTERVAL { get; set; }
+      Single lastDispatchTime { get; set; }
+      Queue`1 pendingDispatches { get; set; }
+      Coroutine dispatchCoroutine { get; set; }
+      Int32 QueuedJobCount { get;  }
+    -- Methods (11) --
+      public Void Awake()
+      public Void AddTechnician(Technician technician)
+      public Void SendTechnician(NetworkSwitch networkSwitch, Server server)
+      public Void RequestNextJob(Technician technician)
+      public Void EnqueueDispatch(RepairJob job)
+      public IEnumerator ProcessDispatchQueue()
+      public List`1 GetQueuedJobs()
+      public List`1 GetActiveJobs()
+      public Boolean IsDeviceAlreadyAssigned(NetworkSwitch networkSwitch, Server server)
+      public Void RestoreJobQueue(List`1 savedJobs)
+      public Void FireTechnician(Int32 technicianID)
+    -- Nested types (3) --
+      RepairJob
+      __c__DisplayClass27_0
+      _ProcessDispatchQueue_d__22
+
+  public class Il2Cpp.TechnicianManager+__c__DisplayClass27_0 : Il2CppSystem.Object
+    -- Fields (3) --
+      private static IntPtr NativeFieldInfoPtr_technicianID
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__FireTechnician_b__0_Internal_Boolean_Technician_0
+    -- Properties (1) --
+      Int32 technicianID { get; set; }
+    -- Methods (1) --
+      public Boolean _FireTechnician_b__0(Technician t)
+
+  public class Il2Cpp.TechnicianManager+_ProcessDispatchQueue_d__22 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      TechnicianManager __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.TechnicianManager+RepairJob : Il2CppSystem.ValueType
+    -- Fields (4) --
+      private static IntPtr NativeFieldInfoPtr_networkSwitch
+      private static IntPtr NativeFieldInfoPtr_server
+      private static IntPtr NativeFieldInfoPtr_assignedTechnician
+      private static IntPtr NativeMethodInfoPtr_get_DeviceName_Public_get_String_0
+    -- Properties (4) --
+      NetworkSwitch networkSwitch { get; set; }
+      Server server { get; set; }
+      Technician assignedTechnician { get; set; }
+      String DeviceName { get;  }
+
+  public class Il2Cpp.TechnicianSaveData : Il2CppSystem.Object
+    -- Fields (3) --
+      private static IntPtr NativeFieldInfoPtr_position
+      private static IntPtr NativeFieldInfoPtr_technicianID
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Technician_0
+    -- Properties (2) --
+      Il2CppStructArray`1 position { get; set; }
+      Int32 technicianID { get; set; }
+
+  public class Il2Cpp.UsableObject : Il2Cpp.Interact
+    -- Fields (64) --
+      private static IntPtr NativeFieldInfoPtr_inputctrl
+      private static IntPtr NativeFieldInfoPtr_outlineEffect
+      private static IntPtr NativeFieldInfoPtr_rb
+      private static IntPtr NativeFieldInfoPtr_objectInHandType
+      private static IntPtr NativeFieldInfoPtr_offsetPivotPosition
+      private static IntPtr NativeFieldInfoPtr_secondPosition
+      private static IntPtr NativeFieldInfoPtr_thirdPosition
+      private static IntPtr NativeFieldInfoPtr_offsetPivotRotation
+      private static IntPtr NativeFieldInfoPtr_secondRotation
+      private static IntPtr NativeFieldInfoPtr_thirdRotation
+      private static IntPtr NativeFieldInfoPtr_item
+      private static IntPtr NativeFieldInfoPtr_maxInHand
+      private static IntPtr NativeFieldInfoPtr_toolTipLocalisationID
+      private static IntPtr NativeFieldInfoPtr_toolTipLocalisationIDDescription
+      private static IntPtr NativeFieldInfoPtr_objectInHands
+      private static IntPtr NativeFieldInfoPtr_keepUpright
+      private static IntPtr NativeFieldInfoPtr_prefabID
+      private static IntPtr NativeFieldInfoPtr_pickupItem
+      private static IntPtr NativeFieldInfoPtr_isDropAllowed
+      private static IntPtr NativeFieldInfoPtr_freezeAllForcesInHands
+      private static IntPtr NativeFieldInfoPtr_storedPosition
+      private static IntPtr NativeFieldInfoPtr_storageUID
+      private static IntPtr NativeFieldInfoPtr_trolleySlotIndex
+      private static IntPtr NativeFieldInfoPtr_secondActionHint
+      private static IntPtr NativeFieldInfoPtr_hasActionInHand
+      private static IntPtr NativeFieldInfoPtr_hasSecondActionInHand
+      private static IntPtr NativeFieldInfoPtr_minImpactVelocity
+      private static IntPtr NativeFieldInfoPtr_impactSoundCooldown
+      private static IntPtr NativeFieldInfoPtr_lastImpactSoundTime
+      private static IntPtr NativeFieldInfoPtr_impactSoundVolume
+      private static IntPtr NativeFieldInfoPtr_actionInHandStarted
+      private static IntPtr NativeFieldInfoPtr_secondActionStarted
+      private static IntPtr NativeFieldInfoPtr_dropStarted
+      private static IntPtr NativeFieldInfoPtr_inHowManyFramesCanCheckDistance
+      private static IntPtr NativeFieldInfoPtr_currentFrame
+      private static IntPtr NativeFieldInfoPtr_kMaxDistanceSqr
+      private static IntPtr NativeFieldInfoPtr_isOnTrolley
+      private static IntPtr NativeFieldInfoPtr_currentRackPosition
+      private static IntPtr NativeFieldInfoPtr_rackPositionUID
+      private static IntPtr NativeFieldInfoPtr_sizeInU
+      private static IntPtr NativeFieldInfoPtr_shopItemSO
+      private static IntPtr NativeFieldInfoPtr_modFolderName
+      private static IntPtr NativeFieldInfoPtr_isModObject
+      private static IntPtr NativeFieldInfoPtr_wait3s
+      private static IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_FixedUpdate_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnClick_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_DropObject_Public_Virtual_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_ActionInHand_Public_Virtual_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MakeInteractableAgain_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_MoveBetweenPositions_Public_Void_Vector3_Vector3_0
+      private static IntPtr NativeMethodInfoPtr_MoveToHand_Public_Virtual_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_DisalowDrop_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_InteractOnHover_Public_Virtual_Void_RaycastHit_0
+      private static IntPtr NativeMethodInfoPtr_OnHoverOver_Public_Virtual_Void_0
+      private static IntPtr NativeMethodInfoPtr_CheckIfLost_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_OnDestroy_Public_Virtual_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnLoadDestroy_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveToStorage_Public_Virtual_New_Void_Transform_Int32_Int32_0
+      private static IntPtr NativeMethodInfoPtr_OnCollisionEnter_Private_Void_Collision_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+      private static IntPtr NativeMethodInfoPtr__Awake_b__43_0_Private_Void_CallbackContext_0
+      private static IntPtr NativeMethodInfoPtr__Awake_b__43_1_Private_Void_CallbackContext_0
+      private static IntPtr NativeMethodInfoPtr__Awake_b__43_2_Private_Void_CallbackContext_0
+    -- Properties (44) --
+      InputController inputctrl { get; set; }
+      Outlinable outlineEffect { get; set; }
+      Rigidbody rb { get; set; }
+      ObjectInHand objectInHandType { get; set; }
+      Vector3 offsetPivotPosition { get; set; }
+      Vector3 secondPosition { get; set; }
+      Vector3 thirdPosition { get; set; }
+      Vector3 offsetPivotRotation { get; set; }
+      Vector3 secondRotation { get; set; }
+      Vector3 thirdRotation { get; set; }
+      Item item { get; set; }
+      Int32 maxInHand { get; set; }
+      Int32 toolTipLocalisationID { get; set; }
+      Int32 toolTipLocalisationIDDescription { get; set; }
+      Boolean objectInHands { get; set; }
+      Boolean keepUpright { get; set; }
+      Int32 prefabID { get; set; }
+      AudioClip pickupItem { get; set; }
+      Boolean isDropAllowed { get; set; }
+      Boolean freezeAllForcesInHands { get; set; }
+      Int32 storedPosition { get; set; }
+      Int32 storageUID { get; set; }
+      Int32 trolleySlotIndex { get; set; }
+      GameObject secondActionHint { get; set; }
+      Boolean hasActionInHand { get; set; }
+      Boolean hasSecondActionInHand { get; set; }
+      Single minImpactVelocity { get; set; }
+      Single impactSoundCooldown { get; set; }
+      Single lastImpactSoundTime { get; set; }
+      Single impactSoundVolume { get; set; }
+      Action`1 actionInHandStarted { get; set; }
+      Action`1 secondActionStarted { get; set; }
+      Action`1 dropStarted { get; set; }
+      Int32 inHowManyFramesCanCheckDistance { get; set; }
+      Int32 currentFrame { get; set; }
+      Single kMaxDistanceSqr { get; set; }
+      Boolean isOnTrolley { get; set; }
+      RackPosition currentRackPosition { get; set; }
+      Int32 rackPositionUID { get; set; }
+      Int32 sizeInU { get; set; }
+      ShopItemSO shopItemSO { get; set; }
+      String modFolderName { get; set; }
+      Boolean isModObject { get; set; }
+      WaitForSeconds wait3s { get; set; }
+    -- Methods (19) --
+      public virtual Void Awake()
+      public Void FixedUpdate()
+      public virtual Void InteractOnClick()
+      public virtual Void DropObject()
+      public virtual Void ActionInHand()
+      public IEnumerator MakeInteractableAgain()
+      public Void MoveBetweenPositions(Vector3 _position, Vector3 _rotation)
+      public virtual Void MoveToHand()
+      public IEnumerator DisalowDrop()
+      public virtual Void InteractOnHover(RaycastHit hit)
+      public virtual Void OnHoverOver()
+      public IEnumerator CheckIfLost()
+      public virtual Void OnDestroy()
+      public Void OnLoadDestroy()
+      public virtual Void MoveToStorage(Transform _pos, Int32 _positionIndex, Int32 _storageUid)
+      public Void OnCollisionEnter(Collision collision)
+      public Void _Awake_b__43_0(CallbackContext ctx)
+      public Void _Awake_b__43_1(CallbackContext ctx)
+      public Void _Awake_b__43_2(CallbackContext ctx)
+    -- Nested types (3) --
+      _CheckIfLost_d__55
+      _DisalowDrop_d__51
+      _MakeInteractableAgain_d__48
+
+  public class Il2Cpp.UsableObject+_CheckIfLost_d__55 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      UsableObject __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.UsableObject+_DisalowDrop_d__51 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      UsableObject __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.UsableObject+_MakeInteractableAgain_d__48 : Il2CppSystem.Object
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (5) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      UsableObject __4__this { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+
+=== FILTERED: Menu, Button, Setting, Local, Panel, UI, Config, Save, Load, Option, Preference, Language, Input, Keybind, Resolution, Audio, Volume, Graphics, Quality ===
+
+Matching types: 139
 
   public class Il2Cpp.ActionKeyHint+_DelayedUpdateUI_d__12 : Il2CppSystem.Object
     -- Fields (9) --
@@ -636,7 +2146,7 @@ Matching types: 133
       public Void OnDisable()
       public Void AddToChatOutput(String newText)
 
-  public class Il2Cpp.CustomerBase+_CheckIfAppRequirementsAreMet_d__35 : Il2CppSystem.Object
+  public class Il2Cpp.CustomerBase+_CheckIfAppRequirementsAreMet_d__36 : Il2CppSystem.Object
     -- Fields (10) --
       private static IntPtr NativeFieldInfoPtr___1__state
       private static IntPtr NativeFieldInfoPtr___2__current
@@ -697,6 +2207,30 @@ Matching types: 133
       String customerName { get; set; }
       Single revenue { get; set; }
       Single penalties { get; set; }
+
+  public class Il2Cpp.DeviceTimerManager : UnityEngine.MonoBehaviour
+    -- Fields (9) --
+      private static IntPtr NativeFieldInfoPtr_instance
+      private static IntPtr NativeFieldInfoPtr_activeDevices
+      private static IntPtr NativeFieldInfoPtr_tickSnapshot
+      private static IntPtr NativeMethodInfoPtr_Awake_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_OnEnable_Private_Void_0
+      private static IntPtr NativeMethodInfoPtr_Register_Public_Void_ITimedDevice_0
+      private static IntPtr NativeMethodInfoPtr_Unregister_Public_Void_ITimedDevice_0
+      private static IntPtr NativeMethodInfoPtr_TimerLoop_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (3) --
+      DeviceTimerManager instance { get; set; }
+      List`1 activeDevices { get; set; }
+      List`1 tickSnapshot { get; set; }
+    -- Methods (5) --
+      public Void Awake()
+      public Void OnEnable()
+      public Void Register(ITimedDevice device)
+      public Void Unregister(ITimedDevice device)
+      public IEnumerator TimerLoop()
+    -- Nested types (1) --
+      _TimerLoop_d__7
 
   public class Il2Cpp.DropdownSample : UnityEngine.MonoBehaviour
     -- Fields (5) --
@@ -835,18 +2369,13 @@ Matching types: 133
       public virtual Object System_Collections_IEnumerator_get_Current()
 
   public class Il2Cpp.HRSystem : UnityEngine.MonoBehaviour
-    -- Fields (19) --
+    -- Fields (14) --
       private static IntPtr NativeFieldInfoPtr_confirmHireOverlay
       private static IntPtr NativeFieldInfoPtr_confirmFireOverlay
       private static IntPtr NativeFieldInfoPtr_buttonReturn
       private static IntPtr NativeFieldInfoPtr_buttonsHireEmployees
       private static IntPtr NativeFieldInfoPtr_buttonsFireEmployees
-      private static IntPtr NativeFieldInfoPtr_employeeOneSpawnPoint
-      private static IntPtr NativeFieldInfoPtr_eployeeOneRequiredReputation
-      private static IntPtr NativeFieldInfoPtr_employeeTwoSpawnPoint
-      private static IntPtr NativeFieldInfoPtr_employeeTwoRequiredReputation
-      private static IntPtr NativeFieldInfoPtr_employeeThreeSpawnPoint
-      private static IntPtr NativeFieldInfoPtr_employeeThreeRequiredReputation
+      private static IntPtr NativeFieldInfoPtr_employeeRequiredReputations
       private static IntPtr NativeFieldInfoPtr_selectedEmployeeIndex
       private static IntPtr NativeMethodInfoPtr_OnEnable_Private_Void_0
       private static IntPtr NativeMethodInfoPtr_ButtonHireEmployee_Public_Void_Int32_0
@@ -855,18 +2384,13 @@ Matching types: 133
       private static IntPtr NativeMethodInfoPtr_ButtonFireEmployee_Public_Void_Int32_0
       private static IntPtr NativeMethodInfoPtr_ButtonConfirmFireEmployee_Public_Void_0
       private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
-    -- Properties (12) --
+    -- Properties (7) --
       GameObject confirmHireOverlay { get; set; }
       GameObject confirmFireOverlay { get; set; }
       ButtonExtended buttonReturn { get; set; }
       Il2CppReferenceArray`1 buttonsHireEmployees { get; set; }
       Il2CppReferenceArray`1 buttonsFireEmployees { get; set; }
-      Transform employeeOneSpawnPoint { get; set; }
-      Int32 eployeeOneRequiredReputation { get; set; }
-      Transform employeeTwoSpawnPoint { get; set; }
-      Int32 employeeTwoRequiredReputation { get; set; }
-      Transform employeeThreeSpawnPoint { get; set; }
-      Int32 employeeThreeRequiredReputation { get; set; }
+      Il2CppStructArray`1 employeeRequiredReputations { get; set; }
       Int32 selectedEmployeeIndex { get; set; }
     -- Methods (6) --
       public Void OnEnable()
@@ -1494,7 +3018,7 @@ Matching types: 133
       public Void OnDestroy()
 
   public class Il2Cpp.MainGameManager : UnityEngine.MonoBehaviour
-    -- Fields (106) --
+    -- Fields (107) --
       private static IntPtr NativeFieldInfoPtr_instance
       private static IntPtr NativeFieldInfoPtr_difficulty
       private static IntPtr NativeFieldInfoPtr_playerCamera
@@ -1515,7 +3039,7 @@ Matching types: 133
       private static IntPtr NativeFieldInfoPtr_availableCustomerIndices
       private static IntPtr NativeFieldInfoPtr_availableSubnets
       private static IntPtr NativeFieldInfoPtr_appTypesColorSprite1
-      ... and 86 more fields
+      ... and 87 more fields
     -- Properties (62) --
       MainGameManager instance { get; set; }
       Int32 difficulty { get; set; }
@@ -1538,7 +3062,7 @@ Matching types: 133
       List`1 availableSubnets { get; set; }
       Sprite appTypesColorSprite1 { get; set; }
       ... and 42 more properties
-    -- Methods (43) --
+    -- Methods (44) --
       public Void Awake()
       public Void Start()
       public Void ResetTrolleyPosition()
@@ -1556,6 +3080,7 @@ Matching types: 133
       public String GetFreeSubnet(Single appRequirements)
       public Boolean IsSubnetValid(String subnet)
       public Void ShowCustomerCardsCanvas(CustomerBaseDoor _door)
+      public CustomerItem CreateFallbackCustomer(CustomerItem original, Int32 customerBaseID)
       public Void ButtonCustomerChosen(Int32 _cardID)
       public Void ButtonCancelCustomerChoice()
       public Void ShowBuyWallCanvas(Wall wall)
@@ -1568,16 +3093,15 @@ Matching types: 133
       public Void RemoveUsedSubnet(String subnet)
       public Void ReturnSubnet(String subnet)
       public Void OnLoad()
-      public Void OnDestroy()
-      ... and 13 more methods
+      ... and 14 more methods
     -- Nested types (5) --
       __c
       __c__DisplayClass71_0
       __c__DisplayClass76_0
       __c__DisplayClass78_0
-      _AutoSaveCoroutine_d__92
+      _AutoSaveCoroutine_d__93
 
-  public class Il2Cpp.MainGameManager+_AutoSaveCoroutine_d__92 : Il2CppSystem.Object
+  public class Il2Cpp.MainGameManager+_AutoSaveCoroutine_d__93 : Il2CppSystem.Object
     -- Fields (9) --
       private static IntPtr NativeFieldInfoPtr___1__state
       private static IntPtr NativeFieldInfoPtr___2__current
@@ -1657,35 +3181,6 @@ Matching types: 133
       public Void Update()
       public Void setmount(Transform newmount)
 
-  public class Il2Cpp.ModConfig : Il2CppSystem.Object
-    -- Fields (13) --
-      private static IntPtr NativeFieldInfoPtr_itemName
-      private static IntPtr NativeFieldInfoPtr_price
-      private static IntPtr NativeFieldInfoPtr_xpToUnlock
-      private static IntPtr NativeFieldInfoPtr_sizeInU
-      private static IntPtr NativeFieldInfoPtr_mass
-      private static IntPtr NativeFieldInfoPtr_modelScale
-      private static IntPtr NativeFieldInfoPtr_colliderSize
-      private static IntPtr NativeFieldInfoPtr_colliderCenter
-      private static IntPtr NativeFieldInfoPtr_modelFile
-      private static IntPtr NativeFieldInfoPtr_textureFile
-      private static IntPtr NativeFieldInfoPtr_iconFile
-      private static IntPtr NativeFieldInfoPtr_objectType
-      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
-    -- Properties (12) --
-      String itemName { get; set; }
-      Int32 price { get; set; }
-      Int32 xpToUnlock { get; set; }
-      Int32 sizeInU { get; set; }
-      Single mass { get; set; }
-      Single modelScale { get; set; }
-      Il2CppStructArray`1 colliderSize { get; set; }
-      Il2CppStructArray`1 colliderCenter { get; set; }
-      String modelFile { get; set; }
-      String textureFile { get; set; }
-      String iconFile { get; set; }
-      ObjectInHand objectType { get; set; }
-
   public class Il2Cpp.ModItemSaveData : Il2CppSystem.Object
     -- Fields (7) --
       private static IntPtr NativeFieldInfoPtr_modFolderName
@@ -1704,42 +3199,106 @@ Matching types: 133
       Il2CppStructArray`1 saveIntArray2 { get; set; }
 
   public class Il2Cpp.ModLoader : UnityEngine.MonoBehaviour
-    -- Fields (17) --
+    -- Fields (28) --
       private static IntPtr NativeFieldInfoPtr_instance
       private static IntPtr NativeFieldInfoPtr_modShopItemsParent
       private static IntPtr NativeFieldInfoPtr_modShopButtonPrefab
       private static IntPtr NativeFieldInfoPtr_modTemplates
       private static IntPtr NativeFieldInfoPtr_modTemplatesByFolder
+      private static IntPtr NativeFieldInfoPtr_staticInstances
+      private static IntPtr NativeFieldInfoPtr_loadedPlugins
       private static IntPtr NativeFieldInfoPtr_nextModID
       private static IntPtr NativeMethodInfoPtr_Awake_Private_Void_0
       private static IntPtr NativeMethodInfoPtr_Start_Private_Void_0
       private static IntPtr NativeMethodInfoPtr_LoadAllMods_Private_Void_0
-      private static IntPtr NativeMethodInfoPtr_LoadMod_Private_Void_String_0
-      private static IntPtr NativeMethodInfoPtr_CreateModTemplate_Private_GameObject_ModConfig_Mesh_Material_String_0
-      private static IntPtr NativeMethodInfoPtr_CreateShopButton_Private_Void_Int32_ModConfig_Sprite_0
-      private static IntPtr NativeMethodInfoPtr_GetModPrefab_Public_GameObject_Int32_0
-      private static IntPtr NativeMethodInfoPtr_GetModPrefabByFolder_Public_GameObject_String_0
-      private static IntPtr NativeMethodInfoPtr_LoadTexture_Private_Texture2D_String_0
-      private static IntPtr NativeMethodInfoPtr_OnDestroy_Private_Void_0
-      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
-    -- Properties (6) --
+      private static IntPtr NativeMethodInfoPtr_SyncWorkshopThenLoadAll_Private_IEnumerator_0
+      private static IntPtr NativeMethodInfoPtr_CopyDirectory_Private_Static_Void_String_String_0
+      private static IntPtr NativeMethodInfoPtr_LoadModPack_Private_Void_String_0
+      private static IntPtr NativeMethodInfoPtr_LoadShopItem_Private_Void_String_String_ShopItemConfig_0
+      private static IntPtr NativeMethodInfoPtr_CreateShopTemplate_Private_GameObject_ShopItemConfig_Mesh_Material_String_0
+      private static IntPtr NativeMethodInfoPtr_CreateShopButton_Private_Void_Int32_ShopItemConfig_Sprite_0
+      private static IntPtr NativeMethodInfoPtr_LoadStaticItem_Private_Void_String_String_StaticItemConfig_0
+      private static IntPtr NativeMethodInfoPtr_CreateStaticInstance_Private_GameObject_StaticItemConfig_Mesh_Material_String_0
+      private static IntPtr NativeMethodInfoPtr_LoadDll_Private_Void_String_DllEntry_0
+      ... and 8 more fields
+    -- Properties (8) --
       ModLoader instance { get; set; }
       Transform modShopItemsParent { get; set; }
       GameObject modShopButtonPrefab { get; set; }
       Dictionary`2 modTemplates { get; set; }
       Dictionary`2 modTemplatesByFolder { get; set; }
+      List`1 staticInstances { get; set; }
+      List`1 loadedPlugins { get; set; }
       Int32 nextModID { get; set; }
-    -- Methods (10) --
+    -- Methods (19) --
       public Void Awake()
       public Void Start()
       public Void LoadAllMods()
-      public Void LoadMod(String folderPath)
-      public GameObject CreateModTemplate(ModConfig config, Mesh mesh, Material material, String folderName)
-      public Void CreateShopButton(Int32 modID, ModConfig config, Sprite icon)
+      public IEnumerator SyncWorkshopThenLoadAll()
+      public static Void CopyDirectory(String sourceDir, String destDir)
+      public Void LoadModPack(String folderPath)
+      public Void LoadShopItem(String folderPath, String folderName, ShopItemConfig config)
+      public GameObject CreateShopTemplate(ShopItemConfig config, Mesh mesh, Material material, String folderName)
+      public Void CreateShopButton(Int32 modID, ShopItemConfig config, Sprite icon)
+      public Void LoadStaticItem(String folderPath, String folderName, StaticItemConfig config)
+      public GameObject CreateStaticInstance(StaticItemConfig config, Mesh mesh, Material material, String folderName)
+      public Void LoadDll(String folderPath, DllEntry dll)
+      public Mesh LoadMesh(String folderPath, String modelFile)
+      public Material CreateMaterial(String folderPath, String textureFile)
+      public Sprite LoadIcon(String folderPath, String iconFile)
+      public Texture2D LoadTexture(String path)
       public GameObject GetModPrefab(Int32 modID)
       public GameObject GetModPrefabByFolder(String folderName)
-      public Texture2D LoadTexture(String path)
       public Void OnDestroy()
+    -- Nested types (1) --
+      _SyncWorkshopThenLoadAll_d__11
+
+  public class Il2Cpp.ModLoader+_SyncWorkshopThenLoadAll_d__11 : Il2CppSystem.Object
+    -- Fields (14) --
+      private static IntPtr NativeFieldInfoPtr___1__state
+      private static IntPtr NativeFieldInfoPtr___2__current
+      private static IntPtr NativeFieldInfoPtr___4__this
+      private static IntPtr NativeFieldInfoPtr__modsPath_5__2
+      private static IntPtr NativeFieldInfoPtr__subscribedItems_5__3
+      private static IntPtr NativeFieldInfoPtr__timeout_5__4
+      private static IntPtr NativeFieldInfoPtr__elapsed_5__5
+      private static IntPtr NativeFieldInfoPtr__allReady_5__6
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_System_IDisposable_Dispose_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_MoveNext_Private_Virtual_Final_New_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_Generic_IEnumerator_System_Object__get_Current_Private_Virtual_Final_New_get_Object_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_Reset_Private_Virtual_Final_New_Void_0
+      private static IntPtr NativeMethodInfoPtr_System_Collections_IEnumerator_get_Current_Private_Virtual_Final_New_get_Object_0
+    -- Properties (10) --
+      Int32 __1__state { get; set; }
+      Object __2__current { get; set; }
+      ModLoader __4__this { get; set; }
+      String _modsPath_5__2 { get; set; }
+      Il2CppStructArray`1 _subscribedItems_5__3 { get; set; }
+      Single _timeout_5__4 { get; set; }
+      Single _elapsed_5__5 { get; set; }
+      Boolean _allReady_5__6 { get; set; }
+      Object System.Collections.Generic.IEnumerator<System.Object>.Current { get;  }
+      Object System.Collections.IEnumerator.Current { get;  }
+    -- Methods (5) --
+      public virtual Void System_IDisposable_Dispose()
+      public virtual Boolean MoveNext()
+      public virtual Object System_Collections_Generic_IEnumerator_System_Object__get_Current()
+      public virtual Void System_Collections_IEnumerator_Reset()
+      public virtual Object System_Collections_IEnumerator_get_Current()
+
+  public class Il2Cpp.ModPackConfig : Il2CppSystem.Object
+    -- Fields (5) --
+      private static IntPtr NativeFieldInfoPtr_modName
+      private static IntPtr NativeFieldInfoPtr_shopItems
+      private static IntPtr NativeFieldInfoPtr_staticItems
+      private static IntPtr NativeFieldInfoPtr_dlls
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (4) --
+      String modName { get; set; }
+      List`1 shopItems { get; set; }
+      List`1 staticItems { get; set; }
+      List`1 dlls { get; set; }
 
   public class Il2Cpp.MonthlySnapshotSaveData : Il2CppSystem.Object
     -- Fields (5) --
@@ -1841,7 +3400,7 @@ Matching types: 133
       public String GenerateDeviceName(TypeOfLink type, Vector3 position)
       public Void RegisterCableConnection(Int32 cableId, Vector3 startPos, Vector3 endPos, TypeOfLink startType, TypeOfLink endType, String startSwitchID, String endSwitchID, Int32 startCustomerID, Int32 endCustomerID, String startServerID, String endServerID)
       public Void AddSwitchConnection(String switchName, String deviceName)
-      public Void RemoveCableConnection(Int32 cableId)
+      public Void RemoveCableConnection(Int32 cableId, Boolean preserveLACP)
       public Void RemoveIsolatedDevices()
       public String PrintNetworkMap()
       public Boolean IsIpAddressDuplicate(String ip, Server serverToExclude)
@@ -1874,7 +3433,7 @@ Matching types: 133
       List`1 lacpGroups { get; set; }
 
   public class Il2Cpp.NetworkSwitch : Il2Cpp.UsableObject
-    -- Fields (44) --
+    -- Fields (43) --
       private static IntPtr NativeFieldInfoPtr_canvas
       private static IntPtr NativeFieldInfoPtr_txtScreen
       private static IntPtr NativeFieldInfoPtr_cableLinkSwitchPorts
@@ -1890,13 +3449,13 @@ Matching types: 133
       private static IntPtr NativeFieldInfoPtr_isWarningCleared
       private static IntPtr NativeFieldInfoPtr_powerButton
       private static IntPtr NativeFieldInfoPtr_temporarilyDisconnectedCables
-      private static IntPtr NativeFieldInfoPtr_breakingRoutine
       private static IntPtr NativeMethodInfoPtr_Awake_Public_Virtual_Void_0
       private static IntPtr NativeMethodInfoPtr_Start_Private_Void_0
       private static IntPtr NativeMethodInfoPtr_PowerButton_Public_Void_Boolean_0
       private static IntPtr NativeMethodInfoPtr_TurnOffCommonFunctions_Private_Void_0
-      ... and 24 more fields
-    -- Properties (16) --
+      private static IntPtr NativeMethodInfoPtr_TurnOnCommonFunction_Private_Void_0
+      ... and 23 more fields
+    -- Properties (15) --
       GameObject canvas { get; set; }
       TextMeshProUGUI txtScreen { get; set; }
       Il2CppReferenceArray`1 cableLinkSwitchPorts { get; set; }
@@ -1912,7 +3471,6 @@ Matching types: 133
       Boolean isWarningCleared { get; set; }
       Renderer powerButton { get; set; }
       List`1 temporarilyDisconnectedCables { get; set; }
-      Coroutine breakingRoutine { get; set; }
     -- Methods (27) --
       public virtual Void Awake()
       public Void Start()
@@ -1927,7 +3485,7 @@ Matching types: 133
       public Void HandleNewCableWhileOff(Int32 cableId)
       public List`1 GetConnectedDevices()
       public String GetSwitchId()
-      public IEnumerator BrekingInProgress()
+      public virtual Void TickTimer()
       public Void UpdateScreenUI()
       public Void ItIsBroken()
       public Void DisconnectCables()
@@ -1939,21 +3497,21 @@ Matching types: 133
       public virtual Void OnDestroy()
       public Void SetPowerLightMaterial(Material material)
       public Void RepairDevice()
-      public Boolean _InteractOnClick_b__22_0(RackPosition r)
-      public Boolean _ValidateRackPosition_b__34_0(RackPosition r)
-    -- Nested types (1) --
-      _BrekingInProgress_d__29
+      public Boolean _InteractOnClick_b__21_0(RackPosition r)
+      public Boolean _ValidateRackPosition_b__33_0(RackPosition r)
 
   public class Il2Cpp.NetworkSwitchConfiguration : UnityEngine.MonoBehaviour
-    -- Fields (18) --
-      private static IntPtr NativeFieldInfoPtr_inputField
+    -- Fields (22) --
+      private static IntPtr NativeFieldInfoPtr_labelText
       private static IntPtr NativeFieldInfoPtr_parentObjectForPortText
       private static IntPtr NativeFieldInfoPtr_portInformation
       private static IntPtr NativeFieldInfoPtr_currentNetworkSwitch
       private static IntPtr NativeFieldInfoPtr_currentPorts
       private static IntPtr NativeFieldInfoPtr_selectedPortIndices
+      private static IntPtr NativeFieldInfoPtr_patchPanelLinkCache
       private static IntPtr NativeMethodInfoPtr_Awake_Private_Void_0
       private static IntPtr NativeMethodInfoPtr_OpenConfig_Public_Void_NetworkSwitch_0
+      private static IntPtr NativeMethodInfoPtr_BuildPatchPanelCache_Private_Void_0
       private static IntPtr NativeMethodInfoPtr_RefreshPortDisplay_Private_Void_0
       private static IntPtr NativeMethodInfoPtr_ResolveRemoteDevice_Private_String_CableLink_0
       private static IntPtr NativeMethodInfoPtr_ClickPort_Public_Void_Int32_0
@@ -1963,17 +3521,20 @@ Matching types: 133
       private static IntPtr NativeMethodInfoPtr_CloseConfig_Public_Void_0
       private static IntPtr NativeMethodInfoPtr_NormalizeDeviceKey_Private_String_String_0
       private static IntPtr NativeMethodInfoPtr_ResolveAllCableIds_Private_List_1_Int32_CableLink_0
-      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
-    -- Properties (6) --
-      TMP_InputField inputField { get; set; }
+      private static IntPtr NativeMethodInfoPtr_ButtonEditLabel_Public_Void_0
+      ... and 2 more fields
+    -- Properties (7) --
+      TextMeshProUGUI labelText { get; set; }
       Transform parentObjectForPortText { get; set; }
       Il2CppReferenceArray`1 portInformation { get; set; }
       NetworkSwitch currentNetworkSwitch { get; set; }
       Il2CppReferenceArray`1 currentPorts { get; set; }
       HashSet`1 selectedPortIndices { get; set; }
-    -- Methods (11) --
+      Dictionary`2 patchPanelLinkCache { get; set; }
+    -- Methods (14) --
       public Void Awake()
       public Void OpenConfig(NetworkSwitch networkSwitch)
+      public Void BuildPatchPanelCache()
       public Void RefreshPortDisplay()
       public String ResolveRemoteDevice(CableLink port)
       public Void ClickPort(Int32 i)
@@ -1983,20 +3544,29 @@ Matching types: 133
       public Void CloseConfig()
       public String NormalizeDeviceKey(String deviceName)
       public List`1 ResolveAllCableIds(CableLink port)
-    -- Nested types (3) --
+      public Void ButtonEditLabel()
+      public Void _ButtonEditLabel_b__19_0(String label)
+    -- Nested types (1) --
       __c
-      __c__DisplayClass16_0
-      __c__DisplayClass9_0
+
+  public struct Il2Cpp.PacketSettings : System.ValueType
+    -- Fields (2) --
+      private static IntPtr NativeFieldInfoPtr_PacketType
+      public Int32 PacketType
+    -- Methods (1) --
+      public Object BoxIl2CppObject()
 
   public class Il2Cpp.PacketSpawnerSystem : Il2CppSystem.ValueType
-    -- Fields (15) --
+    -- Fields (17) --
       private static IntPtr NativeFieldInfoPtr_spawnerQuery
       private static IntPtr NativeFieldInfoPtr___TypeHandle
       private static IntPtr NativeFieldInfoPtr___query_23355594_0
       private static IntPtr NativeFieldInfoPtr___query_23355594_1
+      private static IntPtr NativeFieldInfoPtr___query_23355594_2
+      private static IntPtr NativeFieldInfoPtr___query_23355594_3
       private static IntPtr NativeMethodInfoPtr_OnCreate_Public_Virtual_Final_New_Void_byref_SystemState_0
       private static IntPtr NativeMethodInfoPtr_OnUpdate_Public_Virtual_Final_New_Void_byref_SystemState_0
-      private static IntPtr NativeMethodInfoPtr_SpawnPacket_Private_Void_EntityCommandBuffer_PacketSpawnerComponent_Int32_byref_BlobArray_1_float3_0
+      private static IntPtr NativeMethodInfoPtr_SpawnPacket_Private_Void_EntityCommandBuffer_PacketSpawnerComponent_Int32_Entity_byref_BlobArray_1_float3_Int32_0
       private static IntPtr NativeMethodInfoPtr___ScheduleViaJobChunkExtension_0_Private_JobHandle_UpdatePacketsJob_EntityQuery_JobHandle_byref_SystemState_Boolean_0
       private static IntPtr NativeMethodInfoPtr___AssignQueries_Private_Void_byref_SystemState_0
       private static IntPtr NativeMethodInfoPtr_OnCreateForCompiler_Public_Virtual_Final_New_Void_byref_SystemState_0
@@ -2005,15 +3575,17 @@ Matching types: 133
       private static IntPtr NativeMethodInfoPtr___codegen__OnCreateForCompiler_Internal_Static_Void_IntPtr_IntPtr_0
       private static IntPtr NativeMethodInfoPtr_Method_Internal_Static_Void_IntPtr_IntPtr_PDM_0
       private static IntPtr NativeMethodInfoPtr_Method_Internal_Static_Void_IntPtr_IntPtr_PDM_1
-    -- Properties (4) --
+    -- Properties (6) --
       EntityQuery spawnerQuery { get; set; }
       TypeHandle __TypeHandle { get; set; }
       EntityQuery __query_23355594_0 { get; set; }
       EntityQuery __query_23355594_1 { get; set; }
+      EntityQuery __query_23355594_2 { get; set; }
+      EntityQuery __query_23355594_3 { get; set; }
     -- Methods (11) --
       public virtual Void OnCreate(SystemState& state)
       public virtual Void OnUpdate(SystemState& state)
-      public Void SpawnPacket(EntityCommandBuffer ecb, PacketSpawnerComponent spawner, Int32 spawnerIndex, BlobArray`1& waypoints)
+      public Void SpawnPacket(EntityCommandBuffer ecb, PacketSpawnerComponent spawner, Int32 spawnerIndex, Entity spawnerEntity, BlobArray`1& waypoints, Int32 packetType)
       public JobHandle __ScheduleViaJobChunkExtension_0(UpdatePacketsJob job, EntityQuery query, JobHandle dependency, SystemState& state, Boolean hasUserDefinedQuery)
       public Void __AssignQueries(SystemState& state)
       public virtual Void OnCreateForCompiler(SystemState& state)
@@ -2022,9 +3594,10 @@ Matching types: 133
       public static Void __codegen__OnCreateForCompiler(IntPtr self, IntPtr state)
       public static Void Method_Internal_Static_Void_IntPtr_IntPtr_PDM_0(IntPtr self, IntPtr state)
       public static Void Method_Internal_Static_Void_IntPtr_IntPtr_PDM_1(IntPtr self, IntPtr state)
-    -- Nested types (7) --
+    -- Nested types (8) --
       UpdatePacketsJob
       IFE_23355594_0
+      IFE_23355594_1
       TypeHandle
       MulticastDelegateNInternalSealedVoInA_InVoObseA_stBe0
       ObjectNInternalAbstractSealedInPoGeVoA_ObseGeInVo0
@@ -2081,7 +3654,7 @@ Matching types: 133
       Int32 patchPanelType { get; set; }
 
   public class Il2Cpp.PauseMenu : UnityEngine.MonoBehaviour
-    -- Fields (54) --
+    -- Fields (53) --
       private static IntPtr NativeFieldInfoPtr_pauseMenuUI
       private static IntPtr NativeFieldInfoPtr_playerClass
       private static IntPtr NativeFieldInfoPtr_inputctrl
@@ -2090,8 +3663,6 @@ Matching types: 133
       private static IntPtr NativeFieldInfoPtr_loadSaveOverlayTopText
       private static IntPtr NativeFieldInfoPtr_loadSaveSlots
       private static IntPtr NativeFieldInfoPtr_saveConfirmOverlay
-      private static IntPtr NativeFieldInfoPtr_saveNameSetOverlay
-      private static IntPtr NativeFieldInfoPtr_saveNameInputField
       private static IntPtr NativeFieldInfoPtr_notAllowedSaveOverlay
       private static IntPtr NativeFieldInfoPtr_deleteSaveConfirmOverlay
       private static IntPtr NativeFieldInfoPtr_pauseMenuCanvas
@@ -2102,8 +3673,10 @@ Matching types: 133
       private static IntPtr NativeFieldInfoPtr_systemPauseMenuTabGroup
       private static IntPtr NativeFieldInfoPtr_subSystemMenuTab
       private static IntPtr NativeFieldInfoPtr_firstLoadSaveSlot
-      ... and 34 more fields
-    -- Properties (28) --
+      private static IntPtr NativeFieldInfoPtr_consoleGameObject
+      private static IntPtr NativeFieldInfoPtr_consoleInputField
+      ... and 33 more fields
+    -- Properties (26) --
       GameObject pauseMenuUI { get; set; }
       Player playerClass { get; set; }
       InputController inputctrl { get; set; }
@@ -2112,8 +3685,6 @@ Matching types: 133
       TextMeshProUGUI loadSaveOverlayTopText { get; set; }
       Il2CppReferenceArray`1 loadSaveSlots { get; set; }
       GameObject saveConfirmOverlay { get; set; }
-      GameObject saveNameSetOverlay { get; set; }
-      TMP_InputField saveNameInputField { get; set; }
       GameObject notAllowedSaveOverlay { get; set; }
       GameObject deleteSaveConfirmOverlay { get; set; }
       Canvas pauseMenuCanvas { get; set; }
@@ -2124,8 +3695,10 @@ Matching types: 133
       PauseMenu_TabGroup systemPauseMenuTabGroup { get; set; }
       PauseMenu_TabButton subSystemMenuTab { get; set; }
       ButtonExtended firstLoadSaveSlot { get; set; }
-      ... and 8 more properties
-    -- Methods (25) --
+      GameObject consoleGameObject { get; set; }
+      TMP_InputField consoleInputField { get; set; }
+      ... and 6 more properties
+    -- Methods (26) --
       public Void Awake()
       public Void OnEnable()
       public Void OnDisable()
@@ -2136,7 +3709,6 @@ Matching types: 133
       public Void LoadSaveOnButtonClick(TextMeshProUGUI _text)
       public Void NotAllowedToSaveOverlayOff()
       public Void SaveConfirm(Boolean yes)
-      public Void ButtonSetNameOfSave()
       public Void Save(String saveName, String _stringNameOfSave)
       public Void DeleteSaveButtonClick(TextMeshProUGUI _text)
       public Void DeleteSaveConfirm(Boolean yes)
@@ -2148,13 +3720,15 @@ Matching types: 133
       public Void CloseLoadSaveOverlay()
       public Void ProcessConsoleCommand(String input)
       public Void HandleAddCommand(Il2CppStringArray parts)
-      public Void _Awake_b__30_0(CallbackContext ctx)
-      public Void _Awake_b__30_1(CallbackContext ctx)
-      public Void _Awake_b__30_2(CallbackContext ctx)
+      public Void _Awake_b__28_0(CallbackContext ctx)
+      public Void _Awake_b__28_1(CallbackContext ctx)
+      public Void _Awake_b__28_2(CallbackContext ctx)
+      public Void _LoadSaveOnButtonClick_b__35_0(String saveName)
+      public Void _SaveConfirm_b__37_0(String saveName)
     -- Nested types (3) --
       OnPauseMenuOpen
       OnPauseMenuClose
-      _LoadWithOverlay_d__45
+      _LoadWithOverlay_d__42
 
   public class Il2Cpp.PauseMenu_TabButton : UnityEngine.MonoBehaviour
     -- Fields (11) --
@@ -2204,7 +3778,7 @@ Matching types: 133
       public Void OnTabSelected(PauseMenu_TabButton tabbutton)
       public Void ResetTabs()
 
-  public class Il2Cpp.PauseMenu+_LoadWithOverlay_d__45 : Il2CppSystem.Object
+  public class Il2Cpp.PauseMenu+_LoadWithOverlay_d__42 : Il2CppSystem.Object
     -- Fields (10) --
       private static IntPtr NativeFieldInfoPtr___1__state
       private static IntPtr NativeFieldInfoPtr___2__current
@@ -2712,9 +4286,10 @@ Matching types: 133
       public String Validate()
 
   public class Il2Cpp.SaveSystem : Il2CppSystem.Object
-    -- Fields (19) --
+    -- Fields (24) --
       private static IntPtr NativeFieldInfoPtr_listofsaves
       private static IntPtr NativeFieldInfoPtr_saveDirPath
+      private static IntPtr NativeFieldInfoPtr_displayToRawMap
       private static IntPtr NativeFieldInfoPtr_onSavingData
       private static IntPtr NativeFieldInfoPtr_onLoadingData
       private static IntPtr NativeFieldInfoPtr_onLoadingDataLater
@@ -2723,6 +4298,8 @@ Matching types: 133
       private static IntPtr NativeFieldInfoPtr_versionToIgnoreFrom
       private static IntPtr NativeFieldInfoPtr_isQuitting
       private static IntPtr NativeMethodInfoPtr_SaveGame_Public_Static_Void_String_String_0
+      private static IntPtr NativeMethodInfoPtr_WriteMeta_Private_Static_Void_String_Int32_String_0
+      private static IntPtr NativeMethodInfoPtr_ReadMeta_Private_Static_SaveMeta_String_0
       private static IntPtr NativeMethodInfoPtr_LoadGame_Public_Static_SaveData_String_0
       private static IntPtr NativeMethodInfoPtr_DeleteSaveFile_Public_Static_Void_String_0
       private static IntPtr NativeMethodInfoPtr_GetBinaryFormatter_Public_Static_BinaryFormatter_0
@@ -2730,11 +4307,11 @@ Matching types: 133
       private static IntPtr NativeMethodInfoPtr_Listofsaves_Private_Static_List_1_String_0
       private static IntPtr NativeMethodInfoPtr_NewestSave_Public_Static_String_0
       private static IntPtr NativeMethodInfoPtr_LoadGameData_Public_Static_Void_0
-      private static IntPtr NativeMethodInfoPtr_Load_Public_Static_Void_String_Boolean_0
-      private static IntPtr NativeMethodInfoPtr_AutoSave_Public_Static_Void_0
-    -- Properties (9) --
+      ... and 4 more fields
+    -- Properties (10) --
       List`1 listofsaves { get; set; }
       String saveDirPath { get; set; }
+      Dictionary`2 displayToRawMap { get; set; }
       OnSavingData onSavingData { get; set; }
       OnLoadingData onLoadingData { get; set; }
       OnLoadingDataLater onLoadingDataLater { get; set; }
@@ -2742,8 +4319,10 @@ Matching types: 133
       Int32 version { get; set; }
       Int32 versionToIgnoreFrom { get; set; }
       Boolean isQuitting { get; set; }
-    -- Methods (10) --
+    -- Methods (14) --
       public static Void SaveGame(String savename, String stringNameOfSave)
+      public static Void WriteMeta(String savename, Int32 version, String nameOfSave)
+      public static SaveMeta ReadMeta(String savename)
       public static SaveData LoadGame(String savename)
       public static Void DeleteSaveFile(String savename)
       public static BinaryFormatter GetBinaryFormatter()
@@ -2753,12 +4332,18 @@ Matching types: 133
       public static Void LoadGameData()
       public static Void Load(String savename, Boolean isFromPauseMenu)
       public static Void AutoSave()
-    -- Nested types (5) --
+      public static String FormatDisplayName(String rawEntry)
+      public static String GetRawSaveEntry(String displayName)
+    -- Nested types (9) --
       OnSavingData
       OnLoadingData
       OnLoadingDataLater
+      SaveMeta
       __c
-      __c__DisplayClass20_0
+      __c__DisplayClass13_0
+      __c__DisplayClass18_0
+      __c__DisplayClass24_0
+      __c__DisplayClass25_0
 
   public class Il2Cpp.SaveSystem+OnLoadingData : Il2CppSystem.MulticastDelegate
     -- Fields (4) --
@@ -2788,8 +4373,17 @@ Matching types: 133
       public static OnLoadingDataLater op_Addition(OnLoadingDataLater , OnLoadingDataLater )
       public static OnLoadingDataLater op_Subtraction(OnLoadingDataLater , OnLoadingDataLater )
 
+  public class Il2Cpp.SaveSystem+SaveMeta : Il2CppSystem.Object
+    -- Fields (3) --
+      private static IntPtr NativeFieldInfoPtr_version
+      private static IntPtr NativeFieldInfoPtr_nameOfSave
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (2) --
+      Int32 version { get; set; }
+      String nameOfSave { get; set; }
+
   public class Il2Cpp.Server : Il2Cpp.UsableObject
-    -- Fields (56) --
+    -- Fields (55) --
       private static IntPtr NativeFieldInfoPtr_canvas
       private static IntPtr NativeFieldInfoPtr_txtIP
       private static IntPtr NativeFieldInfoPtr_txtServerScreen
@@ -2810,8 +4404,8 @@ Matching types: 133
       private static IntPtr NativeFieldInfoPtr_isWarningCleared
       private static IntPtr NativeFieldInfoPtr_customerLogo
       private static IntPtr NativeFieldInfoPtr_appLogo
-      ... and 36 more fields
-    -- Properties (24) --
+      ... and 35 more fields
+    -- Properties (23) --
       GameObject canvas { get; set; }
       TextMeshProUGUI txtIP { get; set; }
       TextMeshProUGUI txtServerScreen { get; set; }
@@ -2832,7 +4426,7 @@ Matching types: 133
       Boolean isWarningCleared { get; set; }
       Image customerLogo { get; set; }
       Image appLogo { get; set; }
-      ... and 4 more properties
+      ... and 3 more properties
     -- Methods (31) --
       public virtual Void Awake()
       public Void Start()
@@ -2855,7 +4449,7 @@ Matching types: 133
       public Int32 GetCustomerID()
       public Void UpdateCustomer(Int32 newCustomerID)
       public Void UpdateAppID(Int32 _appID)
-      public IEnumerator BrekingInProgress()
+      public virtual Void TickTimer()
       public Void ItIsBroken()
       public Boolean ValidateRackPosition()
       public Void ClearWarningSign(Boolean isPreserved)
@@ -2863,10 +4457,8 @@ Matching types: 133
       public virtual Void OnDestroy()
       public Void SetPowerLightMaterial(Material material)
       public Void RepairDevice()
-      public Boolean _InteractOnClick_b__32_0(RackPosition r)
+      public Boolean _InteractOnClick_b__31_0(RackPosition r)
       ... and 1 more methods
-    -- Nested types (1) --
-      _BrekingInProgress_d__45
 
   public class Il2Cpp.ServerSaveData : Il2CppSystem.Object
     -- Fields (14) --
@@ -2922,33 +4514,47 @@ Matching types: 133
       public Void LoadSettings()
 
   public class Il2Cpp.SettingsGameplay : UnityEngine.MonoBehaviour
-    -- Fields (10) --
+    -- Fields (17) --
       private static IntPtr NativeFieldInfoPtr_dropDownLanguages
       private static IntPtr NativeFieldInfoPtr_toggleAutoSave
       private static IntPtr NativeFieldInfoPtr_dropDownAutoSaveInterval
+      private static IntPtr NativeFieldInfoPtr_dropDownPacketType
+      private static IntPtr NativeFieldInfoPtr_dropDownRouteEvalInterval
       private static IntPtr NativeFieldInfoPtr_isMainMenu
+      private static IntPtr NativeFieldInfoPtr_unstuckPlayerPosition
+      private static IntPtr NativeFieldInfoPtr_packetType
       private static IntPtr NativeMethodInfoPtr_Start_Public_Void_0
       private static IntPtr NativeMethodInfoPtr_OnLanguageDropDownChange_Public_Void_Int32_0
       private static IntPtr NativeMethodInfoPtr_SetAutoSaveInterval_Public_Void_Int32_0
       private static IntPtr NativeMethodInfoPtr_SetAutoSaveOnOff_Public_Void_Boolean_0
+      private static IntPtr NativeMethodInfoPtr_SetPacketType_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_SetRouteEvalInterval_Public_Void_Int32_0
+      private static IntPtr NativeMethodInfoPtr_ButtonUnstuckPlayer_Public_Void_0
       private static IntPtr NativeMethodInfoPtr_LoadSettings_Private_Void_0
       private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
-    -- Properties (4) --
+    -- Properties (8) --
       TMP_Dropdown dropDownLanguages { get; set; }
       Toggle toggleAutoSave { get; set; }
       TMP_Dropdown dropDownAutoSaveInterval { get; set; }
+      TMP_Dropdown dropDownPacketType { get; set; }
+      TMP_Dropdown dropDownRouteEvalInterval { get; set; }
       Boolean isMainMenu { get; set; }
-    -- Methods (5) --
+      Transform unstuckPlayerPosition { get; set; }
+      Int32 packetType { get; set; }
+    -- Methods (8) --
       public Void Start()
       public Void OnLanguageDropDownChange(Int32 i)
       public Void SetAutoSaveInterval(Int32 i)
       public Void SetAutoSaveOnOff(Boolean isActive)
+      public Void SetPacketType(Int32 i)
+      public Void SetRouteEvalInterval(Int32 i)
+      public Void ButtonUnstuckPlayer()
       public Void LoadSettings()
     -- Nested types (1) --
       __c
 
   public class Il2Cpp.SettingsGraphics : UnityEngine.MonoBehaviour
-    -- Fields (48) --
+    -- Fields (55) --
       private static IntPtr NativeFieldInfoPtr_volumeProfile
       private static IntPtr NativeFieldInfoPtr_isMainMenu
       private static IntPtr NativeFieldInfoPtr_resolutionDropdown
@@ -2957,6 +4563,9 @@ Matching types: 133
       private static IntPtr NativeFieldInfoPtr_limitfpsDropdown
       private static IntPtr NativeFieldInfoPtr_resolutions
       private static IntPtr NativeFieldInfoPtr_currentResolutionIndex
+      private static IntPtr NativeFieldInfoPtr_monitorDropdown
+      private static IntPtr NativeFieldInfoPtr_availableDisplays
+      private static IntPtr NativeFieldInfoPtr_isUpdatingUI
       private static IntPtr NativeFieldInfoPtr_qualityDropDown
       private static IntPtr NativeFieldInfoPtr_antiAliasingDropdown
       private static IntPtr NativeFieldInfoPtr_upscalingModeDropdown
@@ -2966,11 +4575,8 @@ Matching types: 133
       private static IntPtr NativeFieldInfoPtr_sliderFieldOfView
       private static IntPtr NativeFieldInfoPtr_textFieldOfViewValue
       private static IntPtr NativeFieldInfoPtr_sliderShadowDistance
-      private static IntPtr NativeFieldInfoPtr_textShadowDistanceValue
-      private static IntPtr NativeFieldInfoPtr_sliderMotionBlur
-      private static IntPtr NativeFieldInfoPtr_textMotionBlurValue
-      ... and 28 more fields
-    -- Properties (27) --
+      ... and 35 more fields
+    -- Properties (30) --
       VolumeProfile volumeProfile { get; set; }
       Boolean isMainMenu { get; set; }
       TMP_Dropdown resolutionDropdown { get; set; }
@@ -2979,6 +4585,9 @@ Matching types: 133
       TMP_Dropdown limitfpsDropdown { get; set; }
       Il2CppStructArray`1 resolutions { get; set; }
       Int32 currentResolutionIndex { get; set; }
+      TMP_Dropdown monitorDropdown { get; set; }
+      List`1 availableDisplays { get; set; }
+      Boolean isUpdatingUI { get; set; }
       TMP_Dropdown qualityDropDown { get; set; }
       TMP_Dropdown antiAliasingDropdown { get; set; }
       TMP_Dropdown upscalingModeDropdown { get; set; }
@@ -2988,11 +4597,8 @@ Matching types: 133
       Slider sliderFieldOfView { get; set; }
       TextMeshProUGUI textFieldOfViewValue { get; set; }
       Slider sliderShadowDistance { get; set; }
-      TextMeshProUGUI textShadowDistanceValue { get; set; }
-      Slider sliderMotionBlur { get; set; }
-      TextMeshProUGUI textMotionBlurValue { get; set; }
-      ... and 7 more properties
-    -- Methods (20) --
+      ... and 10 more properties
+    -- Methods (24) --
       public Void Start()
       public Void SetQuality(Int32 qualityIndex)
       public Void SetFullScreen(Boolean isFullScreen)
@@ -3013,9 +4619,14 @@ Matching types: 133
       public Void SetAntiAliasing(Int32 index)
       public Void SetAAQuality(Int32 index)
       public Boolean IsDLSSSupported()
-    -- Nested types (2) --
+      public Void PopulateMonitors()
+      public Void SetMonitor(Int32 monitorIndex)
+      public IEnumerator MoveToMonitorCoroutine(DisplayInfo targetDisplay, Boolean restoreFullScreen)
+      public Void RepopulateResolutions()
+    -- Nested types (3) --
       __c
-      _AvailableRefreshRatesAfterFrame_d__32
+      _AvailableRefreshRatesAfterFrame_d__35
+      _MoveToMonitorCoroutine_d__52
 
   public class Il2Cpp.SettingsSingleton : UnityEngine.MonoBehaviour
     -- Fields (6) --
@@ -3105,8 +4716,60 @@ Matching types: 133
       Boolean isInserted { get; set; }
       Vector3 portPosition { get; set; }
 
+  public class Il2Cpp.ShopItemConfig : Il2CppSystem.Object
+    -- Fields (13) --
+      private static IntPtr NativeFieldInfoPtr_itemName
+      private static IntPtr NativeFieldInfoPtr_price
+      private static IntPtr NativeFieldInfoPtr_xpToUnlock
+      private static IntPtr NativeFieldInfoPtr_sizeInU
+      private static IntPtr NativeFieldInfoPtr_mass
+      private static IntPtr NativeFieldInfoPtr_modelScale
+      private static IntPtr NativeFieldInfoPtr_colliderSize
+      private static IntPtr NativeFieldInfoPtr_colliderCenter
+      private static IntPtr NativeFieldInfoPtr_modelFile
+      private static IntPtr NativeFieldInfoPtr_textureFile
+      private static IntPtr NativeFieldInfoPtr_iconFile
+      private static IntPtr NativeFieldInfoPtr_objectType
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (12) --
+      String itemName { get; set; }
+      Int32 price { get; set; }
+      Int32 xpToUnlock { get; set; }
+      Int32 sizeInU { get; set; }
+      Single mass { get; set; }
+      Single modelScale { get; set; }
+      Il2CppStructArray`1 colliderSize { get; set; }
+      Il2CppStructArray`1 colliderCenter { get; set; }
+      String modelFile { get; set; }
+      String textureFile { get; set; }
+      String iconFile { get; set; }
+      ObjectInHand objectType { get; set; }
+
+  public class Il2Cpp.StaticItemConfig : Il2CppSystem.Object
+    -- Fields (10) --
+      private static IntPtr NativeFieldInfoPtr_itemName
+      private static IntPtr NativeFieldInfoPtr_modelScale
+      private static IntPtr NativeFieldInfoPtr_colliderSize
+      private static IntPtr NativeFieldInfoPtr_colliderCenter
+      private static IntPtr NativeFieldInfoPtr_modelFile
+      private static IntPtr NativeFieldInfoPtr_textureFile
+      private static IntPtr NativeFieldInfoPtr_position
+      private static IntPtr NativeFieldInfoPtr_rotation
+      private static IntPtr NativeFieldInfoPtr_isKinematic
+      private static IntPtr NativeMethodInfoPtr__ctor_Public_Void_0
+    -- Properties (9) --
+      String itemName { get; set; }
+      Single modelScale { get; set; }
+      Il2CppStructArray`1 colliderSize { get; set; }
+      Il2CppStructArray`1 colliderCenter { get; set; }
+      String modelFile { get; set; }
+      String textureFile { get; set; }
+      Il2CppStructArray`1 position { get; set; }
+      Il2CppStructArray`1 rotation { get; set; }
+      Boolean isKinematic { get; set; }
+
   public class Il2Cpp.StaticUIElements : UnityEngine.MonoBehaviour
-    -- Fields (68) --
+    -- Fields (78) --
       private static IntPtr NativeFieldInfoPtr_instance
       private static IntPtr NativeFieldInfoPtr_canvasStatic
       private static IntPtr NativeFieldInfoPtr_imagePointer
@@ -3127,8 +4790,8 @@ Matching types: 133
       private static IntPtr NativeFieldInfoPtr_topLeft_ExpensesPerSecond
       private static IntPtr NativeFieldInfoPtr_topLeft_reputationTXT
       private static IntPtr NativeFieldInfoPtr_topLeft_xpTXT
-      ... and 48 more fields
-    -- Properties (46) --
+      ... and 58 more fields
+    -- Properties (52) --
       StaticUIElements instance { get; set; }
       GameObject canvasStatic { get; set; }
       GameObject imagePointer { get; set; }
@@ -3149,8 +4812,8 @@ Matching types: 133
       TextMeshProUGUI topLeft_ExpensesPerSecond { get; set; }
       TextMeshProUGUI topLeft_reputationTXT { get; set; }
       TextMeshProUGUI topLeft_xpTXT { get; set; }
-      ... and 26 more properties
-    -- Methods (21) --
+      ... and 32 more properties
+    -- Methods (25) --
       public Void Awake()
       public Void Start()
       public IEnumerator UpdateCoinsAndPrestige_TopLeft()
@@ -3172,9 +4835,13 @@ Matching types: 133
       public Void UpdateHoldProgress(Single value)
       public Void SetLoadingInfo(String s)
       public Void OnLoadingStarted()
+      public Void ShowInputTextOverlay(String title, Action`1 onConfirmed, String defaultText, GameObject selectOnClose)
+      public Void ButtonSaveInputTextOverlay()
+      public Void ButtonCancelInputTextOverlay()
+      public Void RestorePreviousSelection()
     -- Nested types (2) --
-      _UpdateCoinsAndPrestige_TopLeft_d__48
-      _UpdateMessagesCoroutine_d__55
+      _UpdateCoinsAndPrestige_TopLeft_d__54
+      _UpdateMessagesCoroutine_d__61
 
   public class Il2Cpp.SteamManager : UnityEngine.MonoBehaviour
     -- Fields (13) --
@@ -3221,7 +4888,7 @@ Matching types: 133
       TextMeshProUGUI m_TextMeshProUGUI { get; set; }
       CallResult`1 m_globalStatsResult { get; set; }
       Boolean m_globalStatsReady { get; set; }
-      Double m_globalCableLength { get; set; }
+      Int64 m_globalCableLength { get; set; }
     -- Methods (4) --
       public Void Start()
       public IEnumerator WaitAndDisplay()
@@ -3330,9 +4997,10 @@ Matching types: 133
       public virtual Object System_Collections_IEnumerator_get_Current()
 
   public class Il2Cpp.TechnicianManager : UnityEngine.MonoBehaviour
-    -- Fields (26) --
+    -- Fields (27) --
       private static IntPtr NativeFieldInfoPtr_instance
       private static IntPtr NativeFieldInfoPtr_technicians
+      private static IntPtr NativeFieldInfoPtr_commandCenterOperator
       private static IntPtr NativeFieldInfoPtr_transformIdle
       private static IntPtr NativeFieldInfoPtr_transformContainer
       private static IntPtr NativeFieldInfoPtr_transformDumpster
@@ -3350,11 +5018,11 @@ Matching types: 133
       private static IntPtr NativeMethodInfoPtr_SendTechnician_Public_Void_NetworkSwitch_Server_0
       private static IntPtr NativeMethodInfoPtr_RequestNextJob_Public_Void_Technician_0
       private static IntPtr NativeMethodInfoPtr_EnqueueDispatch_Private_Void_RepairJob_0
-      private static IntPtr NativeMethodInfoPtr_ProcessDispatchQueue_Private_IEnumerator_0
-      ... and 6 more fields
-    -- Properties (14) --
+      ... and 7 more fields
+    -- Properties (15) --
       TechnicianManager instance { get; set; }
       List`1 technicians { get; set; }
+      List`1 commandCenterOperator { get; set; }
       Il2CppReferenceArray`1 transformIdle { get; set; }
       Transform transformContainer { get; set; }
       Transform transformDumpster { get; set; }
@@ -3381,8 +5049,8 @@ Matching types: 133
       public Void FireTechnician(Int32 technicianID)
     -- Nested types (3) --
       RepairJob
-      __c__DisplayClass26_0
-      _ProcessDispatchQueue_d__21
+      __c__DisplayClass27_0
+      _ProcessDispatchQueue_d__22
 
   public class Il2Cpp.TechnicianSaveData : Il2CppSystem.Object
     -- Fields (3) --
@@ -3633,11 +5301,13 @@ Matching types: 133
       String platform { get; set; }
 
   public class Il2Cpp.WaypointInitializationSystem : Unity.Entities.SystemBase
-    -- Fields (50) --
+    -- Fields (55) --
       private static IntPtr NativeFieldInfoPtr__Instance_k__BackingField
       private static IntPtr NativeFieldInfoPtr_cablePositions
       private static IntPtr NativeFieldInfoPtr_isLoading
       private static IntPtr NativeFieldInfoPtr_needsToEvaluateRoutes
+      private static IntPtr NativeFieldInfoPtr_lastEvaluationTime
+      private static IntPtr NativeFieldInfoPtr_evaluationCooldown
       private static IntPtr NativeFieldInfoPtr_lastFinalCableSpeeds
       private static IntPtr NativeFieldInfoPtr_cables
       private static IntPtr NativeFieldInfoPtr___TypeHandle
@@ -3652,14 +5322,14 @@ Matching types: 133
       private static IntPtr NativeMethodInfoPtr_GetCableInfo_Public_Nullable_1_CableInfo_Int32_0
       private static IntPtr NativeMethodInfoPtr_LoadNetworkState_Public_Void_NetworkSaveData_List_1_RackPosition_Int32_0
       private static IntPtr NativeMethodInfoPtr_LoadNetworkStateCoroutine_Private_IEnumerator_NetworkSaveData_List_1_RackPosition_Int32_0
-      private static IntPtr NativeMethodInfoPtr_ClearNetworkState_Private_Void_0
-      private static IntPtr NativeMethodInfoPtr_OnCreate_Protected_Virtual_Void_0
-      ... and 30 more fields
-    -- Properties (12) --
+      ... and 35 more fields
+    -- Properties (14) --
       WaypointInitializationSystem _Instance_k__BackingField { get; set; }
       CablePositions cablePositions { get; set; }
       Boolean isLoading { get; set; }
       Boolean needsToEvaluateRoutes { get; set; }
+      Single lastEvaluationTime { get; set; }
+      Single evaluationCooldown { get; set; }
       Dictionary`2 lastFinalCableSpeeds { get; set; }
       Dictionary`2 cables { get; set; }
       TypeHandle __TypeHandle { get; set; }
@@ -3668,7 +5338,7 @@ Matching types: 133
       EntityQuery __query_1822386707_2 { get; set; }
       EntityQuery __query_1822386707_3 { get; set; }
       WaypointInitializationSystem Instance { get; set; }
-    -- Methods (36) --
+    -- Methods (39) --
       public Single GetCableCurrentSpeed(Int32 cableId)
       public List`1 GetAllCables()
       public Nullable`1 GetCableInfo(Int32 cableId)
@@ -3682,6 +5352,9 @@ Matching types: 133
       public Void CreateSpawnersForCable(CableInfo& cableInfo, PacketSpawnerComponent prefabComponent)
       public Entity CreateSpawner(List`1 waypoints, Vector3 spawnerPos, Int32 cableId, Int32 customerID, PacketSpawnerComponent prefabComponent, Boolean isForward)
       public Void UpdateServerCustomerID(String serverID, Int32 customerID)
+      public Void RequestRouteEvaluation()
+      public Void SetEvaluationCooldown(Single seconds)
+      public Single GetEvaluationCooldown()
       public Void EvaluateAllRoutes()
       public Void ActivateSpawnersForCable(CableInfo cable, Single finalSpeed, HashSet`1 customersOnCable, HashSet`1 directions)
       public String MapDirectionToSibling(CableInfo primary, CableInfo sibling, String direction)
@@ -3696,26 +5369,23 @@ Matching types: 133
       public Nullable`1 FindCableConnecting(String from, String to)
       public String GetDeviceName(CableEndpoint endpoint)
       public Void RegisterCableInNetworkMap(CableInfo cableInfo)
-      public Void OnCableRemoved(Int32 cableId)
-      public Void SafelyDisposeSpawner(Entity spawnerEntity, Int32 cableId, String direction)
-      public Boolean DoesCableServeMultipleCustomers(Int32 cableId)
-      ... and 6 more methods
+      ... and 9 more methods
     -- Nested types (13) --
       CableEndpoint
       CableInfo
       CustomerNetworkInfo
       TypeHandle
       __c
-      __c__DisplayClass12_0
-      __c__DisplayClass12_1
-      __c__DisplayClass24_0
-      __c__DisplayClass27_0
-      __c__DisplayClass46_0
-      __c__DisplayClass46_1
-      _LoadNetworkStateCoroutine_d__12
-      ___LoadNetworkStateCoroutine_592A83D2_d__46
+      __c__DisplayClass14_0
+      __c__DisplayClass14_1
+      __c__DisplayClass29_0
+      __c__DisplayClass32_0
+      __c__DisplayClass51_0
+      __c__DisplayClass51_1
+      _LoadNetworkStateCoroutine_d__14
+      ___LoadNetworkStateCoroutine_592A83D2_d__51
 
-  public class Il2Cpp.WaypointInitializationSystem+___LoadNetworkStateCoroutine_592A83D2_d__46 : Il2CppSystem.Object
+  public class Il2Cpp.WaypointInitializationSystem+___LoadNetworkStateCoroutine_592A83D2_d__51 : Il2CppSystem.Object
     -- Fields (15) --
       private static IntPtr NativeFieldInfoPtr___1__state
       private static IntPtr NativeFieldInfoPtr___2__current
@@ -3751,7 +5421,7 @@ Matching types: 133
       public virtual Void System_Collections_IEnumerator_Reset()
       public virtual Object System_Collections_IEnumerator_get_Current()
 
-  public class Il2Cpp.WaypointInitializationSystem+_LoadNetworkStateCoroutine_d__12 : Il2CppSystem.Object
+  public class Il2Cpp.WaypointInitializationSystem+_LoadNetworkStateCoroutine_d__14 : Il2CppSystem.Object
     -- Fields (15) --
       private static IntPtr NativeFieldInfoPtr___1__state
       private static IntPtr NativeFieldInfoPtr___2__current

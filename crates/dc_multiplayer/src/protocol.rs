@@ -1,4 +1,5 @@
 use bincode::{Decode, Encode};
+use dc_api::Vec3;
 
 #[allow(dead_code)]
 pub mod object_types {

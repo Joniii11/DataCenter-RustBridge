@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("inspect_tool")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a5ddf9362ca299deb81b6987e4375a29573bd6d9")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f754df6ac9bebc8d867a3c99f6a67d94aee655c6")]
 [assembly: System.Reflection.AssemblyProductAttribute("inspect_tool")]
 [assembly: System.Reflection.AssemblyTitleAttribute("inspect_tool")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

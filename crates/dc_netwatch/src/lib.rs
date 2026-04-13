@@ -404,6 +404,10 @@ fn scene_loaded(api: &Api, name: &str) {
         if api.version() >= 4 {
             let total_techs = api.get_total_technician_count().unwrap_or(0);
             let free_techs = api.get_free_technician_count().unwrap_or(0);
+            dc_api::crash_log(&format!(
+                "[SysAdmin] Scene '{}' loaded: total_techs={}, free_techs={}",
+                name, total_techs, free_techs
+            ));
         }
     }
 }

@@ -1,0 +1,59 @@
+thread 'rustc' panicked at /rustc-dev/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305\library\core\src\slice\index.rs:1031:55:
+slice index starts at 21 but ends at 19
+stack backtrace:
+   0:     0x7ffc53db539e - std::backtrace_rs::backtrace::win64::trace
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\std\src\..\..\backtrace\src\backtrace\win64.rs:85
+   1:     0x7ffc53db539e - std::backtrace_rs::backtrace::trace_unsynchronized
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\std\src\..\..\backtrace\src\backtrace\mod.rs:66
+   2:     0x7ffc53db539e - std::backtrace::Backtrace::create
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\std\src\backtrace.rs:331
+   3:     0x7ffc53db52da - std::backtrace::Backtrace::force_capture
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\std\src\backtrace.rs:312
+   4:     0x7ffc5558be99 - core[b5d223fe1db4fad0]::slice::sort::unstable::heapsort::heapsort::<((rustc_lint_defs[81f36aca8f8324d6]::Level, &str), usize), <((rustc_lint_defs[81f36aca8f8324d6]::Level, &str), usize) as core[b5d223fe1db4fad0]::cmp::PartialOrd>::lt>
+   5:     0x7ffc53dc9114 - std::panicking::panic_with_hook
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\std\src\panicking.rs:833
+   6:     0x7ffc53dae7b4 - std::panicking::panic_handler::closure$0
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\std\src\panicking.rs:698
+   7:     0x7ffc53dabc7f - std::sys::backtrace::__rust_end_short_backtrace<std::panicking::panic_handler::closure_env$0,never$>
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\std\src\sys\backtrace.rs:182
+   8:     0x7ffc53daf36e - std::panicking::panic_handler
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\std\src\panicking.rs:689
+   9:     0x7ffc5805f92d - core::panicking::panic_fmt
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\core\src\panicking.rs:80
+  10:     0x7ffc5805f9ef - core::slice::index::slice_index_fail
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\core\src\panic.rs:177
+  11:     0x7ffc57d6d599 - <annotate_snippets[f5605a3d920531af]::snippet::Snippet<annotate_snippets[f5605a3d920531af]::snippet::Patch>>::patch
+  12:     0x7ffc53c89f1a - <annotate_snippets[f5605a3d920531af]::renderer::Renderer>::render
+  13:     0x7ffc53c7eced - <annotate_snippets[f5605a3d920531af]::renderer::Renderer>::render
+  14:     0x7ffc53c6535d - <rustc_stable_hash[3dea2f821d5e372f]::sip128::SipHasher128>::short_write_process_buffer::<2usize>
+  15:     0x7ffc53c79a0a - <rustc_errors[bb6e99f5685fce7e]::annotate_snippet_emitter_writer::AnnotateSnippetEmitter as rustc_errors[bb6e99f5685fce7e]::emitter::Emitter>::emit_diagnostic
+  16:     0x7ffc53c693e7 - <rustc_stable_hash[3dea2f821d5e372f]::sip128::SipHasher128>::short_write_process_buffer::<2usize>
+  17:     0x7ffc53c7a9ac - <rustc_errors[bb6e99f5685fce7e]::json::JsonEmitter as rustc_errors[bb6e99f5685fce7e]::emitter::Emitter>::emit_diagnostic
+  18:     0x7ffc53c61fdc - <rustc_stable_hash[3dea2f821d5e372f]::sip128::SipHasher128>::short_write_process_buffer::<2usize>
+  19:     0x7ffc510c4db4 - llvm::function_ref<void __cdecl(llvm::Value const * __ptr64)>::callback_fn<`llvm::Value::stripInBoundsOffsets'::`1'::<lambda_1_1> >
+  20:     0x7ffc53c6f26d - <rustc_errors[bb6e99f5685fce7e]::DiagCtxtHandle>::has_errors_excluding_lint_errors
+  21:     0x7ffc53c6beba - <rustc_errors[bb6e99f5685fce7e]::DiagCtxtHandle>::emit_diagnostic
+  22:     0x7ffc539174c4 - llvm::TargetTransformInfoImplBase::canHaveNonUndefGlobalInitializerInAddressSpace
+  23:     0x7ffc553e31f4 - <rustc_middle[1e72f14750d6e308]::dep_graph::graph::DepGraphData>::try_mark_green
+  24:     0x7ffc553de71d - <rustc_middle[1e72f14750d6e308]::dep_graph::graph::DepGraph>::try_mark_green
+  25:     0x7ffc54c408ed - RINvMs6_NtCsil8Ix6uMOIy_9hashbrown3rawINtB6_8RawTableTTNtNtNtCs2C4UKVMDz9A_12rustc_middle2ty8instance8InstanceNtNtNtBX_3mir4mono14CollectionModeETINtNtNtBX_5query5erase10ErasedDataAhj20_ENtNtNtBX_9dep_graph5graph12DepNodeIndexEEE14reserve_rehashNCINvNtCs1M
+  26:     0x7ffc538cdd9d - llvm::TargetTransformInfoImplBase::canHaveNonUndefGlobalInitializerInAddressSpace
+  27:     0x7ffc53e2e252 - rustc_interface[d981fa18fa6b65d1]::passes::analysis
+  28:     0x7ffc538ec44a - llvm::TargetTransformInfoImplBase::canHaveNonUndefGlobalInitializerInAddressSpace
+  29:     0x7ffc5379e85a - <<rustc_ty_utils[1bbf41c3d2d6a1d8]::opaque_types::OpaqueTypeCollector>::collect_taits_declared_in_body::TaitInBodyFinder as rustc_hir[3f58419b6046b564]::intravisit::Visitor>::visit_nested_item
+  30:     0x7ffc538ec385 - llvm::TargetTransformInfoImplBase::canHaveNonUndefGlobalInitializerInAddressSpace
+  31:     0x7ffc510cba78 - std[3ae92f2f8da1f7d3]::sys::backtrace::__rust_begin_short_backtrace::<std[3ae92f2f8da1f7d3]::thread::lifecycle::spawn_unchecked<ctrlc[2da393e8d63b9a14]::set_handler_inner<rustc_driver_impl[488c52a9a65c51b2]::install_ctrlc_handler::{closure#0}>::{closure#0}, ()>::{closure#1}::{closure#0}::{closure#0}, ()>
+  32:     0x7ffc510c7961 - RINvNtNtCs53A2b4DmIh3_3std3sys9backtrace28___rust_begin_short_backtraceNCNCINvNtCsiFMT0gW0aez_15rustc_interface4util26run_in_thread_with_globalsNCINvB1e_31run_in_thread_pool_with_globalsNCINvNtB1g_9interface12run_compileruNCNvCs6eaFgW0Q5oI_17rustc_driver_i
+  33:     0x7ffc510d09da - std[3ae92f2f8da1f7d3]::sys::backtrace::__rust_begin_short_backtrace::<std[3ae92f2f8da1f7d3]::thread::lifecycle::spawn_unchecked<ctrlc[2da393e8d63b9a14]::set_handler_inner<rustc_driver_impl[488c52a9a65c51b2]::install_ctrlc_handler::{closure#0}>::{closure#0}, ()>::{closure#1}::{closure#0}::{closure#0}, ()>
+  34:     0x7ffc53dd2d5c - std::sys::thread::windows::impl$0::new::thread_start
+                               at /rustc/bcf3d36c997dd9b5db4bb7f40cb91dd4cf46a305/library\std\src\sys\thread\windows.rs:58
+  35:     0x7ffdcd93e8d7 - BaseThreadInitThunk
+  36:     0x7ffdce60c53c - RtlUserThreadStart
+
+
+rustc version: 1.96.0-nightly (bcf3d36c9 2026-03-19)
+platform: x86_64-pc-windows-msvc
+
+query stack during panic:
+#0 [analysis] running analysis passes on crate `dc_netwatch`
+end of query stack

@@ -16,3 +16,9 @@ E:\rust\data center modloader\inspect_tool\obj\Debug\net8.0\refint\inspect_tool.
 E:\rust\data center modloader\inspect_tool\obj\Debug\net8.0\inspect_tool.pdb
 E:\rust\data center modloader\inspect_tool\obj\Debug\net8.0\inspect_tool.genruntimeconfig.cache
 E:\rust\data center modloader\inspect_tool\obj\Debug\net8.0\ref\inspect_tool.dll
+E:\rust\data center modloader\inspect_tool\binDebugnet8.0\inspect_tool.exe
+E:\rust\data center modloader\inspect_tool\binDebugnet8.0\inspect_tool.deps.json
+E:\rust\data center modloader\inspect_tool\binDebugnet8.0\inspect_tool.runtimeconfig.json
+E:\rust\data center modloader\inspect_tool\binDebugnet8.0\inspect_tool.dll
+E:\rust\data center modloader\inspect_tool\binDebugnet8.0\inspect_tool.pdb
+E:\rust\data center modloader\inspect_tool\binDebugnet8.0\System.Reflection.MetadataLoadContext.dll

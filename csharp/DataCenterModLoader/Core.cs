@@ -147,13 +147,19 @@ public class Core : MelonMod
             _ffiBridge?.OnSceneLoaded(sceneName);
             _mpBridge?.OnSceneLoaded(sceneName);
             ModConfigSystem.OnSceneLoaded(sceneName);
-
+            CustomEmployeeManager.ResetInjectionState();
         }
         catch (Exception ex)
         {
             CrashLog.LogException("OnSceneWasLoaded", ex);
         }
     }
+
+    // Drain the TechnicianManager.pendingDispatches queue periodically so that jobs
+    // queued by the game's own "Add all broken devices" button (or restored from a
+    // save) are assigned to free technicians even when no CommandCenterOperator is hired.
+    private float _queueDrainTimer = 0f;
+    private const float QUEUE_DRAIN_INTERVAL = 2f;
 
     public override void OnUpdate()
     {
@@ -165,6 +171,22 @@ public class Core : MelonMod
             CustomEmployeeManager.ReregisterSalariesIfNeeded();
             EntityManager.Update();
             CarryStateMonitor.Update();
+
+            // Periodically force-process any pending dispatch queue entries that
+            // the game's ProcessDispatchQueue coroutine would normally handle only
+            // when a CommandCenterOperator is hired.
+            _queueDrainTimer += Time.deltaTime;
+            if (_queueDrainTimer >= QUEUE_DRAIN_INTERVAL)
+            {
+                _queueDrainTimer = 0f;
+                try
+                {
+                    var tm = Il2Cpp.TechnicianManager.instance;
+                    if (tm != null)
+                        GameHooks.ForceProcessPendingQueue(tm);
+                }
+                catch { }
+            }
         }
         catch (Exception ex)
         {

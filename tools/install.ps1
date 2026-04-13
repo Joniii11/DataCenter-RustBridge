@@ -486,7 +486,66 @@ function Build-Projects {
 }
 
 # ============================================================================
-# Step 5: Deploy mod files
+# Step 5: Cleanup conflicting assemblies from mod folders
+# ============================================================================
+
+function Remove-ConflictingModAssemblies {
+    param([string]$TargetGamePath)
+
+    Write-Step "Cleaning conflicting Unity/managed assemblies from mod folders..."
+
+    $cleanupDirs = @(
+        (Join-Path $TargetGamePath "Mods"),
+        (Join-Path $TargetGamePath "UserLibs"),
+        (Join-Path $TargetGamePath "Plugins")
+    )
+
+    # Managed/runtime assemblies that must never be deployed by this installer into mod folders
+    $blockedPatterns = @(
+        "UnityEngine*.dll",
+        "Il2Cpp*.dll",
+        "mscorlib.dll",
+        "netstandard.dll",
+        "System*.dll"
+    )
+
+    $removed = 0
+
+    foreach ($dir in $cleanupDirs) {
+        if (-not (Test-Path $dir)) { continue }
+
+        foreach ($pattern in $blockedPatterns) {
+            $matches = Get-ChildItem -Path $dir -Filter $pattern -Recurse -File -ErrorAction SilentlyContinue
+            foreach ($m in $matches) {
+                # Never touch the game-managed assemblies tree
+                if ($m.FullName -like "*\Data Center_Data\Managed\*") { continue }
+
+                # Keep our actual mods
+                if ($m.Name -eq "RustBridge.dll") { continue }
+                if ($m.FullName -like "*\Mods\native\dc_*.dll") { continue }
+
+                try {
+                    Remove-Item -Path $m.FullName -Force -ErrorAction Stop
+                    Write-Info ("  Removed conflicting assembly: " + $m.FullName)
+                    $removed++
+                }
+                catch {
+                    Write-Warn ("  Could not remove: " + $m.FullName)
+                }
+            }
+        }
+    }
+
+    if ($removed -gt 0) {
+        Write-Ok ($removed.ToString() + " conflicting assembly file(s) removed.")
+    }
+    else {
+        Write-Ok "No conflicting assemblies found in mod folders."
+    }
+}
+
+# ============================================================================
+# Step 6: Deploy mod files
 # ============================================================================
 
 function Deploy-ModFiles {
@@ -519,11 +578,21 @@ function Deploy-ModFiles {
     }
 
     # Copy Rust mod DLLs from target/release that match dc_* pattern
-    # Excludes: dc_api.dll (shared lib), dc_api_macros.dll (proc-macro, compile-time only), dc_example_mod.dll (example)
+    # Excludes: dc_api.dll (shared lib), dc_api_macros.dll (proc-macro, compile-time only), dc_example_mod.dll (example),
+    # and any Unity/managed framework assemblies.
     $releaseDir = Join-Path $ProjectRoot "target\release"
     if (Test-Path $releaseDir) {
         $extraMods = Get-ChildItem -Path $releaseDir -Filter "dc_*.dll" -ErrorAction SilentlyContinue |
-            Where-Object { ($_.Name -ne "dc_example_mod.dll") -and ($_.Name -ne "dc_api.dll") -and ($_.Name -ne "dc_api_macros.dll") }
+            Where-Object {
+                ($_.Name -ne "dc_example_mod.dll") -and
+                ($_.Name -ne "dc_api.dll") -and
+                ($_.Name -ne "dc_api_macros.dll") -and
+                ($_.Name -notlike "UnityEngine*.dll") -and
+                ($_.Name -notlike "Il2Cpp*.dll") -and
+                ($_.Name -notlike "System*.dll") -and
+                ($_.Name -ne "mscorlib.dll") -and
+                ($_.Name -ne "netstandard.dll")
+            }
 
         foreach ($mod in $extraMods) {
             Copy-Item $mod.FullName -Destination $rustModsDir -Force
@@ -596,7 +665,8 @@ $buildOk = Build-Projects -TargetGamePath $resolvedGamePath
 
 Write-Host ""
 
-# --- Deploy ---
+# --- Cleanup + Deploy ---
+Remove-ConflictingModAssemblies -TargetGamePath $resolvedGamePath
 Deploy-ModFiles -TargetGamePath $resolvedGamePath
 
 # --- Summary ---

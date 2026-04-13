@@ -92,6 +92,50 @@ class Program
         Console.WriteLine("=== FILTERED: Menu, Button, Setting, Local, Panel, UI, Config, Save, Load, Option, Preference, Language, Input, Keybind, Resolution, Audio, Volume, Graphics, Quality ===");
         Console.WriteLine();
 
+        string[] rackDeepDumpTypes = {
+            "Rack", "RackPosition", "RackMount", "RackDoor",
+            "UsableObject", "Interact",
+            "Server", "NetworkSwitch", "PatchPanel",
+            "ServerSaveData", "SwitchSaveData", "PatchPanelSaveData",
+            // Technician / HR system — added for post-update introspection
+            "Technician", "TechnicianManager", "TechnicianSaveData",
+            "HRSystem",
+            "RepairJob", "RepairJobSaveData",
+            "BalanceSheet", "Employee",
+            "CommandCenterOperator",
+        };
+        var rackDeepSet = new HashSet<string>(rackDeepDumpTypes, StringComparer.OrdinalIgnoreCase);
+
+        Console.WriteLine();
+        Console.WriteLine("=== RACK / PHYSICS DEEP DUMP ===");
+        Console.WriteLine();
+
+        // Exact name match (including nested types like Rack+_UnmountRack_d__18)
+        var rackTypes = sorted.Where(t =>
+        {
+            string name = SafeName(t);
+            // Match exact name or parent name for nested types (e.g. "Rack+__c")
+            if (rackDeepSet.Contains(name)) return true;
+            // Also match nested types whose declaring type is in the set
+            try
+            {
+                if (t.IsNested && t.DeclaringType != null && rackDeepSet.Contains(SafeName(t.DeclaringType)))
+                    return true;
+            }
+            catch { }
+            return false;
+        }).ToList();
+
+        Console.WriteLine($"Rack/physics types to dump: {rackTypes.Count}");
+        Console.WriteLine();
+
+        foreach (var t in rackTypes)
+        {
+            PrintTypeWithMembers(t, maxFields: 100, maxProps: 100, maxMethods: 200);
+            Console.WriteLine();
+        }
+
+        // ── Original keyword-filtered dump ──
         string[] keywords = {
             "Menu", "Button", "Setting", "Local", "Panel", "UI", "Config",
             "Save", "Load", "Option", "Preference", "Language", "Input",
@@ -100,6 +144,10 @@ class Program
             "HUD", "Tooltip", "Tab", "Window", "Lobby", "Server", "Network",
             "Player", "Game", "Manager", "Controller", "Handler", "System"
         };
+
+        Console.WriteLine();
+        Console.WriteLine("=== FILTERED: Menu, Button, Setting, Local, Panel, UI, Config, Save, Load, Option, Preference, Language, Input, Keybind, Resolution, Audio, Volume, Graphics, Quality ===");
+        Console.WriteLine();
 
         var filtered = sorted
             .Where(t => { try { return keywords.Any(kw => (t.Name ?? "").IndexOf(kw, StringComparison.OrdinalIgnoreCase) >= 0); } catch { return false; } })

@@ -154,6 +154,7 @@ public static class CustomEmployeeManager
 
 #pragma warning disable CS0414
     private static bool _scrollViewInjected = false;
+    private static Transform _injectedContent = null;
 #pragma warning restore CS0414
 
     private static Transform EnsureScrollView(Transform hrTransform, Transform grid)
@@ -288,6 +289,7 @@ public static class CustomEmployeeManager
 
         grid.gameObject.SetActive(false);
 
+        _injectedContent = contentGO.transform;
         _scrollViewInjected = true;
         CrashLog.Log("CustomEmployee: ScrollView injection complete");
 
@@ -303,30 +305,81 @@ public static class CustomEmployeeManager
             var hrTransform = hrSystem.gameObject.transform;
             LogHierarchy(hrTransform, 0);
 
-            var grid = hrTransform.Find("Grid");
-            if (grid == null)
+
+            Transform contentGrid;
+            if (_injectedContent != null)
             {
-                CrashLog.Log("CustomEmployee: 'Grid' not found in HRSystem");
-                return;
+                contentGrid = _injectedContent;
+                CrashLog.Log($"CustomEmployee: Reusing cached content '{contentGrid.name}' ({contentGrid.childCount} children)");
             }
+            else
+            {
+                Transform grid = hrTransform.Find("Grid");
+                if (grid != null)
+                    CrashLog.Log("CustomEmployee: Found container via legacy 'Grid' child");
 
-            CrashLog.Log($"CustomEmployee: Found Grid with {grid.childCount} children");
+                if (grid == null)
+                {
+                    var hireButtons = hrSystem.buttonsHireEmployees;
+                    var fireButtons = hrSystem.buttonsFireEmployees;
 
-            // Wrap grid in scroll view (idempotent, reuses if already done)
-            var contentGrid = EnsureScrollView(hrTransform, grid);
+                    Transform btn0 = hireButtons?.Length > 0 ? hireButtons[0]?.transform : null;
+                    Transform btn1 = hireButtons?.Length > 1 ? hireButtons[1]?.transform
+                                   : fireButtons?.Length > 0 ? fireButtons[0]?.transform : null;
+
+                    if (btn0 != null && btn1 != null)
+                    {
+                        grid = FindLowestCommonAncestor(btn0, btn1);
+                        if (grid != null)
+                            CrashLog.Log($"CustomEmployee: Found container via button LCA: '{grid.name}'");
+                    }
+                    else if (btn0 != null)
+                    {
+                        grid = btn0.parent?.parent?.parent ?? btn0.parent?.parent;
+                        if (grid != null)
+                            CrashLog.Log($"CustomEmployee: Found container via button walk-up: '{grid.name}'");
+                    }
+                }
+
+                if (grid == null)
+                {
+                    int maxChildren = 0;
+                    for (int i = 0; i < hrTransform.childCount; i++)
+                    {
+                        var c = hrTransform.GetChild(i);
+                        if (c.childCount > maxChildren) { maxChildren = c.childCount; grid = c; }
+                    }
+                    if (grid != null && maxChildren > 0)
+                        CrashLog.Log($"CustomEmployee: Found container by scan: '{grid.name}' ({maxChildren} children)");
+                }
+
+                if (grid == null)
+                {
+                    CrashLog.Log("CustomEmployee: Could not find employee card container in HRSystem");
+                    return;
+                }
+
+                CrashLog.Log($"CustomEmployee: Found container '{grid.name}' with {grid.childCount} children");
+                contentGrid = EnsureScrollView(hrTransform, grid);
+            }
 
             CrashLog.Log($"CustomEmployee: Using content grid '{contentGrid.name}' with {contentGrid.childCount} children");
 
+            // Prefer cards that start with "EmployeeCard" but fall back to any active
+            // non-custom child, since the new game version may use different card names
             Transform templateCard = null;
             for (int i = contentGrid.childCount - 1; i >= 0; i--)
             {
                 var child = contentGrid.GetChild(i);
-                if (child.gameObject.activeSelf &&
-                    child.name.StartsWith("EmployeeCard") &&
-                    !child.name.StartsWith("CustomEmployee_"))
+                if (child.gameObject.activeSelf && !child.name.StartsWith("CustomEmployee_"))
                 {
-                    templateCard = child;
-                    break;
+                    if (child.name.StartsWith("EmployeeCard"))
+                    {
+                        templateCard = child;
+                        break;  // best match — stop immediately
+                    }
+                    if (templateCard == null)
+                        templateCard = child;  // fallback: first active non-custom card
                 }
             }
 
@@ -365,6 +418,25 @@ public static class CustomEmployeeManager
         }
     }
 
+    public static void ResetInjectionState()
+    {
+        _injectedContent = null;
+        _scrollViewInjected = false;
+        _hierarchyLogged = false;
+        CrashLog.Log("CustomEmployee: injection state reset");
+    }
+
+    private static Transform FindLowestCommonAncestor(Transform a, Transform b)
+    {
+        if (a == null || b == null) return null;
+        var ancestors = new HashSet<Transform>();
+        for (var t = a.parent; t != null; t = t.parent)
+            ancestors.Add(t);
+        for (var t = b.parent; t != null; t = t.parent)
+            if (ancestors.Contains(t)) return t;
+        return null;
+    }
+
     private static void CreateCard(Transform grid, Transform template, CustomEmployeeEntry entry, string cardName)
     {
         var newCardObj = UnityEngine.Object.Instantiate(template.gameObject, grid);
@@ -373,10 +445,7 @@ public static class CustomEmployeeManager
 
         var card = newCardObj.transform;
 
-        SetTextAtPath(card, "VL/text_employeeName", entry.Name);
-        SetTextAtPath(card, "VL/text_employeeSalary", $"Salary: {entry.SalaryPerHour:F0} / h");
-        SetTextAtPath(card, "VL/text_requiredReputation", $"Required Reputation: {entry.RequiredReputation:F0}");
-
+        AssignCardTexts(card, entry);
         SetupButtons(card, entry);
         SetPortrait(card, entry.EmployeeId);
 
@@ -385,10 +454,116 @@ public static class CustomEmployeeManager
 
     private static void UpdateCard(Transform card, CustomEmployeeEntry entry)
     {
-        SetTextAtPath(card, "VL/text_employeeName", entry.Name);
-        SetTextAtPath(card, "VL/text_employeeSalary", $"Salary: {entry.SalaryPerHour:F0} / h");
-        SetTextAtPath(card, "VL/text_requiredReputation", $"Required Reputation: {entry.RequiredReputation:F0}");
+        AssignCardTexts(card, entry);
         SetupButtons(card, entry);
+    }
+
+    /// <summary>
+    /// Sets the three visible text fields on an employee card.
+    ///
+    /// Strategy (most-to-least specific):
+    ///   1. Try the legacy hard-coded paths from the old UI ("VL/text_employeeName", etc.)
+    ///   2. If a path is missing, scan ALL TextMeshProUGUI / Text children of the card and
+    ///      match by name-hint (case-insensitive contains: "name", "salary"/"pay"/"cost", "rep").
+    ///   3. If name-hints fail, fall back to positional assignment: first visible text = name,
+    ///      second = salary, third = reputation.
+    /// This makes the card injection survive UI restructuring in game updates.
+    /// </summary>
+    private static void AssignCardTexts(Transform card, CustomEmployeeEntry entry)
+    {
+        string wantName = entry.Name;
+        string wantSalary = $"Salary: {entry.SalaryPerHour:F0} / h";
+        string wantRep = $"Required Reputation: {entry.RequiredReputation:F0}";
+
+        // --- attempt 1: legacy exact paths ---
+        bool nameSet = TrySetByPath(card, "VL/text_employeeName", wantName);
+        bool salarySet = TrySetByPath(card, "VL/text_employeeSalary", wantSalary);
+        bool repSet = TrySetByPath(card, "VL/text_requiredReputation", wantRep);
+
+        if (nameSet && salarySet && repSet) return;
+
+        // --- attempt 2: scan children by name hint ---
+        try
+        {
+            // Collect all text transforms in depth-first order, skipping button sub-trees
+            var textTransforms = new System.Collections.Generic.List<Transform>();
+            CollectTextTransforms(card, textTransforms);
+
+            CrashLog.Log($"AssignCardTexts: found {textTransforms.Count} text component(s) in card '{card.name}'");
+
+            foreach (var t in textTransforms)
+            {
+                string n = t.name.ToLowerInvariant();
+
+                if (!nameSet && (n.Contains("name") || n.Contains("employee")))
+                {
+                    nameSet = TrySetTextOnTransform(t, wantName);
+                    continue;
+                }
+                if (!salarySet && (n.Contains("salary") || n.Contains("pay") || n.Contains("cost") || n.Contains("wage")))
+                {
+                    salarySet = TrySetTextOnTransform(t, wantSalary);
+                    continue;
+                }
+                if (!repSet && (n.Contains("rep") || n.Contains("reputation") || n.Contains("prestige")))
+                {
+                    repSet = TrySetTextOnTransform(t, wantRep);
+                    continue;
+                }
+            }
+
+            // --- attempt 3: positional fallback for anything still unset ---
+            if (!nameSet || !salarySet || !repSet)
+            {
+                int pos = 0;
+                foreach (var t in textTransforms)
+                {
+                    if (pos == 0 && !nameSet) { TrySetTextOnTransform(t, wantName); nameSet = true; }
+                    else if (pos == 1 && !salarySet) { TrySetTextOnTransform(t, wantSalary); salarySet = true; }
+                    else if (pos == 2 && !repSet) { TrySetTextOnTransform(t, wantRep); repSet = true; }
+                    pos++;
+                    if (nameSet && salarySet && repSet) break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("AssignCardTexts fallback scan", ex);
+        }
+
+        CrashLog.Log($"AssignCardTexts: name={nameSet}, salary={salarySet}, rep={repSet} for '{entry.EmployeeId}'");
+    }
+
+    private static bool TrySetByPath(Transform card, string path, string text)
+    {
+        var t = card.Find(path);
+        if (t == null) return false;
+        return TrySetTextOnTransform(t, text);
+    }
+
+    /// Collect all transforms that have a TextMeshProUGUI or legacy Text component,
+    /// skipping sub-trees that are buttons (to avoid overwriting button labels).
+    private static void CollectTextTransforms(Transform parent, System.Collections.Generic.List<Transform> result)
+    {
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var child = parent.GetChild(i);
+
+            // Skip button sub-trees
+            if (child.GetComponent<UnityEngine.UI.Button>() != null) continue;
+            try { if (child.GetComponent<ButtonExtended>() != null) continue; } catch { }
+
+            bool hasText = false;
+            try { if (child.GetComponent<TextMeshProUGUI>() != null) hasText = true; } catch { }
+            if (!hasText)
+            {
+                try { if (child.GetComponent<UnityEngine.UI.Text>() != null) hasText = true; } catch { }
+            }
+
+            if (hasText) result.Add(child);
+
+            CollectTextTransforms(child, result);
+        }
     }
 
     private static void SetTextAtPath(Transform root, string path, string text)
@@ -439,24 +614,82 @@ public static class CustomEmployeeManager
         return false;
     }
 
+    /// <summary>
+    /// Finds a button transform inside <paramref name="card"/> using a prioritised search:
+    /// 1. Exact path (e.g. "VL/ButtonHire")
+    /// 2. Any direct or deep child whose name contains <paramref name="nameHint"/>
+    /// 3. Returns null if nothing matched.
+    /// </summary>
+    private static Transform FindButton(Transform card, string exactPath, string nameHint)
+    {
+        // 1. exact path
+        var t = card.Find(exactPath);
+        if (t != null) return t;
+
+        // 2. deep-child name search (case-insensitive contains)
+        return FindChildContaining(card, nameHint);
+    }
+
+    private static Transform FindChildContaining(Transform parent, string nameHint)
+    {
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            var child = parent.GetChild(i);
+            if (child.name.IndexOf(nameHint, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return child;
+            var deep = FindChildContaining(child, nameHint);
+            if (deep != null) return deep;
+        }
+        return null;
+    }
+
     private static void SetupButtons(Transform card, CustomEmployeeEntry entry)
     {
-        var buttonHireT = card.Find("VL/ButtonHire");
-        var buttonFireT = card.Find("VL/ButtonFire");
+        // Try legacy exact paths first, then fall back to name-hint search,
+        // then fall back to ButtonExtended components in card order.
+        Transform buttonHireT = FindButton(card, "VL/ButtonHire", "Hire");
+        Transform buttonFireT = FindButton(card, "VL/ButtonFire", "Fire");
 
         if (buttonHireT == null || buttonFireT == null)
         {
-            CrashLog.Log($"CustomEmployee: ButtonHire or ButtonFire not found (hire={buttonHireT != null}, fire={buttonFireT != null})");
+            // Last resort: grab the first two ButtonExtended components in the card.
+            // Index 0 → Hire, Index 1 → Fire (matches the game's own ordering).
+            try
+            {
+                var allBtns = card.GetComponentsInChildren<ButtonExtended>(includeInactive: true);
+                if (allBtns != null)
+                {
+                    if (buttonHireT == null && allBtns.Length >= 1)
+                        buttonHireT = allBtns[0].transform;
+                    if (buttonFireT == null && allBtns.Length >= 2)
+                        buttonFireT = allBtns[1].transform;
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashLog.LogException("SetupButtons: ButtonExtended fallback", ex);
+            }
+        }
+
+        if (buttonHireT == null || buttonFireT == null)
+        {
+            CrashLog.Log($"CustomEmployee: SetupButtons — could not find hire/fire buttons for '{entry.EmployeeId}' (hire={buttonHireT != null}, fire={buttonFireT != null})");
             return;
         }
+
+        CrashLog.Log($"CustomEmployee: SetupButtons — using hire='{buttonHireT.name}', fire='{buttonFireT.name}' for '{entry.EmployeeId}'");
 
         string employeeId = entry.EmployeeId;
 
         buttonHireT.gameObject.SetActive(!entry.IsHired);
         buttonFireT.gameObject.SetActive(entry.IsHired);
 
-        TrySetTextOnTransform(buttonHireT.Find("TextHire"), "Hire");
-        TrySetTextOnTransform(buttonFireT.Find("TextHire"), "Fire");
+        // Try the known text child name first; if absent scan for any text component.
+        bool hireTextSet = TrySetTextOnTransform(buttonHireT.Find("TextHire"), "Hire");
+        if (!hireTextSet) TrySetTextOnTransform(buttonHireT, "Hire");
+
+        bool fireTextSet = TrySetTextOnTransform(buttonFireT.Find("TextHire"), "Fire");
+        if (!fireTextSet) TrySetTextOnTransform(buttonFireT, "Fire");
 
         WireButtonExtendedClick(buttonHireT, () =>
         {

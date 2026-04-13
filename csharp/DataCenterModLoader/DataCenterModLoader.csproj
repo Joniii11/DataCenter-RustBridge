@@ -69,11 +69,7 @@
       <Private>false</Private>
     </Reference>
 
-    <!-- Unity engine facade (contains SceneManagement namespace in Unity 6) -->
-    <Reference Include="UnityEngine">
-      <HintPath>$(MelonLoaderDir)\Il2CppAssemblies\UnityEngine.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+
 
     <!-- Unity UI module (needed for Button, Text, Image, LayoutGroup, etc.) -->
     <Reference Include="UnityEngine.UI">

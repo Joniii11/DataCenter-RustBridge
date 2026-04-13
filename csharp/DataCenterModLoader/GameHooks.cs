@@ -401,11 +401,23 @@ public static class GameHooks
         {
             var tm = TechnicianManager.instance;
             if (tm == null) return 0;
+
             var techs = tm.technicians;
             if (techs == null) return 0;
-
-            uint count = 0;
             int total = techs.Count;
+            if (total == 0) return 0;
+
+            // Primary: use GetActiveJobs() — counts all busy techs across all 6 slots
+            try
+            {
+                var activeJobs = tm.GetActiveJobs();
+                int activeCount = activeJobs != null ? activeJobs.Count : 0;
+                return (uint)Math.Max(0, total - activeCount);
+            }
+            catch { }
+
+            // Fallback: iterate isBusy per-technician (pre-update behaviour)
+            uint count = 0;
             for (int i = 0; i < total; i++)
             {
                 try
@@ -428,9 +440,102 @@ public static class GameHooks
             if (tm == null) return 0;
             var techs = tm.technicians;
             if (techs == null) return 0;
+            // Return the exact count of Technician objects — all 6 when all are hired/active.
+            // CommandCenterOperator entries live in tm.commandCenterOperator (separate list)
+            // and cannot do physical repairs, so they are intentionally excluded here.
             return (uint)Math.Max(0, techs.Count);
         }
         catch { return 0; }
+    }
+
+    public static uint GetQueuedJobCount()
+    {
+        try
+        {
+            var tm = TechnicianManager.instance;
+            if (tm == null) return 0;
+            return (uint)Math.Max(0, tm.QueuedJobCount);
+        }
+        catch { return 0; }
+    }
+
+    /// <summary>
+    /// The new game update added <c>CommandCenterOperator</c> NPCs that must be hired before
+    /// <c>ProcessDispatchQueue</c> will move jobs from <c>pendingDispatches</c> to actual
+    /// technicians.  If no operator is hired the queue grows forever while techs stand idle.
+    ///
+    /// This method bypasses that requirement: it drains <c>pendingDispatches</c> directly and
+    /// calls <c>Technician.AssignJob</c> on every free technician we can find.  It is called
+    /// immediately after every <c>SendTechnician</c> so the SysAdmin mod keeps working even
+    /// without a hired Command-Center Operator.
+    /// </summary>
+    public static void ForceProcessPendingQueue(TechnicianManager tm)
+    {
+        try
+        {
+            var pending = tm.pendingDispatches;
+            if (pending == null || pending.Count == 0) return;
+
+            var techs = tm.technicians;
+            if (techs == null || techs.Count == 0) return;
+
+            // Build active-technician set via GetActiveJobs() for accuracy
+            var activeTechIds = new System.Collections.Generic.HashSet<int>();
+            try
+            {
+                var activeJobs = tm.GetActiveJobs();
+                if (activeJobs != null)
+                {
+                    foreach (var aj in activeJobs)
+                    {
+                        try
+                        {
+                            if (aj.assignedTechnician != null)
+                                activeTechIds.Add(aj.assignedTechnician.technicianID);
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch { }
+
+            int assigned = 0;
+            for (int i = 0; i < techs.Count && pending.Count > 0; i++)
+            {
+                try
+                {
+                    var tech = techs[i];
+                    if (tech == null) continue;
+
+                    // Skip techs that are already working
+                    bool busy = activeTechIds.Contains(tech.technicianID);
+                    if (!busy)
+                    {
+                        try { busy = tech.isBusy; } catch { }
+                    }
+                    if (busy) continue;
+
+                    // Dequeue next pending job and assign directly
+                    var job = pending.Dequeue();
+                    tech.AssignJob(job);
+                    assigned++;
+
+                    try
+                    {
+                        CrashLog.Log($"ForceProcessPendingQueue: assigned '{job.DeviceName}' → tech #{tech.technicianID} ({tech.technicianName})");
+                    }
+                    catch { }
+                }
+                catch { }
+            }
+
+            if (assigned > 0)
+                CrashLog.Log($"ForceProcessPendingQueue: force-assigned {assigned} job(s) (bypassed CommandCenterOperator check)");
+        }
+        catch (Exception ex)
+        {
+            CrashLog.LogException("ForceProcessPendingQueue", ex);
+        }
     }
 
     // Returns: 1 = dispatched, 0 = no target, -1 = no free technician
@@ -451,6 +556,7 @@ public static class GameHooks
             var keys = new System.Collections.Generic.List<string>();
             foreach (var kvp in dict) keys.Add(kvp.Key);
 
+            int skipped = 0;
             foreach (var key in keys)
             {
                 try
@@ -459,13 +565,16 @@ public static class GameHooks
                     try { server = dict[key]; } catch { continue; }
                     if (server == null) continue;
 
-                    if (tm.IsDeviceAlreadyAssigned(null, server)) continue;
+                    if (tm.IsDeviceAlreadyAssigned(null, server)) { skipped++; continue; }
 
                     tm.SendTechnician(null, server);
+                    ForceProcessPendingQueue(tm);
                     return 1;
                 }
                 catch { }
             }
+            if (skipped > 0)
+                CrashLog.Log($"DispatchRepairServer: no target — {skipped}/{keys.Count} device(s) already assigned in queue");
             return 0;
         }
         catch { return 0; }
@@ -487,6 +596,7 @@ public static class GameHooks
             var keys = new System.Collections.Generic.List<string>();
             foreach (var kvp in dict) keys.Add(kvp.Key);
 
+            int skipped = 0;
             foreach (var key in keys)
             {
                 try
@@ -495,13 +605,16 @@ public static class GameHooks
                     try { sw = dict[key]; } catch { continue; }
                     if (sw == null) continue;
 
-                    if (tm.IsDeviceAlreadyAssigned(sw, null)) continue;
+                    if (tm.IsDeviceAlreadyAssigned(sw, null)) { skipped++; continue; }
 
                     tm.SendTechnician(sw, null);
+                    ForceProcessPendingQueue(tm);
                     return 1;
                 }
                 catch { }
             }
+            if (skipped > 0)
+                CrashLog.Log($"DispatchRepairSwitch: no target — {skipped}/{keys.Count} device(s) already assigned in queue");
             return 0;
         }
         catch { return 0; }
@@ -523,6 +636,7 @@ public static class GameHooks
             var keys = new System.Collections.Generic.List<string>();
             foreach (var kvp in dict) keys.Add(kvp.Key);
 
+            int skipped = 0;
             foreach (var key in keys)
             {
                 try
@@ -533,13 +647,16 @@ public static class GameHooks
                     if (server.isBroken) continue;
                     if (server.eolTime > 0) continue;
 
-                    if (tm.IsDeviceAlreadyAssigned(null, server)) continue;
+                    if (tm.IsDeviceAlreadyAssigned(null, server)) { skipped++; continue; }
 
                     tm.SendTechnician(null, server);
+                    ForceProcessPendingQueue(tm);
                     return 1;
                 }
                 catch { }
             }
+            if (skipped > 0)
+                CrashLog.Log($"DispatchReplaceServer: no target — {skipped}/{keys.Count} device(s) already assigned in queue");
             return 0;
         }
         catch { return 0; }
@@ -561,6 +678,7 @@ public static class GameHooks
             var keys = new System.Collections.Generic.List<string>();
             foreach (var kvp in dict) keys.Add(kvp.Key);
 
+            int skipped = 0;
             foreach (var key in keys)
             {
                 try
@@ -577,13 +695,16 @@ public static class GameHooks
                     }
                     if (!isEol) continue; // not EOL
 
-                    if (tm.IsDeviceAlreadyAssigned(sw, null)) continue;
+                    if (tm.IsDeviceAlreadyAssigned(sw, null)) { skipped++; continue; }
 
                     tm.SendTechnician(sw, null);
+                    ForceProcessPendingQueue(tm);
                     return 1;
                 }
                 catch { }
             }
+            if (skipped > 0)
+                CrashLog.Log($"DispatchReplaceSwitch: no target — {skipped}/{keys.Count} device(s) already assigned in queue");
             return 0;
         }
         catch { return 0; }

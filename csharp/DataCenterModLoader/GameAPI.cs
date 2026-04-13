@@ -1671,7 +1671,7 @@ public partial class GameAPIManager : IDisposable
                 Marshal.WriteByte(outId, copyLen, 0);
             }
 
-            try { Patch_ComputerShop_SpawnPhysicalItem.RegisterRemoteSpawn(go.GetInstanceID(), resultId); }
+            try { SpawnedObjectTracker.RegisterRemoteSpawn(go.GetInstanceID(), resultId); }
             catch { }
 
             CrashLog.Log($"[WorldSync] SpawnObject: created '{resultId}' (type={objectType}, prefab={prefabId}) OK");
@@ -1951,6 +1951,28 @@ public partial class GameAPIManager : IDisposable
                 try { var pp = new Il2Cpp.PatchPanel(ptr); if (!string.IsNullOrEmpty(pp.patchPanelId)) guessedType = 7; } catch { }
             }
 
+            // Preserve the object ID through InsertedInRack callbacks
+            string preserveId = "";
+            switch (guessedType)
+            {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                    try { var srv = new Il2Cpp.Server(ptr); preserveId = srv.ServerID ?? ""; } catch { }
+                    break;
+                case 4:
+                    try { var sw = new Il2Cpp.NetworkSwitch(ptr); preserveId = sw.switchId ?? ""; } catch { }
+                    break;
+                case 7:
+                    try { var pp = new Il2Cpp.PatchPanel(ptr); preserveId = pp.patchPanelId ?? ""; } catch { }
+                    break;
+            }
+            if (!string.IsNullOrEmpty(preserveId))
+            {
+                Patch_Rack_MarkPositionAsUsed.PendingCloneRestore = (preserveId, guessedType, rackUid);
+            }
+
             int sizeInU = RackInstallBookkeeping(ptr, rackPos, guessedType, "PlaceInRack");
 
             comp.transform.SetParent(rackPos.transform, false);
@@ -2016,6 +2038,29 @@ public partial class GameAPIManager : IDisposable
             {
                 try { var pp = new Il2Cpp.PatchPanel(ptr); if (!string.IsNullOrEmpty(pp.patchPanelId)) guessedType = 7; } catch { }
             }
+            // Clear installed objects tracking before uninstall bookkeeping
+            try
+            {
+                int removeUid = -1;
+                switch (guessedType)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                        try { var s2 = new Il2Cpp.Server(ptr); removeUid = s2.currentRackPosition != null ? s2.currentRackPosition.rackPosGlobalUID : s2.rackPositionUID; } catch { }
+                        break;
+                    case 4:
+                        try { var sw2 = new Il2Cpp.NetworkSwitch(ptr); removeUid = sw2.currentRackPosition != null ? sw2.currentRackPosition.rackPosGlobalUID : sw2.rackPositionUID; } catch { }
+                        break;
+                    case 7:
+                        try { var pp2 = new Il2Cpp.PatchPanel(ptr); removeUid = pp2.currentRackPosition != null ? pp2.currentRackPosition.rackPosGlobalUID : pp2.rackPositionUID; } catch { }
+                        break;
+                }
+                if (removeUid > 0) Patch_Rack_MarkPositionAsUsed.RemoveInstalledObject(removeUid);
+            }
+            catch { }
+
             RackUninstallBookkeeping(ptr, guessedType, "RemoveFromRack");
 
             // ── 3. Reparent to world ────────────────────────────────────────
@@ -2033,6 +2078,9 @@ public partial class GameAPIManager : IDisposable
                 var rb = comp.GetComponent<UnityEngine.Rigidbody>();
                 if (rb != null)
                 {
+                    rb.velocity = UnityEngine.Vector3.zero;
+                    rb.angularVelocity = UnityEngine.Vector3.zero;
+                    UnityEngine.Physics.SyncTransforms();
                     rb.isKinematic = false;
                     rb.useGravity = true;
                     rb.WakeUp();
@@ -2117,13 +2165,71 @@ public partial class GameAPIManager : IDisposable
                 return 0;
             }
 
-            ObjSetActiveImpl(handle, 1);
-            ObjSetPositionImpl(handle, x, y, z);
-            ObjSetRotationImpl(handle, rotX, rotY, rotZ, rotW);
+            var comp = ResolveComponent(handle);
+            if (comp == null)
+            {
+                CrashLog.Log($"[WorldSync] DropObject: component null for '{objId}'");
+                return 0;
+            }
+
+            // ── 1. Lock physics WHILE STILL INACTIVE ────────────────────────
+            // GetComponent works on inactive GameObjects in Unity/IL2CPP.
+            // Setting isKinematic=true before SetActive() means the Rigidbody
+            // enters the physics world as kinematic on the very first tick —
+            // no velocity, no forces, no depenetration.
+            var rb = comp.GetComponent<UnityEngine.Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.velocity = UnityEngine.Vector3.zero;
+                rb.angularVelocity = UnityEngine.Vector3.zero;
+            }
+
+            // ── 2. Clear objectInHands BEFORE activation ─────────────────────
+            // RackUninstallBookkeeping sets objectInHands = true whenever an
+            // object is removed from a rack.  On the remote client the native
+            // drop logic never runs, so this flag is never cleared.  If it is
+            // still true when SetActive(true) fires, the game's own scripts
+            // apply carry-follow forces on the very first Update tick — that
+            // is what flings the object across the room in the rack→carry→drop
+            // scenario while the plain floor→carry→drop case works fine.
+            TryResetObjectInHands(handle);
+
+            // ── 3. Teleport & reparent WHILE STILL INACTIVE ─────────────────
+            // Moving the transform before SetActive() is the critical fix:
+            //   a) The game's own OnEnable callbacks fire at the DROP position,
+            //      not at the stale rack-slot position.
+            //   b) PhysX never sees the body at the rack slot — it goes straight
+            //      from "not in simulation" to "at drop position, kinematic".
+            // Both of these prevent the object being flung across the room.
             ObjSetParentToWorldImpl(handle);
-            RbSetKinematicImpl(handle, 0);
-            RbSetGravityImpl(handle, 1);
-            RbWakeUpImpl(handle);
+            comp.transform.position = new UnityEngine.Vector3(x, y, z);
+            comp.transform.rotation = new UnityEngine.Quaternion(rotX, rotY, rotZ, rotW);
+
+            // ── 4. Activate at the correct position ─────────────────────────
+            // OnEnable fires here; transform is already at the drop target.
+            ObjSetActiveImpl(handle, 1);
+
+            // ── 5. Flush new position into PhysX broadphase ─────────────────
+            // Ensures the engine's AABB / contact cache reflects the new
+            // world position before we release kinematic.
+            UnityEngine.Physics.SyncTransforms();
+
+            // ── 6. Release physics ───────────────────────────────────────────
+            if (rb != null)
+            {
+                rb.velocity = UnityEngine.Vector3.zero;
+                rb.angularVelocity = UnityEngine.Vector3.zero;
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.WakeUp();
+            }
+            else
+            {
+                RbSetKinematicImpl(handle, 0);
+                RbSetGravityImpl(handle, 1);
+                RbWakeUpImpl(handle);
+            }
 
             CrashLog.Log($"[WorldSync] DropObject: reactivated '{objId}' at ({x:F1},{y:F1},{z:F1})");
             return 1;
@@ -2133,6 +2239,58 @@ public partial class GameAPIManager : IDisposable
             CrashLog.LogException("WorldDropObjectImpl", ex);
             return 0;
         }
+    }
+
+    /// <summary>
+    /// Clears the <c>objectInHands</c> flag that
+    /// <see cref="RackUninstallBookkeeping"/> sets to <c>true</c> when an
+    /// object is removed from a rack.  On the remote client this flag is
+    /// never cleared by the native drop logic, so we must clear it here
+    /// before calling SetActive(true).  If left as <c>true</c>, the game's
+    /// own MonoBehaviour scripts apply carry-follow forces to the object on
+    /// the very first Update tick after activation, flinging it away.
+    /// </summary>
+    private static void TryResetObjectInHands(ulong handle)
+    {
+        var ptr = new IntPtr((long)handle);
+
+        // Try Server types first
+        try
+        {
+            var srv = new Il2Cpp.Server(ptr);
+            if (!string.IsNullOrEmpty(srv.ServerID))
+            {
+                srv.objectInHands = false;
+                CrashLog.Log($"[WorldSync] TryResetObjectInHands: cleared Server '{srv.ServerID}'");
+                return;
+            }
+        }
+        catch { }
+
+        // Try NetworkSwitch
+        try
+        {
+            var sw = new Il2Cpp.NetworkSwitch(ptr);
+            if (!string.IsNullOrEmpty(sw.switchId))
+            {
+                sw.objectInHands = false;
+                CrashLog.Log($"[WorldSync] TryResetObjectInHands: cleared NetworkSwitch '{sw.switchId}'");
+                return;
+            }
+        }
+        catch { }
+
+        // Try PatchPanel
+        try
+        {
+            var pp = new Il2Cpp.PatchPanel(ptr);
+            if (!string.IsNullOrEmpty(pp.patchPanelId))
+            {
+                pp.objectInHands = false;
+                CrashLog.Log($"[WorldSync] TryResetObjectInHands: cleared PatchPanel '{pp.patchPanelId}'");
+            }
+        }
+        catch { }
     }
 
     int WorldEnsureRackUIDsImpl()
@@ -2412,6 +2570,8 @@ public partial class GameAPIManager : IDisposable
             if (comp == null) return 0;
             var rb = comp.GetComponent<UnityEngine.Rigidbody>();
             if (rb == null) return 0;
+            rb.velocity = UnityEngine.Vector3.zero;
+            rb.angularVelocity = UnityEngine.Vector3.zero;
             rb.WakeUp();
             return 1;
         }
@@ -2664,16 +2824,51 @@ public partial class GameAPIManager : IDisposable
             }
 
             var ptr = new IntPtr((long)objHandle);
-            int sizeInU = RackInstallBookkeeping(ptr, rackPos, objectType, "RackGameInstall");
 
-            // Mark position as used (suppress re-entrant events)
             Patch_Rack_MarkPositionAsUsed.SuppressEvents = true;
-            try { rack.MarkPositionAsUsed(rackPos.positionIndex, sizeInU); }
-            catch (Exception ex) { CrashLog.Log($"[WorldSync] RackGameInstall: MarkPositionAsUsed failed: {ex.Message}"); }
-            finally { Patch_Rack_MarkPositionAsUsed.SuppressEvents = false; }
+            try
+            {
+                // Read the current object ID BEFORE calling InsertedInRack
+                // so the Harmony postfix can restore it if the game renames it
+                string objectId = "";
+                int rackPosUid = rackPos.rackPosGlobalUID;
+                switch (objectType)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                        try { var srv = new Il2Cpp.Server(ptr); objectId = srv.ServerID ?? ""; } catch { }
+                        break;
+                    case 4:
+                        try { var sw = new Il2Cpp.NetworkSwitch(ptr); objectId = sw.switchId ?? ""; } catch { }
+                        break;
+                    case 7:
+                        try { var pp = new Il2Cpp.PatchPanel(ptr); objectId = pp.patchPanelId ?? ""; } catch { }
+                        break;
+                }
+                if (!string.IsNullOrEmpty(objectId))
+                {
+                    Patch_Rack_MarkPositionAsUsed.PendingCloneRestore = (objectId, objectType, rackPosUid);
+                }
 
-            CrashLog.Log($"[WorldSync] RackGameInstall: installed at uid={rackPos.rackPosGlobalUID} OK");
-            return 1;
+                int sizeInU = RackInstallBookkeeping(ptr, rackPos, objectType, "RackGameInstall");
+
+                // Mark position as used
+                rack.MarkPositionAsUsed(rackPos.positionIndex, sizeInU);
+
+                CrashLog.Log($"[WorldSync] RackGameInstall: installed at uid={rackPos.rackPosGlobalUID} OK");
+                return 1;
+            }
+            catch (Exception ex)
+            {
+                CrashLog.Log($"[WorldSync] RackGameInstall: failed: {ex.Message}");
+                return 0;
+            }
+            finally
+            {
+                Patch_Rack_MarkPositionAsUsed.SuppressEvents = false;
+            }
         }
         catch (Exception ex)
         {
@@ -2725,22 +2920,28 @@ public partial class GameAPIManager : IDisposable
 
             RackUninstallBookkeeping(ptr, objectType, "RackGameUninstall");
 
+            // Clear the installed objects tracking for this rack position
+            if (savedRackPos != null)
+            {
+                try
+                {
+                    int posUid = savedRackPos.rackPosGlobalUID;
+                    if (posUid > 0)
+                        Patch_Rack_MarkPositionAsUsed.RemoveInstalledObject(posUid);
+                }
+                catch { }
+            }
+
             if (savedRackPos != null)
             {
                 try
                 {
                     var rack = savedRackPos.rack;
-                    if (rack != null && rack.positions != null)
+                    if (rack != null)
                     {
                         int startIndex = savedRackPos.positionIndex;
-                        for (int i = startIndex; i < startIndex + savedSizeInU && i < rack.positions.Count; i++)
-                        {
-                            try
-                            {
-                                var rp = rack.positions[i];
-                            }
-                            catch { }
-                        }
+                        CrashLog.Log($"[WorldSync] RackGameUninstall: IsPositionAvailable({startIndex}, {savedSizeInU}) = {rack.IsPositionAvailable(startIndex, savedSizeInU)} before freeing");
+                        rack.MarkPositionAsUnused(startIndex, savedSizeInU);
                         CrashLog.Log($"[WorldSync] RackGameUninstall: freed {savedSizeInU} position(s) starting at index {startIndex}");
                     }
                 }

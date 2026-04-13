@@ -57,6 +57,7 @@ pub trait SyncedObject: WorldObject {
                     object_id, rack_uid_str
                 ));
                 remove_from_rack(api, obj.handle(), Self::wire_type());
+                api.rb_set_kinematic(obj.handle(), true);
             }
             let ok = obj.pickup(api);
             dc_api::crash_log(&format!(

@@ -117,22 +117,39 @@ internal static class Patch_Server_ServerInsertedInRack
         {
             string instanceId = "";
             byte objectType = 0;
-            int rackUid = -1;
             try { instanceId = __instance?.ServerID ?? ""; } catch { }
             try { objectType = (byte)(__instance?.serverType ?? 0); } catch { }
-            try { rackUid = __0?.rackPositionUID ?? -1; } catch { }
 
-            CrashLog.Log($"ServerInsertedInRack [diag]: instanceId={instanceId}, type={objectType}, rackUid={rackUid}");
+            // Determine rack position UID from multiple sources
+            int rackPosUid = -1;
+            try { rackPosUid = __instance?.currentRackPosition?.rackPosGlobalUID ?? -1; } catch { }
+            if (rackPosUid <= 0) try { rackPosUid = __instance?.rackPositionUID ?? -1; } catch { }
+            if (rackPosUid <= 0) try { rackPosUid = __0?.rackPositionUID ?? -1; } catch { }
 
-            var pending = Patch_Rack_MarkPositionAsUsed.PendingCloneRestore;
-            if (pending.HasValue && pending.Value.objectType <= 3)
+            CrashLog.Log($"ServerInsertedInRack [diag]: instanceId={instanceId}, type={objectType}, rackUid={rackPosUid}");
+
+            // Try 1: Consume from PendingRestores dictionary
+            var pending = Patch_Rack_MarkPositionAsUsed.ConsumePendingRestore(rackPosUid, objectType);
+            if (pending.HasValue)
             {
-                Patch_Rack_MarkPositionAsUsed.PendingCloneRestore = null;
                 if (!string.IsNullOrEmpty(pending.Value.objectId) && instanceId != pending.Value.objectId)
                 {
                     try { __instance.ServerID = pending.Value.objectId; } catch { }
-                    try { __instance.rackPositionUID = pending.Value.rackPosUid; } catch { }
-                    CrashLog.Log($"[WorldSync] ServerInsertedInRack: restored clone ID '{instanceId}' → '{pending.Value.objectId}' rackUid={pending.Value.rackPosUid}");
+                    try { __instance.rackPositionUID = rackPosUid; } catch { }
+                    CrashLog.Log($"[WorldSync] ServerInsertedInRack: restored clone ID '{instanceId}' → '{pending.Value.objectId}' rackUid={rackPosUid}");
+                }
+                return;
+            }
+
+            // Try 2: Fallback to InstalledObjects (game re-triggered InsertedInRack internally)
+            var installed = Patch_Rack_MarkPositionAsUsed.LookupInstalledObject(rackPosUid, objectType);
+            if (installed.HasValue)
+            {
+                if (!string.IsNullOrEmpty(installed.Value.objectId) && instanceId != installed.Value.objectId)
+                {
+                    try { __instance.ServerID = installed.Value.objectId; } catch { }
+                    try { __instance.rackPositionUID = rackPosUid; } catch { }
+                    CrashLog.Log($"[WorldSync] ServerInsertedInRack: restored clone ID (dict fallback) '{instanceId}' → '{installed.Value.objectId}' rackUid={rackPosUid}");
                 }
             }
         }
@@ -167,17 +184,34 @@ internal static class Patch_NetworkSwitch_SwitchInsertedInRack
         try
         {
             string currentId = __instance?.switchId ?? "";
-            CrashLog.Log($"SwitchInsertedInRack [diag]: switchId={currentId}");
 
-            var pending = Patch_Rack_MarkPositionAsUsed.PendingCloneRestore;
-            if (pending.HasValue && pending.Value.objectType == 4)
+            int rackPosUid = -1;
+            try { rackPosUid = __instance?.currentRackPosition?.rackPosGlobalUID ?? -1; } catch { }
+            if (rackPosUid <= 0) try { rackPosUid = __instance?.rackPositionUID ?? -1; } catch { }
+            if (rackPosUid <= 0) try { rackPosUid = __0?.rackPositionUID ?? -1; } catch { }
+
+            CrashLog.Log($"SwitchInsertedInRack [diag]: switchId={currentId}, rackUid={rackPosUid}");
+
+            var pending = Patch_Rack_MarkPositionAsUsed.ConsumePendingRestore(rackPosUid, 4);
+            if (pending.HasValue)
             {
-                Patch_Rack_MarkPositionAsUsed.PendingCloneRestore = null;
                 if (!string.IsNullOrEmpty(pending.Value.objectId) && currentId != pending.Value.objectId)
                 {
                     try { __instance.switchId = pending.Value.objectId; } catch { }
-                    try { __instance.rackPositionUID = pending.Value.rackPosUid; } catch { }
-                    CrashLog.Log($"[WorldSync] SwitchInsertedInRack: restored clone ID '{currentId}' → '{pending.Value.objectId}' rackUid={pending.Value.rackPosUid}");
+                    try { __instance.rackPositionUID = rackPosUid; } catch { }
+                    CrashLog.Log($"[WorldSync] SwitchInsertedInRack: restored clone ID '{currentId}' → '{pending.Value.objectId}' rackUid={rackPosUid}");
+                }
+                return;
+            }
+
+            var installed = Patch_Rack_MarkPositionAsUsed.LookupInstalledObject(rackPosUid, 4);
+            if (installed.HasValue)
+            {
+                if (!string.IsNullOrEmpty(installed.Value.objectId) && currentId != installed.Value.objectId)
+                {
+                    try { __instance.switchId = installed.Value.objectId; } catch { }
+                    try { __instance.rackPositionUID = rackPosUid; } catch { }
+                    CrashLog.Log($"[WorldSync] SwitchInsertedInRack: restored clone ID (dict fallback) '{currentId}' → '{installed.Value.objectId}' rackUid={rackPosUid}");
                 }
             }
         }
@@ -193,17 +227,34 @@ internal static class Patch_PatchPanel_InsertedInRack
         try
         {
             string currentId = __instance?.patchPanelId ?? "";
-            CrashLog.Log($"PatchPanel.InsertedInRack [diag]: patchPanelId={currentId}");
 
-            var pending = Patch_Rack_MarkPositionAsUsed.PendingCloneRestore;
-            if (pending.HasValue && pending.Value.objectType == 7)
+            int rackPosUid = -1;
+            try { rackPosUid = __instance?.currentRackPosition?.rackPosGlobalUID ?? -1; } catch { }
+            if (rackPosUid <= 0) try { rackPosUid = __instance?.rackPositionUID ?? -1; } catch { }
+            if (rackPosUid <= 0) try { rackPosUid = __0?.rackPositionUID ?? -1; } catch { }
+
+            CrashLog.Log($"PatchPanel.InsertedInRack [diag]: patchPanelId={currentId}, rackUid={rackPosUid}");
+
+            var pending = Patch_Rack_MarkPositionAsUsed.ConsumePendingRestore(rackPosUid, 7);
+            if (pending.HasValue)
             {
-                Patch_Rack_MarkPositionAsUsed.PendingCloneRestore = null;
                 if (!string.IsNullOrEmpty(pending.Value.objectId) && currentId != pending.Value.objectId)
                 {
                     try { __instance.patchPanelId = pending.Value.objectId; } catch { }
-                    try { __instance.rackPositionUID = pending.Value.rackPosUid; } catch { }
-                    CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack: restored clone ID '{currentId}' → '{pending.Value.objectId}' rackUid={pending.Value.rackPosUid}");
+                    try { __instance.rackPositionUID = rackPosUid; } catch { }
+                    CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack: restored clone ID '{currentId}' → '{pending.Value.objectId}' rackUid={rackPosUid}");
+                }
+                return;
+            }
+
+            var installed = Patch_Rack_MarkPositionAsUsed.LookupInstalledObject(rackPosUid, 7);
+            if (installed.HasValue)
+            {
+                if (!string.IsNullOrEmpty(installed.Value.objectId) && currentId != installed.Value.objectId)
+                {
+                    try { __instance.patchPanelId = installed.Value.objectId; } catch { }
+                    try { __instance.rackPositionUID = rackPosUid; } catch { }
+                    CrashLog.Log($"[WorldSync] PatchPanel.InsertedInRack: restored clone ID (dict fallback) '{currentId}' → '{installed.Value.objectId}' rackUid={rackPosUid}");
                 }
             }
         }
@@ -215,7 +266,88 @@ internal static class Patch_PatchPanel_InsertedInRack
 internal static class Patch_Rack_MarkPositionAsUsed
 {
     internal static bool SuppressEvents = false;
-    internal static (string objectId, byte objectType, int rackPosUid)? PendingCloneRestore = null;
+
+    // Dictionary-based pending restores keyed by rackPosGlobalUID.
+    // Each install gets its own slot — concurrent remote installs can no longer
+    // overwrite the pending entry for a local install.
+    internal static Dictionary<int, (string objectId, byte objectType)> PendingRestores = new();
+
+    // Permanent map: rackPosUid → stableId.
+    // Used as fallback when the game internally re-triggers InsertedInRack
+    // (e.g. rack bookkeeping, save callbacks) after PendingRestores was consumed.
+    internal static Dictionary<int, (string objectId, byte objectType)> InstalledObjects = new();
+
+    // Backward-compat property — GameAPI.cs still sets PendingCloneRestore = (...).
+    // The setter migrates the value into both dictionaries automatically.
+    internal static (string objectId, byte objectType, int rackPosUid)? PendingCloneRestore
+    {
+        get => null;
+        set
+        {
+            if (value.HasValue && value.Value.rackPosUid > 0)
+            {
+                PendingRestores[value.Value.rackPosUid] = (value.Value.objectId, value.Value.objectType);
+                InstalledObjects[value.Value.rackPosUid] = (value.Value.objectId, value.Value.objectType);
+            }
+        }
+    }
+
+    // Dedup guard — Il2Cpp fires every Harmony postfix twice for the same call.
+    private static int _lastFiredUid = -1;
+    private static long _lastFiredTick = 0;
+
+    /// <summary>
+    /// Consume and remove the pending restore entry for the given rack position.
+    /// Returns null if no matching entry exists.
+    /// </summary>
+    internal static (string objectId, byte objectType)? ConsumePendingRestore(int rackPosUid, byte expectedType)
+    {
+        if (rackPosUid > 0 && PendingRestores.TryGetValue(rackPosUid, out var entry))
+        {
+            bool typeMatch = expectedType switch
+            {
+                <= 3 => entry.objectType <= 3,
+                4 => entry.objectType == 4,
+                7 => entry.objectType == 7,
+                _ => false
+            };
+            if (typeMatch)
+            {
+                PendingRestores.Remove(rackPosUid);
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Look up the stable ID for the object installed at a rack position.
+    /// Does NOT remove the entry — this is a persistent fallback.
+    /// </summary>
+    internal static (string objectId, byte objectType)? LookupInstalledObject(int rackPosUid, byte expectedType)
+    {
+        if (rackPosUid > 0 && InstalledObjects.TryGetValue(rackPosUid, out var entry))
+        {
+            bool typeMatch = expectedType switch
+            {
+                <= 3 => entry.objectType <= 3,
+                4 => entry.objectType == 4,
+                7 => entry.objectType == 7,
+                _ => false
+            };
+            if (typeMatch) return entry;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Remove an entry from both dictionaries. Call on uninstall.
+    /// </summary>
+    internal static void RemoveInstalledObject(int rackPosUid)
+    {
+        InstalledObjects.Remove(rackPosUid);
+        PendingRestores.Remove(rackPosUid);
+    }
 
     internal static void Postfix(Rack __instance, int __0, int __1)
     {
@@ -236,23 +368,35 @@ internal static class Patch_Rack_MarkPositionAsUsed
             string objectId = null;
             byte objectType = 0;
 
-            var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
-            foreach (var srv in allServers)
+            // ── First, try to use the known held object (most reliable) ──
+            string heldId = Patch_UsableObject_InteractOnClick.GetHeldObjectId();
+            byte heldType = Patch_UsableObject_InteractOnClick.GetHeldObjectType();
+            if (!string.IsNullOrEmpty(heldId))
             {
-                try
-                {
-                    if ((srv.currentRackPosition != null && srv.currentRackPosition.rackPosGlobalUID == rackPosUid)
-                        || srv.rackPositionUID == rackPosUid)
-                    {
-                        objectId = srv.ServerID ?? "";
-                        objectType = (byte)srv.serverType;
-                        break;
-                    }
-                }
-                catch { }
+                objectId = heldId;
+                objectType = heldType;
             }
 
-            // --- Try NetworkSwitch ---
+            // ── Fallback: scan scene objects (legacy, less reliable) ──
+            if (objectId == null)
+            {
+                var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
+                foreach (var srv in allServers)
+                {
+                    try
+                    {
+                        if ((srv.currentRackPosition != null && srv.currentRackPosition.rackPosGlobalUID == rackPosUid)
+                            || srv.rackPositionUID == rackPosUid)
+                        {
+                            objectId = srv.ServerID ?? "";
+                            objectType = (byte)srv.serverType;
+                            break;
+                        }
+                    }
+                    catch { }
+                }
+            }
+
             if (objectId == null)
             {
                 foreach (var sw in UnityEngine.Object.FindObjectsOfType<NetworkSwitch>())
@@ -297,7 +441,15 @@ internal static class Patch_Rack_MarkPositionAsUsed
 
             if (rackPosUid < 0) return;
 
-            PendingCloneRestore = (objectId, objectType, rackPosUid);
+            // Dedup guard — Il2Cpp fires the postfix twice per call
+            long now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            if (rackPosUid == _lastFiredUid && (now - _lastFiredTick) < 200)
+                return;
+            _lastFiredUid = rackPosUid;
+            _lastFiredTick = now;
+
+            PendingRestores[rackPosUid] = (objectId, objectType);
+            InstalledObjects[rackPosUid] = (objectId, objectType);
 
             CrashLog.Log($"[WorldSync] MarkPositionAsUsed: '{objectId}' type={objectType} at rackUid={rackPosUid} (index={index}, sizeInU={sizeInU}) → firing event");
             EventDispatcher.FireServerInstalled(objectId, objectType, rackPosUid);
@@ -335,21 +487,6 @@ internal static class Patch_RackPosition_InteractOnClick
         try
         {
             CrashLog.Log($"[WorldSync] RackPosition.InteractOnClick: posIndex={__instance.positionIndex} rackPosGlobalUID={__instance.rackPosGlobalUID}");
-
-            if (_prevNumObjects > 0 && _prevObjectInHand != 0)
-            {
-                string heldId = Patch_UsableObject_InteractOnClick.GetHeldObjectId();
-                byte heldType = Patch_UsableObject_InteractOnClick.GetHeldObjectType();
-                int rackUid = __instance.rackPosGlobalUID;
-
-                if (!string.IsNullOrEmpty(heldId) && rackUid > 0)
-                {
-                    CrashLog.Log($"[WorldSync] RackPosition.InteractOnClick: early install detection '{heldId}' type={heldType} at rackUid={rackUid}");
-                    EventDispatcher.FireServerInstalled(heldId, heldType, rackUid);
-                    CarryStateMonitor.SuppressNextDrop();
-                    Patch_UsableObject_InteractOnClick.ClearHeldObject();
-                }
-            }
         }
         catch (Exception ex) { CrashLog.Log($"[WorldSync] RackPosition.InteractOnClick Postfix error: {ex.Message}"); }
     }
@@ -383,7 +520,6 @@ internal static class Patch_MainGameManager_ButtonCustomerChosen
         catch (Exception ex) { EventDispatcher.LogError($"ButtonCustomerChosen: {ex.Message}"); }
     }
 }
-
 [HarmonyPatch(typeof(ComputerShop), nameof(ComputerShop.ButtonCheckOut))]
 internal static class Patch_ComputerShop_ButtonCheckOut
 {
@@ -391,224 +527,162 @@ internal static class Patch_ComputerShop_ButtonCheckOut
     {
         try { EventDispatcher.FireSimple(EventIds.ShopCheckout); }
         catch (Exception ex) { EventDispatcher.LogError($"ButtonCheckOut: {ex.Message}"); }
+
+        // After checkout all items are already spawned in the scene.
+        // Detect them here instead of patching SpawnPhysicalItem (which causes
+        // IL2CPP colour/material corruption when Harmony touches it at all).
+        try { SpawnedObjectTracker.DetectNewObjects(); }
+        catch (Exception ex) { CrashLog.Log($"[WorldSync] ButtonCheckOut scan error: {ex.Message}"); }
     }
 }
 
-/// <summary>
-/// Detects when a physical item (server, switch, etc.) is spawned by the shop.
-/// </summary>
-[HarmonyPatch(typeof(ComputerShop), "SpawnPhysicalItem")]
-internal static class Patch_ComputerShop_SpawnPhysicalItem
+internal static class SpawnedObjectTracker
 {
     internal static bool SuppressEvents = false;
 
-    // Track known server instance IDs so we only fire once per object.
-    // Populated on scene load with pre-existing servers.
-    private static readonly HashSet<int> _knownServerInstances = new();
-    private static readonly HashSet<string> _knownServerIds = new();
+    private static readonly HashSet<int> _knownInstances = new();
+    private static readonly HashSet<string> _knownIds = new();
 
-    internal static void Postfix(ComputerShop __instance)
+    internal static void DetectNewObjects()
     {
         if (SuppressEvents) return;
-
         try
         {
-            // Scan for any Server component we haven't seen yet.
-            // SpawnPhysicalItem just created a new GameObject — find it.
-            var allServers = UnityEngine.Object.FindObjectsOfType<Server>();
-
-            foreach (var srv in allServers)
+            foreach (var uo in UnityEngine.Object.FindObjectsOfType<UsableObject>())
             {
-                try
-                {
-                    int instId = srv.GetInstanceID();
-                    if (!_knownServerInstances.Add(instId)) continue;
+                int instId = uo.GetInstanceID();
+                if (!_knownInstances.Add(instId)) continue; // already tracked
 
-                    string serverId = srv.ServerID ?? "";
-
-                    if (!string.IsNullOrEmpty(serverId) && !_knownServerIds.Add(serverId))
-                    {
-                        CrashLog.Log($"[WorldSync] SpawnPhysicalItem: skipping '{serverId}' (already known by ServerID)");
-                        continue;
-                    }
-
-                    if (string.IsNullOrEmpty(serverId))
-                    {
-                        string objName = srv.gameObject?.name ?? "Server";
-                        if (objName.EndsWith("(Clone)"))
-                            objName = objName.Substring(0, objName.Length - 7);
-                        serverId = $"{objName}_{instId}";
-                        srv.ServerID = serverId;
-                    }
-
-                    byte objectType = (byte)srv.serverType;
-                    int prefabId = Patch_Server_ServerInsertedInRack.FindServerPrefabIndex(srv);
-                    var pos = srv.transform.position;
-                    var rot = srv.transform.rotation;
-
-                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: new server '{serverId}' type={objectType} prefab={prefabId} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
-                    EventDispatcher.FireObjectSpawned(serverId, objectType, prefabId, pos, rot);
-                }
-                catch (Exception ex)
-                {
-                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: error processing server: {ex.Message}");
-                }
+                ProcessNewObject(uo, instId);
             }
+        }
+        catch (Exception ex) { CrashLog.Log($"[WorldSync] DetectNewObjects error: {ex.Message}"); }
+    }
 
-            var allSwitches = UnityEngine.Object.FindObjectsOfType<NetworkSwitch>();
-            foreach (var sw in allSwitches)
+    private static void ProcessNewObject(UsableObject uo, int instId)
+    {
+        string objectId = null;
+        byte objectType = 0;
+        int prefabId = 0;
+
+        var server = uo.TryCast<Server>();
+        if (server != null)
+        {
+            objectId = server.ServerID ?? "";
+            if (string.IsNullOrEmpty(objectId))
             {
+                string n = server.gameObject?.name ?? "Server";
+                if (n.EndsWith("(Clone)")) n = n[..^7];
+                objectId = $"{n}_{instId}";
+                server.ServerID = objectId;
+            }
+            objectType = (byte)server.serverType;
+            prefabId = Patch_Server_ServerInsertedInRack.FindServerPrefabIndex(server);
+        }
+        else
+        {
+            var sw = uo.TryCast<NetworkSwitch>();
+            if (sw != null)
+            {
+                objectId = sw.switchId ?? "";
+                if (string.IsNullOrEmpty(objectId))
+                {
+                    string n = sw.gameObject?.name ?? "Switch";
+                    if (n.EndsWith("(Clone)")) n = n[..^7];
+                    objectId = Patch_UsableObject_InteractOnClick.GenerateDeterministicId(n, sw.transform.position);
+                    sw.switchId = objectId;
+                }
+                objectType = 4;
                 try
                 {
-                    int instId = sw.GetInstanceID();
-                    if (!_knownServerInstances.Add(instId)) continue;
-
-                    string switchId = sw.switchId ?? "";
-
-                    if (!string.IsNullOrEmpty(switchId) && !_knownServerIds.Add(switchId))
+                    var mgr = MainGameManager.instance;
+                    if (mgr?.switchesPrefabs != null)
                     {
-                        CrashLog.Log($"[WorldSync] SpawnPhysicalItem: skipping switch '{switchId}' (already known by switchId)");
-                        continue;
-                    }
-
-                    if (string.IsNullOrEmpty(switchId))
-                    {
-                        string objName = sw.gameObject?.name ?? "Switch";
-                        if (objName.EndsWith("(Clone)"))
-                            objName = objName.Substring(0, objName.Length - 7);
-                        switchId = Patch_UsableObject_InteractOnClick.GenerateDeterministicId(objName, sw.transform.position);
-                        sw.switchId = switchId;
-                    }
-
-                    byte objectType = 4;
-                    int prefabId = 0;
-                    try
-                    {
-                        var mgr = MainGameManager.instance;
-                        if (mgr?.switchesPrefabs != null)
+                        string swName = sw.gameObject?.name ?? "";
+                        if (swName.EndsWith("(Clone)")) swName = swName[..^7];
+                        for (int i = 0; i < mgr.switchesPrefabs.Count; i++)
                         {
-                            string swName = sw.gameObject?.name ?? "";
-                            if (swName.EndsWith("(Clone)")) swName = swName.Substring(0, swName.Length - 7);
-                            for (int i = 0; i < mgr.switchesPrefabs.Count; i++)
-                            {
-                                try { if (mgr.switchesPrefabs[i]?.name == swName) { prefabId = i; break; } } catch { }
-                            }
+                            try { if (mgr.switchesPrefabs[i]?.name == swName) { prefabId = i; break; } } catch { }
                         }
                     }
-                    catch { }
-
-                    var pos = sw.transform.position;
-                    var rot = sw.transform.rotation;
-
-                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: new switch '{switchId}' type={objectType} prefab={prefabId} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
-                    EventDispatcher.FireObjectSpawned(switchId, objectType, prefabId, pos, rot);
                 }
-                catch (Exception ex)
-                {
-                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: error processing switch: {ex.Message}");
-                }
+                catch { }
             }
-
-            var allPanels = UnityEngine.Object.FindObjectsOfType<PatchPanel>();
-            foreach (var pp in allPanels)
+            else
             {
-                try
+                var pp = uo.TryCast<PatchPanel>();
+                if (pp != null)
                 {
-                    int instId = pp.GetInstanceID();
-                    if (!_knownServerInstances.Add(instId)) continue;
-
-                    string panelId = pp.patchPanelId ?? "";
-
-                    if (!string.IsNullOrEmpty(panelId) && !_knownServerIds.Add(panelId))
+                    objectId = pp.patchPanelId ?? "";
+                    if (string.IsNullOrEmpty(objectId))
                     {
-                        CrashLog.Log($"[WorldSync] SpawnPhysicalItem: skipping panel '{panelId}' (already known by patchPanelId)");
-                        continue;
+                        string n = pp.gameObject?.name ?? "PatchPanel";
+                        if (n.EndsWith("(Clone)")) n = n[..^7];
+                        objectId = Patch_UsableObject_InteractOnClick.GenerateDeterministicId(n, pp.transform.position);
+                        pp.patchPanelId = objectId;
                     }
-
-                    if (string.IsNullOrEmpty(panelId))
-                    {
-                        string objName = pp.gameObject?.name ?? "PatchPanel";
-                        if (objName.EndsWith("(Clone)"))
-                            objName = objName.Substring(0, objName.Length - 7);
-                        panelId = Patch_UsableObject_InteractOnClick.GenerateDeterministicId(objName, pp.transform.position);
-                        pp.patchPanelId = panelId;
-                    }
-
-                    byte objectType = 7;
-                    int prefabId = 0;
+                    objectType = 7;
                     try
                     {
                         var mgr = MainGameManager.instance;
                         if (mgr != null)
                         {
-                            int ppType = pp.patchPanelType;
-                            var prefabGo = mgr.GetPatchPanelPrefab(ppType);
-                            if (prefabGo != null) prefabId = ppType;
+                            var prefabGo = mgr.GetPatchPanelPrefab(pp.patchPanelType);
+                            if (prefabGo != null) prefabId = pp.patchPanelType;
                         }
                     }
                     catch { }
-
-                    var pos = pp.transform.position;
-                    var rot = pp.transform.rotation;
-
-                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: new panel '{panelId}' type={objectType} prefab={prefabId} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
-                    EventDispatcher.FireObjectSpawned(panelId, objectType, prefabId, pos, rot);
                 }
-                catch (Exception ex)
-                {
-                    CrashLog.Log($"[WorldSync] SpawnPhysicalItem: error processing panel: {ex.Message}");
-                }
+                else return; // not a tracked type
             }
         }
-        catch (Exception ex) { EventDispatcher.LogError($"SpawnPhysicalItem: {ex.Message}"); }
+
+        if (string.IsNullOrEmpty(objectId)) return;
+        if (!_knownIds.Add(objectId))
+        {
+            CrashLog.Log($"[WorldSync] DetectNewObjects: skipping '{objectId}' (already known by ID)");
+            return;
+        }
+
+        var pos = uo.transform.position;
+        var rot = uo.transform.rotation;
+        CrashLog.Log($"[WorldSync] DetectNewObjects: new object '{objectId}' type={objectType} prefab={prefabId} pos=({pos.x:F1},{pos.y:F1},{pos.z:F1})");
+        EventDispatcher.FireObjectSpawned(objectId, objectType, prefabId, pos, rot);
     }
 
     /// <summary>
-    /// Populate known instances from the current scene so we don't
-    /// re-fire ObjectSpawned for servers that came from the save file.
-    /// Call this after scene load / save load.
+    /// Populate known instances from the current scene so we don't re-fire ObjectSpawned
+    /// for objects that came from the save file. Call this after scene load / save load.
     /// </summary>
     internal static void PopulateKnownServers()
     {
-        _knownServerInstances.Clear();
-        _knownServerIds.Clear();
+        _knownInstances.Clear();
+        _knownIds.Clear();
         try
         {
-            foreach (var srv in UnityEngine.Object.FindObjectsOfType<Server>())
+            foreach (var uo in UnityEngine.Object.FindObjectsOfType<UsableObject>())
             {
-                _knownServerInstances.Add(srv.GetInstanceID());
-                string sid = srv.ServerID ?? "";
-                if (!string.IsNullOrEmpty(sid))
-                    _knownServerIds.Add(sid);
+                _knownInstances.Add(uo.GetInstanceID());
+                string id = "";
+                var srv = uo.TryCast<Server>(); if (srv != null) id = srv.ServerID ?? "";
+                var sw = uo.TryCast<NetworkSwitch>(); if (sw != null) id = sw.switchId ?? "";
+                var pp = uo.TryCast<PatchPanel>(); if (pp != null) id = pp.patchPanelId ?? "";
+                if (!string.IsNullOrEmpty(id)) _knownIds.Add(id);
             }
-            foreach (var sw in UnityEngine.Object.FindObjectsOfType<NetworkSwitch>())
-            {
-                _knownServerInstances.Add(sw.GetInstanceID());
-                string sid = sw.switchId ?? "";
-                if (!string.IsNullOrEmpty(sid))
-                    _knownServerIds.Add(sid);
-            }
-            foreach (var pp in UnityEngine.Object.FindObjectsOfType<PatchPanel>())
-            {
-                _knownServerInstances.Add(pp.GetInstanceID());
-                string pid = pp.patchPanelId ?? "";
-                if (!string.IsNullOrEmpty(pid))
-                    _knownServerIds.Add(pid);
-            }
-            CrashLog.Log($"[WorldSync] PopulateKnownServers: populated {_knownServerInstances.Count} known objects ({_knownServerIds.Count} by ID)");
+            CrashLog.Log($"[WorldSync] PopulateKnownServers: {_knownInstances.Count} instances, {_knownIds.Count} IDs");
         }
         catch (Exception ex) { CrashLog.Log($"[WorldSync] PopulateKnownServers error: {ex.Message}"); }
     }
 
     /// <summary>
-    /// Register a remotely-spawned server so we don't re-detect it.
-    /// Call this from WorldSpawnObjectImpl after creating an object.
+    /// Register a remotely-spawned object so we don't re-detect it.
+    /// Called from WorldSpawnObjectImpl after creating an object.
     /// </summary>
     internal static void RegisterRemoteSpawn(int instanceId, string serverId = null)
     {
-        _knownServerInstances.Add(instanceId);
+        _knownInstances.Add(instanceId);
         if (!string.IsNullOrEmpty(serverId))
-            _knownServerIds.Add(serverId);
+            _knownIds.Add(serverId);
     }
 }
 
@@ -666,7 +740,7 @@ internal static class Patch_HRSystem_ButtonConfirmFireEmployee
         try { EventDispatcher.FireSimple(EventIds.EmployeeFired); }
         catch (Exception ex) { EventDispatcher.LogError($"ButtonConfirmFireEmployee: {ex.Message}"); }
     }
-}
+}/*
 
 [HarmonyPatch(typeof(HRSystem), nameof(HRSystem.ButtonCancelBuying))]
 internal static class Patch_HRSystem_ButtonCancelBuying
@@ -676,7 +750,7 @@ internal static class Patch_HRSystem_ButtonCancelBuying
         try { CustomEmployeeManager.ClearPending(); }
         catch (Exception ex) { CrashLog.LogException("ButtonCancelBuying clear pending", ex); }
     }
-}
+}*/
 
 [HarmonyPatch(typeof(SaveSystem), nameof(SaveSystem.SaveGame))]
 internal static class Patch_SaveSystem_SaveGame
@@ -701,7 +775,7 @@ internal static class Patch_SaveSystem_Load
         {
             CustomEmployeeManager.LoadState();
             EventDispatcher.FireSimple(EventIds.GameLoaded);
-            Patch_ComputerShop_SpawnPhysicalItem.PopulateKnownServers();
+            SpawnedObjectTracker.PopulateKnownServers();
         }
         catch (Exception ex) { EventDispatcher.LogError($"Load: {ex.Message}"); }
     }
@@ -821,7 +895,7 @@ internal static class Patch_ComputerShop_ButtonBuyShopItem
         catch (Exception ex) { EventDispatcher.LogError($"ButtonBuyShopItem: {ex.Message}"); }
     }
 }
-
+/*
 [HarmonyPatch(typeof(ComputerShop), nameof(ComputerShop.ButtonClear))]
 internal static class Patch_ComputerShop_ButtonClear
 {
@@ -830,7 +904,7 @@ internal static class Patch_ComputerShop_ButtonClear
         try { EventDispatcher.FireShopCartCleared(); }
         catch (Exception ex) { EventDispatcher.LogError($"ButtonClear: {ex.Message}"); }
     }
-}
+}*/
 
 [HarmonyPatch(typeof(MainGameManager), nameof(MainGameManager.ButtonBuyWall))]
 internal static class Patch_MainGameManager_ButtonBuyWall
@@ -855,7 +929,7 @@ internal static class Patch_SaveSystem_AutoSave
         catch (Exception ex) { EventDispatcher.LogError($"AutoSave: {ex.Message}"); }
     }
 }
-
+/*
 [HarmonyPatch(typeof(ComputerShop), nameof(ComputerShop.RemoveSpawnedItem))]
 internal static class Patch_ComputerShop_RemoveSpawnedItem
 {
@@ -865,7 +939,7 @@ internal static class Patch_ComputerShop_RemoveSpawnedItem
         catch (Exception ex) { EventDispatcher.LogError($"RemoveSpawnedItem: {ex.Message}"); }
     }
 }
-
+*/
 /// <summary>
 /// Patches HRSystem.OnEnable to inject custom employee cards into the HR panel.
 /// The panel is toggled via SetActive, so OnEnable fires each time it opens.
@@ -907,10 +981,13 @@ internal static class Patch_UsableObject_InteractOnClick
     private static byte _heldObjectType = 0;
     private static UsableObject _heldObjectRef = null;
 
-
+    // Guard against double-fire when the game calls InteractOnClick on both
+    // base class and derived class in the same interaction (virtual dispatch).
+    private static bool _pickupFiredThisInteraction = false;
 
     internal static void Prefix(UsableObject __instance)
     {
+        _pickupFiredThisInteraction = false;
         try
         {
             var pm = PlayerManager.instance;
@@ -972,16 +1049,103 @@ internal static class Patch_UsableObject_InteractOnClick
                         }
                         else
                         {
+                            string objName = __instance.gameObject.name;
+                            if (objName.EndsWith("(Clone)")) objName = objName[..^7];
                             var p = __instance.transform.position;
                             int posHash = ((int)(p.x * 100)) ^ ((int)(p.y * 100) << 10) ^ ((int)(p.z * 100) << 20);
-                            objectId = $"{__instance.gameObject.name}_{posHash}";
+                            objectId = $"{objName}_{posHash}";
                             objectType = (byte)(int)__instance.objectInHandType;
                         }
                     }
                 }
 
+                // ── Resolve clone IDs to stable IDs using InstalledObjects ──
+                // When the game re-clones an object during a rack install and our
+                // restore didn't fire (race condition), the object's field contains
+                // a clone ID. Look it up from InstalledObjects by rack position UID.
                 if (!string.IsNullOrEmpty(objectId))
                 {
+                    int pickupRackUid = -1;
+                    try
+                    {
+                        switch (objectType)
+                        {
+                            case 0:
+                            case 1:
+                            case 2:
+                            case 3:
+                                var srv2 = __instance.TryCast<Server>();
+                                if (srv2 != null)
+                                {
+                                    if (srv2.currentRackPosition != null)
+                                        pickupRackUid = srv2.currentRackPosition.rackPosGlobalUID;
+                                    if (pickupRackUid <= 0)
+                                        pickupRackUid = srv2.rackPositionUID;
+                                }
+                                break;
+                            case 4:
+                                var sw2 = __instance.TryCast<NetworkSwitch>();
+                                if (sw2 != null)
+                                {
+                                    if (sw2.currentRackPosition != null)
+                                        pickupRackUid = sw2.currentRackPosition.rackPosGlobalUID;
+                                    if (pickupRackUid <= 0)
+                                        pickupRackUid = sw2.rackPositionUID;
+                                }
+                                break;
+                            case 7:
+                                var pp2 = __instance.TryCast<PatchPanel>();
+                                if (pp2 != null)
+                                {
+                                    if (pp2.currentRackPosition != null)
+                                        pickupRackUid = pp2.currentRackPosition.rackPosGlobalUID;
+                                    if (pickupRackUid <= 0)
+                                        pickupRackUid = pp2.rackPositionUID;
+                                }
+                                break;
+                        }
+                    }
+                    catch { }
+
+                    if (pickupRackUid > 0)
+                    {
+                        var stableEntry = Patch_Rack_MarkPositionAsUsed.LookupInstalledObject(pickupRackUid, objectType);
+                        if (stableEntry.HasValue && !string.IsNullOrEmpty(stableEntry.Value.objectId) && stableEntry.Value.objectId != objectId)
+                        {
+                            CrashLog.Log($"[WorldSync] Pickup: resolved clone ID '{objectId}' → stable '{stableEntry.Value.objectId}' (rackUid={pickupRackUid})");
+                            objectId = stableEntry.Value.objectId;
+                            // Also fix the object's field so the game stays consistent
+                            try
+                            {
+                                switch (objectType)
+                                {
+                                    case 0:
+                                    case 1:
+                                    case 2:
+                                    case 3:
+                                        var srv3 = __instance.TryCast<Server>();
+                                        if (srv3 != null) srv3.ServerID = objectId;
+                                        break;
+                                    case 4:
+                                        var sw3 = __instance.TryCast<NetworkSwitch>();
+                                        if (sw3 != null) sw3.switchId = objectId;
+                                        break;
+                                    case 7:
+                                        var pp3 = __instance.TryCast<PatchPanel>();
+                                        if (pp3 != null) pp3.patchPanelId = objectId;
+                                        break;
+                                }
+                            }
+                            catch { }
+                        }
+                        // Object is leaving the rack — remove from tracking
+                        Patch_Rack_MarkPositionAsUsed.RemoveInstalledObject(pickupRackUid);
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(objectId) && !_pickupFiredThisInteraction)
+                {
+                    _pickupFiredThisInteraction = true;
                     _heldObjectId = objectId;
                     _heldObjectType = objectType;
                     _heldObjectRef = __instance;
